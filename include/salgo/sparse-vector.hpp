@@ -4,7 +4,6 @@
 #include "stack-storage.hpp"
 
 
-
 namespace salgo {
 
 
@@ -33,6 +32,10 @@ private:
 
 	std::vector<Node> v;
 	int num_existing = 0;
+
+public:
+	Sparse_Vector() = default;
+	Sparse_Vector(int size) : v(size), num_existing(size) {}
 
 public:
 	inline VAL& operator[](int key) {
@@ -80,6 +83,25 @@ public:
 	}
 
 
+	//
+	// FUN is (int old_key, int new_key) -> void
+	//
+	template<class FUN>
+	void compact(const FUN& fun = [](int,int){}) {
+		int target = 0;
+		for(int i=0; i<(int)v.size(); ++i) {
+			if(v[i].exists && target != i) {
+				v[target].val = std::move( v[i].val );
+				v[target].exists = true;
+				fun(i, target);
+				++target;
+			}
+		}
+
+		v.resize(target);
+	}
+
+
 
 private:
 	template<Const_Flag C>
@@ -87,7 +109,7 @@ private:
 	private:
 		Iterator(Node* new_node, Node* new_end_node)
 				: node(new_node), end_node(new_end_node) {
-			if(node != end_node) _increment();
+			if(node != end_node && !node->exists) _increment();
 		}
 
 		friend Sparse_Vector;

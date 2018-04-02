@@ -75,12 +75,20 @@ public:
 
 
 	inline T& get() {
+
+		#ifndef NDEBUG
 		DCHECK(constructed);
+		#endif
+
 		return *reinterpret_cast<T*>( &data[0] );
 	}
 
 	inline const T& get() const {
+
+		#ifndef NDEBUG
 		DCHECK(constructed);
+		#endif
+
 		return *reinterpret_cast<const T*>( &data[0] );
 	}
 };
