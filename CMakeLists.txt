@@ -60,7 +60,7 @@ if (GLOG_FOUND)
 endif ()
 
 
-find_package(Eigen3 3.3 REQUIRED)
+find_package(Eigen3 3.2 REQUIRED)
 if (EIGEN3_FOUND)
     include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
 endif()
