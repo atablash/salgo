@@ -33,33 +33,74 @@ private:
 	std::vector<Node> v;
 	int num_existing = 0;
 
+
 public:
 	Sparse_Vector() = default;
 	Sparse_Vector(int size) : v(size), num_existing(size) {}
 
+
+
+
 public:
-	inline VAL& operator[](int key) {
-		_check_key(key);
-		return v[key].val;
+	template<Const_Flag C>
+	class Accessor {
+	public:
+		inline int key() const {
+			return _key;
+		}
+
+		inline Const<VAL,C>& val() {
+			DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
+			return _owner.v[ _key ].val;
+		}
+
+		inline const VAL& val() const {
+			DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
+			return _owner.v[ _key ].val;
+		}
+
+		inline void erase() {
+			DCHECK_GE( _key, 0 ) << "index out of bounds";
+			DCHECK_LT( _key, (int)_owner.v.size() ) << "index out of bounds";
+			DCHECK( _owner.v[ _key ].exists ) << "erasing already erased element";
+			_owner.v[ _key ].exists = false;
+			_owner.v[ _key ].val.destruct();
+			--_owner.num_existing;
+		}
+
+		inline bool exists() {
+			DCHECK_GE( _key, 0 ) << "index out of bounds";
+			DCHECK_LT( _key, (int)_owner.v.size() ) << "index out of bounds";
+			return _owner.v[ _key ].exists;
+		}
+
+
+	private:
+		Accessor(Const<Sparse_Vector,C>& owner, int key)
+			: _owner(owner), _key(key) {}
+
+		friend Sparse_Vector;
+
+
+	private:
+		Const<Sparse_Vector,C>& _owner;
+		const int _key;
+	};
+
+
+
+
+public:
+	inline auto operator[](int key) {
+		DCHECK_GE( key, 0 ) << "index out of bounds";
+		DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
+		return Accessor<MUTAB>(*this, key);
 	}
 
-	inline const VAL& operator[](int key) const {
-		_check_key(key);
-		return v[key].val;
-	}
-
-	inline void erase(int key) {
-		_check_key(key);
-		DCHECK(v[key].exists) << "erasing already erased element";
-		v[key].exists = false;
-		v[key].val.destruct();
-		--num_existing;
-	}
-
-	inline bool exists(int key) const {
-		DCHECK_GE(key, 0) << "index out of bounds";
-		DCHECK_LT(key, (int)v.size()) << "index out of bounds";
-		return v[key].exists;
+	inline auto operator[](int key) const {
+		DCHECK_GE( key, 0 ) << "index out of bounds";
+		DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
+		return Accessor<CONST>(*this, key);
 	}
 
 	template<class... ARGS>
@@ -103,17 +144,12 @@ public:
 
 
 
+
+
+
 private:
 	template<Const_Flag C>
 	class Iterator {
-	private:
-		Iterator(Node* new_node, Node* new_end_node)
-				: node(new_node), end_node(new_end_node) {
-			if(node != end_node && !node->exists) _increment();
-		}
-
-		friend Sparse_Vector;
-
 
 	public:
 		inline auto& operator++() {
@@ -136,36 +172,50 @@ private:
 
 
 	public:
-		bool operator==(const Iterator& o) const {
-			DCHECK_EQ(end_node, o.end_node);
-			return node == o.node;
+		template<Const_Flag CC>
+		bool operator==(const Iterator<CC>& o) const {
+			DCHECK_EQ(&_owner, &o._owner);
+			return _key == o._key;
 		}
 
-		bool operator!=(const Iterator& o) const {
-			return !(node == o.node);
+		template<Const_Flag CC>
+		bool operator!=(const Iterator<CC>& o) const {
+			DCHECK_EQ(&_owner, &o._owner);
+			return _key != o._key;
+		}
+
+		template<Const_Flag CC>
+		bool operator<(const Iterator<CC>& o) const {
+			DCHECK_EQ(&_owner, &o._owner);
+			return _key < o._key;
+		}
+
+		template<Const_Flag CC>
+		bool operator>(const Iterator<CC>& o) const {
+			DCHECK_EQ(&_owner, &o._owner);
+			return _key > o._key;
+		}
+
+		template<Const_Flag CC>
+		bool operator<=(const Iterator<CC>& o) const {
+			DCHECK_EQ(&_owner, &o._owner);
+			return _key <= o._key;
+		}
+
+		template<Const_Flag CC>
+		bool operator>=(const Iterator<CC>& o) const {
+			DCHECK_EQ(&_owner, &o._owner);
+			return _key >= o._key;
 		}
 
 
 
 
 	public:
-		VAL& operator*() {
-			return node->val;
-		}
+		auto operator*() const {  return Accessor<C>(_owner, _key);  }
 
-		const VAL& operator*() const {
-			return node->val;
-		}
-
-
-		VAL* operator->() {
-			return &node->val;
-		}
-
-		const VAL* operator->() const {
-			return &node->val;
-		}
-
+		// unable to implement if using accessors:
+		// auto operator->()       {  return &container[idx];  }
 
 
 
@@ -173,47 +223,62 @@ private:
 	private:
 		inline void _increment() {
 			do {
-				++node;
-			} while(node != end_node && !node->exists);
+				++_key;
+			} while(_key != _owner.domain_end() && !_owner.v[ _key ].exists);
 		}
 
 		inline void _decrement() {
 			do {
-				--node;
-			} while(!node->exists);
+				--_key;
+			} while(!_owner.v[ _key ].exists);
 		}
 
+
+
+
 	private:
-		Const<Node,C>* node;
-		Const<Node,C>* const end_node;
+		Iterator(Const<Sparse_Vector,C>& owner, int key)
+				: _owner(owner), _key(key) {
+			if(key != owner.domain_end() && !owner.v[key].exists) _increment();
+		}
+
+		friend Sparse_Vector;
+
+	private:
+		Const<Sparse_Vector,C>& _owner;
+		int _key;
 	};
+
+
+
+
 
 public:
 	inline auto begin() {
-		return Iterator<MUTAB>(&v[0], &v[v.size()]);
+		return Iterator<MUTAB>(*this, 0);
 	}
 
 	inline auto begin() const {
-		return Iterator<CONST>(&v[0], &v[v.size()]);
+		return Iterator<CONST>(*this, 0);
+	}
+
+	inline auto cbegin() const {
+		return Iterator<CONST>(*this, 0);
 	}
 
 
 	inline auto end() {
-		return Iterator<MUTAB>( &v[v.size()], &v[v.size()] );
+		return Iterator<MUTAB>(*this, v.size());
 	}
 
 	inline auto end() const {
-		return Iterator<CONST>( &v[v.size()], &v[v.size()] );
+		return Iterator<CONST>(*this, v.size());
 	}
 
-
-
-private:
-	inline void _check_key(int key) const {
-		DCHECK_GE(key, 0) << "index out of bounds";
-		DCHECK_LT(key, (int)v.size()) << "index out of bounds";
-		DCHECK( v[key].exists ) << "accessing erased element";
+	inline auto cend() const {
+		return Iterator<CONST>(*this, v.size());
 	}
+
 };
 
 
