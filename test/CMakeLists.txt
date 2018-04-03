@@ -34,6 +34,7 @@ endif()
 set(sources
 	main.cpp
 	sparse-vector.cpp
+	3d/compute-normals.cpp
 )
 
 
