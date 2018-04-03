@@ -18,6 +18,7 @@ matrix:
             # dependencies
             - libgoogle-glog-dev
             - libgtest-dev
+            - libgflags-dev
             - libeigen3-dev
       env:
         - MATRIX_EVAL="export CC=gcc-7 && export CXX=g++-7"
@@ -35,6 +36,7 @@ matrix:
             # dependencies
             - libgoogle-glog-dev
             - libgtest-dev
+            - libgflags-dev
             - libeigen3-dev
       env:
         - MATRIX_EVAL="export CC=clang-5.0 && export CXX=clang++-5.0"

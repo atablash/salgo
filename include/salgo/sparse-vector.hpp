@@ -30,10 +30,24 @@ private:
 		bool exists;
 	};
 
+
+
+
+
+	//
+	// data
+	//
+private:
 	std::vector<Node> v;
 	int num_existing = 0;
 
 
+
+
+
+	//
+	// construction
+	//
 public:
 	Sparse_Vector() = default;
 	Sparse_Vector(int size) : v(size), num_existing(size) {}
@@ -41,6 +55,56 @@ public:
 
 
 
+
+
+	//
+	// interface: manipulate element - can be accessed via the Accessor
+	//
+public:
+	inline void erase(int key) {
+		_check_bounds(key);
+		DCHECK( v[key].exists ) << "erasing already erased element";
+		v[key].exists = false;
+		v[key].val.destruct();
+		--num_existing;
+	}
+
+	inline bool exists(int key) const {
+		_check_bounds(key);
+		return v[ key ].exists;
+	}
+
+	inline VAL& at(int key) {
+		_check_bounds(key);
+		return v[key].val;
+	}
+
+	inline const VAL& at(int key) const {
+		_check_bounds(key);
+		return v[key].val;
+	}
+
+
+
+
+
+
+private:
+	inline void _check_bounds(int key) const {
+		DCHECK_GE( key, 0 ) << "index out of bounds";
+		DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
+	}
+
+
+
+
+
+
+
+
+	//
+	// accessor
+	//
 public:
 	template<Const_Flag C>
 	class Accessor {
@@ -51,27 +115,21 @@ public:
 
 		inline Const<VAL,C>& val() {
 			DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
-			return _owner.v[ _key ].val;
+			return _owner.at( _key );
 		}
 
 		inline const VAL& val() const {
 			DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
-			return _owner.v[ _key ].val;
+			return _owner.at( _key );
 		}
 
 		inline void erase() {
-			DCHECK_GE( _key, 0 ) << "index out of bounds";
-			DCHECK_LT( _key, (int)_owner.v.size() ) << "index out of bounds";
-			DCHECK( _owner.v[ _key ].exists ) << "erasing already erased element";
-			_owner.v[ _key ].exists = false;
-			_owner.v[ _key ].val.destruct();
-			--_owner.num_existing;
+			static_assert(C == MUTAB, "called erase() on CONST accessor");
+			_owner.erase( _key );
 		}
 
-		inline bool exists() {
-			DCHECK_GE( _key, 0 ) << "index out of bounds";
-			DCHECK_LT( _key, (int)_owner.v.size() ) << "index out of bounds";
-			return _owner.v[ _key ].exists;
+		inline bool exists() const {
+			return _owner.exists( _key );
 		}
 
 
@@ -90,6 +148,12 @@ public:
 
 
 
+
+
+
+	//
+	// interface
+	//
 public:
 	inline auto operator[](int key) {
 		DCHECK_GE( key, 0 ) << "index out of bounds";
@@ -173,37 +237,37 @@ private:
 
 	public:
 		template<Const_Flag CC>
-		bool operator==(const Iterator<CC>& o) const {
+		inline bool operator==(const Iterator<CC>& o) const {
 			DCHECK_EQ(&_owner, &o._owner);
 			return _key == o._key;
 		}
 
 		template<Const_Flag CC>
-		bool operator!=(const Iterator<CC>& o) const {
+		inline bool operator!=(const Iterator<CC>& o) const {
 			DCHECK_EQ(&_owner, &o._owner);
 			return _key != o._key;
 		}
 
 		template<Const_Flag CC>
-		bool operator<(const Iterator<CC>& o) const {
+		inline bool operator<(const Iterator<CC>& o) const {
 			DCHECK_EQ(&_owner, &o._owner);
 			return _key < o._key;
 		}
 
 		template<Const_Flag CC>
-		bool operator>(const Iterator<CC>& o) const {
+		inline bool operator>(const Iterator<CC>& o) const {
 			DCHECK_EQ(&_owner, &o._owner);
 			return _key > o._key;
 		}
 
 		template<Const_Flag CC>
-		bool operator<=(const Iterator<CC>& o) const {
+		inline bool operator<=(const Iterator<CC>& o) const {
 			DCHECK_EQ(&_owner, &o._owner);
 			return _key <= o._key;
 		}
 
 		template<Const_Flag CC>
-		bool operator>=(const Iterator<CC>& o) const {
+		inline bool operator>=(const Iterator<CC>& o) const {
 			DCHECK_EQ(&_owner, &o._owner);
 			return _key >= o._key;
 		}
@@ -212,7 +276,7 @@ private:
 
 
 	public:
-		auto operator*() const {  return Accessor<C>(_owner, _key);  }
+		inline auto operator*() const {  return Accessor<C>(_owner, _key);  }
 
 		// unable to implement if using accessors:
 		// auto operator->()       {  return &container[idx];  }
@@ -237,7 +301,7 @@ private:
 
 
 	private:
-		Iterator(Const<Sparse_Vector,C>& owner, int key)
+		inline Iterator(Const<Sparse_Vector,C>& owner, int key)
 				: _owner(owner), _key(key) {
 			if(key != owner.domain_end() && !owner.v[key].exists) _increment();
 		}
