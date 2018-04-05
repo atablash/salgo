@@ -30,10 +30,11 @@ private:
 public:
 	Stack_Storage() {}
 
-	template<class... ARGS>
-	Stack_Storage(ARGS&&... args) {
-		construct(std::forward<ARGS>(args)...);
-	}
+	// this causes ambiguity for no args - don't know if should construct or not:
+	//template<class... ARGS>
+	//Stack_Storage(ARGS&&... args) {
+	//	construct(std::forward<ARGS>(args)...);
+	//}
 
 	~Stack_Storage() {
 		#ifndef NDEBUG

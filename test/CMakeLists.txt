@@ -34,7 +34,13 @@ endif()
 set(sources
 	main.cpp
 	sparse-vector.cpp
+	unordered-vector.cpp
 	3d/compute-normals.cpp
+	3d/collapse-edges.cpp
+	#3d/cap-holes.cpp
+	#3d/links.cpp
+	#3d/const.cpp
+	../third-party/tinyply.cpp
 )
 
 

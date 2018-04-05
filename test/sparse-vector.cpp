@@ -16,7 +16,7 @@ using namespace std::chrono;
 
 TEST(Sparse_vector, test_push_delete_compact) {
 
-	Sparse_Vector<int> m;
+	Sparse_Vector<int>::COUNTABLE m;
 	m.emplace_back(1); //
 	m.emplace_back(2);
 	m.emplace_back(3); //
@@ -25,8 +25,10 @@ TEST(Sparse_vector, test_push_delete_compact) {
 
 	EXPECT_EQ(5, m.count());
 
-	EXPECT_EQ(0, m.domain_begin());
-	EXPECT_EQ(5, m.domain_end());
+	//EXPECT_EQ(0, m.domain_begin());
+	//EXPECT_EQ(5, m.domain_end());
+
+	EXPECT_EQ(5, m.domain());
 
 	EXPECT_EQ(1, m[0].val());
 	EXPECT_EQ(2, m[1].val());
@@ -125,8 +127,10 @@ void run_vector_inplace(int N, int type) {
 		int ii = i;
 		if(type == 1) ii = rand() % N;
 
-		v[ii].val = rand();
-		v[ii].exists = rand()%2 == 1;
+		if(v[ii].exists) {
+			v[ii].val = rand();
+			if(rand()%2) v[ii].exists = false;
+		}
 	}
 
 	long long result = 0;
@@ -153,8 +157,10 @@ void run_vector_external(int N, int type) {
 		int ii = i;
 		if(type == 1) ii = rand() % N;
 
-		v[ii] = rand();
-		exists[ii] = rand()%2 == 1;
+		if(exists[ii]) {
+			v[ii] = rand();
+			if(rand()%2) exists[ii] = false;
+		}
 	}
 
 	long long result = 0;
@@ -182,8 +188,10 @@ void run_vector_external_bitset(int N, int type) {
 		int ii = i;
 		if(type == 1) ii = rand() % N;
 
-		v[ii] = rand();
-		exists[ii] = rand()%2 == 1;
+		if(exists[ii]) {
+			v[ii] = rand();
+			if(rand()%2) exists[ii] = false;
+		}
 	}
 
 	long long result = 0;
@@ -223,8 +231,10 @@ void run_sparse_vector(int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = rand() % N;
 
-			v[ii].val() = rand();
-			if(rand()%2) v[ii].erase();
+			if(v[ii].exists()) {
+				v[ii].val() = rand();
+				if(rand()%2) v[ii].erase();
+			}
 		}
 
 		for(int i=0; i<N; ++i) {
@@ -268,8 +278,10 @@ void run_sparse_vector_index(int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = rand() % N;
 
-			v[ii].val() = rand();
-			if(rand()%2) v[ii].erase();
+			if(v[ii].exists()) {
+				v[ii].val() = rand();
+				if(rand()%2) v[ii].erase();
+			}
 		}
 
 		for(int i=0; i<N; ++i) {
@@ -311,8 +323,10 @@ void run_sparse_vector_noacc(int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = rand() % N;
 
-			v.at(ii) = rand();
-			if(rand()%2) v.erase(ii);
+			if(v.exists(ii)) {
+				v.at(ii) = rand();
+				if(rand()%2) v.erase(ii);
+			}
 		}
 
 		for(int i=0; i<N; ++i) {
@@ -335,7 +349,7 @@ void run_sparse_vector_noacc(int N, int type) {
 
 
 TEST(Performance, sparse_vector) {
-	const int N = 10'000'000;
+	const int N = 1'000'000;
 
 	for(int type=0; type<2; ++type) {
 

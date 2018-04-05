@@ -16,7 +16,7 @@ struct Vert_Props_normal {
 };
 
 
-using M = Mesh<double> :: BUILDER :: Vert_Props< Vert_Props_normal > :: BUILD;
+using M = Mesh<double> :: VERT_PROPS<Vert_Props_normal>;
 
 
 TEST(Fast_compute_vert_normals, cube) {
