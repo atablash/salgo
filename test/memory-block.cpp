@@ -1,4 +1,7 @@
-#include <salgo/sparse-vector.hpp>
+#include "fast-rand.hpp"
+#include "clear-cache.hpp"
+
+#include <salgo/memory-block.hpp>
 
 #include <gtest/gtest.h>
 
@@ -11,12 +14,75 @@ using namespace std::chrono;
 
 
 
+DECLARE_int32(perf);
 
 
 
-TEST(Sparse_vector, test_push_delete_compact) {
+TEST(Memory_block, not_iterable) {
 
-	Sparse_Vector<int>::COUNTABLE m;
+	Memory_Block<int> m;
+	m.emplace_back(1);
+	m.emplace_back(2);
+	m.emplace_back(3);
+	m.emplace_back(4);
+	m.emplace_back(5);
+
+	EXPECT_EQ(5, m.domain());
+
+	EXPECT_EQ(1, m(0).val());
+	EXPECT_EQ(2, m(1).val());
+	EXPECT_EQ(3, m(2).val());
+	EXPECT_EQ(4, m(3).val());
+	EXPECT_EQ(5, m(4).val());
+
+	m(0).destruct();
+	m(1).destruct();
+	m(2).destruct();
+	m(3).destruct();
+	m(4).destruct();
+}
+
+
+TEST(Memory_block, not_iterable_nontrivial) {
+
+
+	struct A {
+		int val;
+		int* counter;
+
+		A(int v, int* p) : val(v), counter(p) {}
+		~A() { ++*counter; }
+	};
+
+
+	Memory_Block< unique_ptr<A> > m(3);
+	// m.emplace_back( make_unique<int>(1) ); // should not compile
+
+	int counter = 0;
+
+	m(0).construct( make_unique<A>(1,&counter) );
+	m(1).construct( make_unique<A>(2,&counter) );
+	m(2).construct( make_unique<A>(3,&counter) );
+
+	EXPECT_EQ(1, m(0).val()->val);
+	EXPECT_EQ(2, m(1).val()->val);
+	EXPECT_EQ(3, m(2).val()->val);
+
+	m(0).destruct();
+	m(1).destruct();
+	m(2).destruct();
+
+	EXPECT_EQ(3, counter);
+}
+
+
+
+
+
+
+TEST(Memory_block, push_delete_compact) {
+
+	Memory_Block<int>::ITERABLE::COUNTABLE m;
 	m.emplace_back(1); //
 	m.emplace_back(2);
 	m.emplace_back(3); //
@@ -30,11 +96,11 @@ TEST(Sparse_vector, test_push_delete_compact) {
 
 	EXPECT_EQ(5, m.domain());
 
-	EXPECT_EQ(1, m[0].val());
-	EXPECT_EQ(2, m[1].val());
-	EXPECT_EQ(3, m[2].val());
-	EXPECT_EQ(4, m[3].val());
-	EXPECT_EQ(5, m[4].val());
+	EXPECT_EQ(1, m(0).val());
+	EXPECT_EQ(2, m(1).val());
+	EXPECT_EQ(3, m(2).val());
+	EXPECT_EQ(4, m(3).val());
+	EXPECT_EQ(5, m(4).val());
 
 	{
 		int sum = 0;
@@ -42,12 +108,69 @@ TEST(Sparse_vector, test_push_delete_compact) {
 		EXPECT_EQ(15, sum);
 	}
 
-	m[0].erase();
-	m[2].erase();
-	m[4].erase();
+	m(0).destruct();
+	m(2).destruct();
+	m(4).destruct();
 
-	EXPECT_TRUE( m[1].exists());
-	EXPECT_FALSE(m[2].exists());
+	EXPECT_TRUE(  m(1).exists() );
+	EXPECT_FALSE( m(2).exists() );
+
+	{
+		int sum = 0;
+		for(const auto& e : m) sum += e.val();
+		EXPECT_EQ(6, sum);
+	}
+
+	{
+		vector<pair<int,int>> remap;
+		m.compact([&](int fr, int to){ remap.emplace_back(fr,to); });
+		EXPECT_EQ( decltype(remap)({{1,0}, {3,1}}), remap );
+	}
+
+	{
+		int sum = 0;
+		for(const auto& e : m) sum += e.val();
+		EXPECT_EQ(6, sum);
+	}
+}
+
+
+
+
+TEST(Memory_block, push_delete_compact_nontrivial) {
+
+	Memory_Block<int>::ITERABLE::COUNTABLE m;
+	m.emplace_back(1); //
+	m.emplace_back(2);
+	m.emplace_back(3); //
+	m.emplace_back(4);
+	m.emplace_back(5); //
+
+	EXPECT_EQ(5, m.count());
+
+	//EXPECT_EQ(0, m.domain_begin());
+	//EXPECT_EQ(5, m.domain_end());
+
+	EXPECT_EQ(5, m.domain());
+
+	EXPECT_EQ(1, m(0).val());
+	EXPECT_EQ(2, m(1).val());
+	EXPECT_EQ(3, m(2).val());
+	EXPECT_EQ(4, m(3).val());
+	EXPECT_EQ(5, m(4).val());
+
+	{
+		int sum = 0;
+		for(const auto& e : m) sum += e.val();
+		EXPECT_EQ(15, sum);
+	}
+
+	m(0).destruct();
+	m(2).destruct();
+	m(4).destruct();
+
+	EXPECT_TRUE(  m(1).exists() );
+	EXPECT_FALSE( m(2).exists() );
 
 	{
 		int sum = 0;
@@ -84,23 +207,24 @@ TEST(Sparse_vector, test_push_delete_compact) {
 
 
 void run_vector(int N, int type) {
+	clear_cache();
 
 	cout << "vector:\t";
-	srand(69);
+	fast_srand(69);
 	auto t0 = steady_clock::now();
 
 	vector<double> v(N);
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = rand() % N;
+		if(type == 1) ii = fast_rand() % N;
 
-		v[ii] = rand();
+		v[ii] = fast_rand();
 	}
 
 	long long result = 0;
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = rand() % N;
+		if(type == 1) ii = fast_rand() % N;
 
 		result += v[ii];
 	}
@@ -112,9 +236,10 @@ void run_vector(int N, int type) {
 
 
 void run_vector_inplace(int N, int type) {
+	clear_cache();
 
 	cout << "vector, in-place exists flag:\t";
-	srand(69);
+	fast_srand(69);
 	auto t0 = steady_clock::now();
 
 	struct Node {
@@ -125,18 +250,18 @@ void run_vector_inplace(int N, int type) {
 	vector<Node> v(N);
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = rand() % N;
+		if(type == 1) ii = fast_rand() % N;
 
 		if(v[ii].exists) {
-			v[ii].val = rand();
-			if(rand()%2) v[ii].exists = false;
+			v[ii].val = fast_rand();
+			if(fast_rand()%2) v[ii].exists = false;
 		}
 	}
 
 	long long result = 0;
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = rand() % N;
+		if(type == 1) ii = fast_rand() % N;
 
 		if(v[ii].exists) result += v[ii].val;
 	}
@@ -147,26 +272,28 @@ void run_vector_inplace(int N, int type) {
 
 
 void run_vector_external(int N, int type) {
+	clear_cache();
+	
 	cout << "vector, external exists array:\t";
-	srand(69);
+	fast_srand(69);
 	auto t0 = steady_clock::now();
 
 	vector<char> exists(N,true);
 	vector<double> v(N);
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = rand() % N;
+		if(type == 1) ii = fast_rand() % N;
 
 		if(exists[ii]) {
-			v[ii] = rand();
-			if(rand()%2) exists[ii] = false;
+			v[ii] = fast_rand();
+			if(fast_rand()%2) exists[ii] = false;
 		}
 	}
 
 	long long result = 0;
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = rand() % N;
+		if(type == 1) ii = fast_rand() % N;
 
 		if(exists[ii]) result += v[ii];
 	}
@@ -177,27 +304,28 @@ void run_vector_external(int N, int type) {
 
 
 void run_vector_external_bitset(int N, int type) {
+	clear_cache();
 
 	cout << "vector, external exists bitset:\t";
-	srand(69);
+	fast_srand(69);
 	auto t0 = steady_clock::now();
 
 	vector<bool> exists(N,true);
 	vector<double> v(N);
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = rand() % N;
+		if(type == 1) ii = fast_rand() % N;
 
 		if(exists[ii]) {
-			v[ii] = rand();
-			if(rand()%2) exists[ii] = false;
+			v[ii] = fast_rand();
+			if(fast_rand()%2) exists[ii] = false;
 		}
 	}
 
 	long long result = 0;
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = rand() % N;
+		if(type == 1) ii = fast_rand() % N;
 
 		if(exists[ii]) result += v[ii];
 	}
@@ -207,19 +335,21 @@ void run_vector_external_bitset(int N, int type) {
 }
 
 void run_sparse_vector(int N, int type) {
+	clear_cache();
 
-	cout << "Sparse_Vector:\t";
-	srand(69);
+	cout << "Memory_Block:\t";
+	fast_srand(69);
 	auto t0 = steady_clock::now();
 
-	Sparse_Vector<double> v(N);
+	Memory_Block<double>::ITERABLE v(N);
+	v.construct_all();
 	long long result = 0;
 
 	if(type == 0) {
 		// sequential
 		for(auto e : v) {
-			e.val() = rand();
-			if(rand()%2) e.erase();
+			e.val() = fast_rand();
+			if(fast_rand()%2) e.destruct();
 		}
 
 		for(const auto& e : v) {
@@ -227,20 +357,20 @@ void run_sparse_vector(int N, int type) {
 		}
 	}
 	else {
-		// random access
+		// fast_random access
 		for(int i=0; i<N; ++i) {
-			int ii = rand() % N;
+			int ii = fast_rand() % N;
 
-			if(v[ii].exists()) {
-				v[ii].val() = rand();
-				if(rand()%2) v[ii].erase();
+			if(v(ii).exists()) {
+				v(ii).val() = fast_rand();
+				if(fast_rand()%2) v(ii).destruct();
 			}
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = rand() % N;
+			int ii = fast_rand() % N;
 
-			if(v[ii].exists()) result += v[ii].val();
+			if(v(ii).exists()) result += v(ii).val();
 		}
 	}
 
@@ -254,40 +384,42 @@ void run_sparse_vector(int N, int type) {
 
 
 void run_sparse_vector_index(int N, int type) {
+	clear_cache();
 
-	cout << "Sparse_Vector index:\t";
-	srand(69);
+	cout << "Memory_Block index:\t";
+	fast_srand(69);
 	auto t0 = steady_clock::now();
 
-	Sparse_Vector<double> v(N);
+	Memory_Block<double>::ITERABLE v(N);
+	v.construct_all();
 	long long result = 0;
 
 	if(type == 0) {
 		// sequential
 		for(int i=0; i<N; ++i) {
-			v[i].val() = rand();
-			if(rand()%2) v[i].erase();
+			v(i).val() = fast_rand();
+			if(fast_rand()%2) v(i).destruct();
 		}
 
 		for(int i=0; i<N; ++i) {
-			if(v[i].exists()) result += v[i].val();
+			if(v(i).exists()) result += v(i).val();
 		}
 	}
 	else {
-		// random access
+		// fast_random access
 		for(int i=0; i<N; ++i) {
-			int ii = rand() % N;
+			int ii = fast_rand() % N;
 
-			if(v[ii].exists()) {
-				v[ii].val() = rand();
-				if(rand()%2) v[ii].erase();
+			if(v(ii).exists()) {
+				v(ii).val() = fast_rand();
+				if(fast_rand()%2) v(ii).destruct();
 			}
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = rand() % N;
+			int ii = fast_rand() % N;
 
-			if(v[ii].exists()) result += v[ii].val();
+			if(v(ii).exists()) result += v(ii).val();
 		}
 	}
 
@@ -299,40 +431,42 @@ void run_sparse_vector_index(int N, int type) {
 
 
 void run_sparse_vector_noacc(int N, int type) {
+	clear_cache();
 
-	cout << "Sparse_Vector index, noacc:\t";
-	srand(69);
+	cout << "Memory_Block index, noacc:\t";
+	fast_srand(69);
 	auto t0 = steady_clock::now();
 
-	Sparse_Vector<double> v(N);
+	Memory_Block<double>::ITERABLE v(N);
+	v.construct_all();
 	long long result = 0;
 
 	if(type == 0) {
 		// sequential
 		for(int i=0; i<N; ++i) {
-			v.at(i) = rand();
-			if(rand()%2) v.erase(i);
+			v[i] = fast_rand();
+			if(fast_rand()%2) v.destruct(i);
 		}
 
 		for(int i=0; i<N; ++i) {
-			if(v.exists(i)) result += v.at(i);
+			if(v.exists(i)) result += v[i];
 		}
 	}
 	else {
-		// random access
+		// fast_random access
 		for(int i=0; i<N; ++i) {
-			int ii = rand() % N;
+			int ii = fast_rand() % N;
 
 			if(v.exists(ii)) {
-				v.at(ii) = rand();
-				if(rand()%2) v.erase(ii);
+				v[ii] = fast_rand();
+				if(fast_rand()%2) v.destruct(ii);
 			}
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = rand() % N;
+			int ii = fast_rand() % N;
 
-			if(v.exists(ii)) result += v.at(ii);
+			if(v.exists(ii)) result += v[ii];
 		}
 	}
 
@@ -348,8 +482,9 @@ void run_sparse_vector_noacc(int N, int type) {
 
 
 
-TEST(Performance, sparse_vector) {
-	const int N = 1'000'000;
+TEST(Memory_block, perf) {
+	const int N = FLAGS_perf;
+	if(N == 0) return;
 
 	for(int type=0; type<2; ++type) {
 

@@ -4,6 +4,8 @@
 #include "const-flag.hpp"
 #include "stack-storage.hpp"
 #include "iterator-base.hpp"
+#include "int-handle.hpp"
+
 
 
 namespace salgo {
@@ -14,18 +16,23 @@ namespace salgo {
 
 
 namespace internal {
-namespace Sparse_Vector {
+namespace Memory_Block {
 
 
 template<bool> struct Add_num_existing { int num_existing = 0; };
 template<> struct Add_num_existing<false> {};
 
 
+template<bool> struct Add_exists { bool exists = false; };
+template<> struct Add_exists<false> {};
 
-template<class _VAL, bool _COUNTABLE>
+
+
+template<class _VAL, bool _ITERABLE, bool _COUNTABLE>
 struct Context {
 
 	using Val = _VAL;
+	static constexpr bool Iterable = _ITERABLE;
 	static constexpr bool Countable = _COUNTABLE;
 
 	//
@@ -35,29 +42,22 @@ struct Context {
 	struct Node;
 	template<Const_Flag C> class Accessor;
 	template<Const_Flag C> class Iterator;
-	class Sparse_Vector;
+	class Memory_Block;
 
 
 
 
 
+	struct Handle : Int_Handle<Handle> { FORWARDING_CONSTRUCTOR(Handle,Int_Handle<Handle>); };
 
 
-	struct Node {
 
-		template<class... ARGS>
-		Node(ARGS&&... args) {
-			val.construct( std::forward<ARGS>(args)... );
-		}
+	struct Node : Add_exists<Iterable> {
+		Stack_Storage<Val> val;
 
 		~Node() {
-			if(exists) {
-				val.destruct();
-			}
+			if constexpr(Iterable) if(Add_exists<Iterable>::exists) val.destruct();
 		}
-
-		Stack_Storage<Val> val;
-		bool exists = true;
 	};
 
 
@@ -71,41 +71,47 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor {
 	public:
-		inline int key() const {
+		Handle handle() const {
 			return _key;
 		}
 
-		inline Const<Val,C>& val() {
-			DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
-			return _owner.at( _key );
+		Const<Val,C>& val() {
+			if constexpr(Iterable) DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
+			return _owner[ _key ];
 		}
 
-		inline const Val& val() const {
-			DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
-			return _owner.at( _key );
+		const Val& val() const {
+			if constexpr(Iterable) DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
+			return _owner[ _key ];
 		}
 
-		inline void erase() {
-			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			_owner.erase( _key );
+		template<class... ARGS>
+		void construct(ARGS&&... args) {
+			static_assert(C == MUTAB, "called construct() on CONST accessor");
+			_owner.construct( _key, std::forward<ARGS>(args)... );
 		}
 
-		inline bool exists() const {
+		void destruct() {
+			static_assert(C == MUTAB, "called destruct() on CONST accessor");
+			_owner.destruct( _key );
+		}
+
+		bool exists() const {
 			return _owner.exists( _key );
 		}
 
 
 	private:
-		Accessor(Const<Sparse_Vector,C>& owner, int key)
+		Accessor(Const<Memory_Block,C>& owner, Handle key)
 			: _owner(owner), _key(key) {}
 
-		friend Sparse_Vector;
+		friend Memory_Block;
 		friend Iterator<C>;
 
 
 	private:
-		Const<Sparse_Vector,C>& _owner;
-		const int _key;
+		Const<Memory_Block,C>& _owner;
+		const Handle _key;
 	};
 
 
@@ -150,15 +156,15 @@ struct Context {
 
 
 	private:
-		inline Iterator(Const<Sparse_Vector,C>& owner, int key)
+		inline Iterator(Const<Memory_Block,C>& owner, Handle key)
 				: _owner(owner), _key(key) {
-			if(key != owner.domain() && !owner.v[key].exists) _increment();
+			if((int)key != owner.domain() && !owner.v[key].exists) _increment();
 		}
 
-		friend Sparse_Vector;
+		friend Memory_Block;
 
 	private:
-		Const<Sparse_Vector,C>& _owner;
+		Const<Memory_Block,C>& _owner;
 		int _key;
 	};
 
@@ -169,12 +175,15 @@ struct Context {
 
 
 
-	class Sparse_Vector : private Add_num_existing<Countable> {
+	class Memory_Block : private Add_num_existing<Countable> {
 		using NUM_EXISTING_BASE = Add_num_existing<Countable>;
 
 	public:
 		using Val = Context::Val;
-		static constexpr bool Countable = Context::Countable;
+		static constexpr bool Is_Iterable = Context::Iterable;
+		static constexpr bool Is_Countable = Context::Countable;
+
+		using Handle = Context::Handle;
 
 
 	private:
@@ -196,9 +205,9 @@ struct Context {
 		// construction
 		//
 	public:
-		Sparse_Vector() = default;
-		Sparse_Vector(int size) : v(size) {
-			if constexpr(Countable) NUM_EXISTING_BASE::num_existing = size;
+		Memory_Block() = default;
+		Memory_Block(int size) : v(size) {
+			// if constexpr(Countable) NUM_EXISTING_BASE::num_existing = size; // uninitialized at first!
 		}
 
 
@@ -207,27 +216,53 @@ struct Context {
 		// interface: manipulate element - can be accessed via the Accessor
 		//
 	public:
-		inline void erase(int key) {
+		template<class... ARGS>
+		void construct(Handle key, ARGS&&... args) {
 			_check_bounds(key);
-			DCHECK( v[key].exists ) << "erasing already erased element";
-			v[key].exists = false;
+			if constexpr(Iterable) {
+				DCHECK(!v[key].exists) << "element already constructed";
+				v[key].exists = true;
+			}
+			v[key].val.construct( std::forward<ARGS>(args)... );
+			if constexpr(Countable) ++NUM_EXISTING_BASE::num_existing;
+		}
+
+		void destruct(Handle key) {
+			_check_bounds(key);
+			if constexpr(Iterable) {
+				DCHECK( v[key].exists ) << "erasing already erased element";
+				v[key].exists = false;
+			}
 			v[key].val.destruct();
 			if constexpr(Countable) --NUM_EXISTING_BASE::num_existing;
 		}
 
-		inline bool exists(int key) const {
+		bool exists(Handle key) const {
 			_check_bounds(key);
-			return v[ key ].exists;
+			return v[key].exists;
 		}
 
-		inline Val& operator[](int key) {
+		Val& operator[](Handle key) {
 			_check_bounds(key);
+			if constexpr(Iterable) DCHECK( v[key].exists ) << "accessing non-existing element";
 			return v[key].val;
 		}
 
-		inline const Val& operator[](int key) const {
+		const Val& operator[](Handle key) const {
 			_check_bounds(key);
+			if constexpr(Iterable) DCHECK( v[key].exists ) << "accessing non-existing element";
 			return v[key].val;
+		}
+
+
+		template<class... ARGS>
+		void construct_all(const ARGS&... args) {
+			for(int i=0; i<(int)v.size(); ++i) {
+				if constexpr(Iterable) {
+					DCHECK(!v[i].exists) << "can't construct_all() if some elements already exist";
+				}
+				construct(i, args...);
+			}
 		}
 
 
@@ -235,7 +270,7 @@ struct Context {
 
 
 	private:
-		inline void _check_bounds(int key) const {
+		inline void _check_bounds(Handle key) const {
 			DCHECK_GE( key, 0 ) << "index out of bounds";
 			DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
 		}
@@ -248,28 +283,35 @@ struct Context {
 		// interface
 		//
 	public:
-		auto operator()(int key) {
+		auto operator()(Handle key) {
 			DCHECK_GE( key, 0 ) << "index out of bounds";
 			DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
 			return Accessor<MUTAB>(*this, key);
 		}
 
-		auto operator()(int key) const {
+		auto operator()(Handle key) const {
 			DCHECK_GE( key, 0 ) << "index out of bounds";
 			DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
 			return Accessor<CONST>(*this, key);
 		}
 
 		template<class... ARGS>
-		Accessor emplace_back(ARGS&&... args) {
-			v.emplace_back( std::forward<ARGS>(args)... );
+		Accessor<MUTAB> emplace_back(ARGS&&... args) {
+			// because of vector realloc:
+			static_assert( Iterable || std::is_trivially_copy_constructible_v<Val>,
+				"non-trivially-constructible types require ITERABLE to emplace_back()" );
+
+			v.emplace_back();
+			v.back().val.construct( std::forward<ARGS>(args)... );
+			if constexpr(Iterable) v.back().exists = true;
+
 			if constexpr(Countable) ++NUM_EXISTING_BASE::num_existing;
 			return Accessor<MUTAB>(*this, v.size()-1);
 		}
 
 
 		int count() const {
-			static_assert(Countable, "count() called on non countable Sparse_Vector");
+			static_assert(Countable, "count() called on non countable Memory_Block");
 			return NUM_EXISTING_BASE::num_existing;
 		}
 
@@ -288,6 +330,8 @@ struct Context {
 		//
 		template<class FUN>
 		void compact(const FUN& fun = [](int,int){}) {
+			static_assert(Iterable, "can only compact if ITERABLE");
+
 			int target = 0;
 			for(int i=0; i<(int)v.size(); ++i) {
 				if(v[i].exists && target != i) {
@@ -307,27 +351,33 @@ struct Context {
 
 	public:
 		inline auto begin() {
+			static_assert(Iterable, "not ITERABLE");
 			return Iterator<MUTAB>(*this, 0);
 		}
 
 		inline auto begin() const {
+			static_assert(Iterable, "not ITERABLE");
 			return Iterator<CONST>(*this, 0);
 		}
 
 		inline auto cbegin() const {
+			static_assert(Iterable, "not ITERABLE");
 			return Iterator<CONST>(*this, 0);
 		}
 
 
 		inline auto end() {
+			static_assert(Iterable, "not ITERABLE");
 			return Iterator<MUTAB>(*this, v.size());
 		}
 
 		inline auto end() const {
+			static_assert(Iterable, "not ITERABLE");
 			return Iterator<CONST>(*this, v.size());
 		}
 
 		inline auto cend() const {
+			static_assert(Iterable, "not ITERABLE");
 			return Iterator<CONST>(*this, v.size());
 		}
 
@@ -339,21 +389,24 @@ struct Context {
 
 
 
-	struct With_Builder : Sparse_Vector {
-		FORWARDING_CONSTRUCTOR(With_Builder, Sparse_Vector);
+	struct With_Builder : Memory_Block {
+		FORWARDING_CONSTRUCTOR(With_Builder, Memory_Block);
+
+		using ITERABLE =
+			typename Context< Val, true, Countable > :: With_Builder;
 
 		using COUNTABLE =
-			typename Context<Val,true> :: With_Builder;
+			typename Context< Val, Iterable, true > :: With_Builder;
 
 		using FULL =
-			typename Context<Val,true> :: With_Builder;
+			typename Context< Val, true, true > :: With_Builder;
 	};
 
 
 
 
 }; // struct Context
-} // namespace Sparse_Vector
+} // namespace Memory_Block
 } // namespace internal
 
 
@@ -364,9 +417,10 @@ struct Context {
 template<
 	class T
 >
-using Sparse_Vector = typename internal::Sparse_Vector::Context<
+using Memory_Block = typename internal::Memory_Block::Context<
 	T,
-	false // COUNTABLE
+	false, // ITERABLE
+	false  // COUNTABLE
 > :: With_Builder;
 
 

@@ -3,6 +3,8 @@
 #include "common.hpp"
 #include "const-flag.hpp"
 #include "iterator-base.hpp"
+#include "stack-storage.hpp"
+#include "memory-block-storage.hpp"
 
 
 namespace salgo {
@@ -42,10 +44,10 @@ struct Context {
 	// template arguments
 	//
 	using Val = _VAL;
-	using Storage = _STORAGE :: VAL<Node>;
+	using Storage = typename _STORAGE :: template VAL<Node>;
 	static constexpr bool Countable = _COUNTABLE;
 
-	using Handle = Storage::Handle;
+	using Handle = typename Storage::Handle;
 
 
 
@@ -55,13 +57,10 @@ struct Context {
 
 
 	struct Node {
-		Val val;
+		Stack_Storage<Val> val;
 
 		Handle next = Handle();
 		Handle prev = Handle();
-
-		template<class... ARGS>
-		Node(ARGS&&... args) : val( std::forward<ARGS>(args)... ) {}
 	};
 
 
@@ -75,26 +74,26 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor {
 	public:
-		inline int handle() const {
+		int handle() const {
 			return _handle;
 		}
 
-		inline Const<Val,C>& val() {
-			return _owner.at( _handle ).val;
+		Const<Val,C>& val() {
+			return _owner[ _handle ];
 		}
 
-		inline const Val& val() const {
-			return _owner.at( _handle ).val;
+		const Val& val() const {
+			return _owner[ _handle ];
 		}
 
-		inline void erase() {
+		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
 			_owner.erase( _handle );
 		}
 
-		inline bool exists() const {
-			return _owner.exists( _handle );
-		}
+		//bool exists() const {
+		//	return _owner.exists( _handle );
+		//}
 
 
 	private:
@@ -126,12 +125,12 @@ struct Context {
 		friend Iterator_Base<C,Iterator>;
 
 		inline void _increment() {
-			_handle = _owner.at( _handle ).next;
+			_handle = _owner->v[ _handle ].next;
 			DCHECK( _handle.valid() ) << "followed broken list link";
 		}
 
 		inline void _decrement() {
-			_handle = _owner.at( _handle ).prev;
+			_handle = _owner->v[ _handle ].prev;
 			DCHECK( _handle.valid() ) << "followed broken list link";
 		}
 
@@ -139,13 +138,13 @@ struct Context {
 
 		template<Const_Flag CC>
 		auto _will_compare_with(const Iterator<CC>& o) const {
-			DCHECK_EQ(&_owner, &o._owner);
+			DCHECK_EQ(_owner, o._owner);
 		}
 
 
 
 	public:
-		inline auto operator*() const {  return Accessor<C>(_owner, _handle);  }
+		inline auto operator*() const {  return Accessor<C>(*_owner, _handle);  }
 
 		// unable to implement if using accessors:
 		// auto operator->()       {  return &container[idx];  }
@@ -154,15 +153,11 @@ struct Context {
 
 
 	private:
-		inline Iterator(Const<List,C>& owner, Handle handle)
-				: _owner(owner), _handle(handle) {
-			if(key != owner.domain() && !owner.v[key].exists) _increment();
-		}
-
+		inline Iterator(Const<List,C>* owner, Handle handle) : _owner(owner), _handle(handle) {}
 		friend List;
 
 	private:
-		Const<List,C>& _owner;
+		Const<List,C>* _owner;
 		Handle _handle;
 	};
 
@@ -178,7 +173,7 @@ struct Context {
 
 	public:
 		using Val = Context::Val;
-		static constexpr bool Countable = Context::Countable;
+		static constexpr bool Is_Countable = Context::Countable;
 
 
 	private:
@@ -194,24 +189,41 @@ struct Context {
 		//
 	private:
 		Storage v;
+		Handle _front;
+		Handle _back;
 
 
 		//
 		// construction
 		//
 	public:
-		List() = default;
-		List(int size) {
+		List() {
+			_front = v.construct().handle();
+			_back = v.construct().handle();
+			v[_front].next = _back;
+			v[_back].prev = _front;
+			#ifndef NDEBUG
+			v[_front].prev.reset();
+			v[_back].next.reset();
+			#endif
+		};
+
+		List(int size) : List() {
 			if constexpr(Countable) NUM_EXISTING_BASE::num_existing = size;
 
-			Handle prev = Handle();
-
 			for(int i=0; i<size; ++i) {
-				auto handle = v.construct().handle();
-				v[handle].prev = prev;
-				if(prev) v[prev].next = handle;
-				prev = handle;
+				emplace( _back );
 			}
+		}
+
+		~List() {
+			for(auto e : *this) {
+				v[ e.handle() ].val.destruct();
+				v.destruct( e.handle() );
+			}
+
+			v.destruct( _front );
+			v.destruct( _back );
 		}
 
 
@@ -220,26 +232,32 @@ struct Context {
 		// interface: manipulate element - can be accessed via the Accessor
 		//
 	public:
-		inline void erase(Handle handle) {
-			DCHECK( v[handle].exists ) << "erasing already erased element";
-			v[key].exists = false;
-			v[key].val.destruct();
+		void erase(Handle handle) {
+			auto next = v[handle].next;
+			auto prev = v[handle].prev;
+
+			DCHECK(prev);
+			DCHECK(next);
+
+			v[prev].next = next;
+			v[next].prev = prev;
+
+			v[handle].val.destruct();
+			v.destruct(handle);
+
 			if constexpr(Countable) --NUM_EXISTING_BASE::num_existing;
 		}
 
-		inline bool exists(int key) const {
-			_check_bounds(key);
-			return v[ key ].exists;
+		//bool exists(Handle handle) const {
+		//	return v[ key ].exists;
+		//}
+
+		Val& operator[](Handle handle) {
+			return v[handle].val;
 		}
 
-		inline Val& at(int key) {
-			_check_bounds(key);
-			return v[key].val;
-		}
-
-		inline const Val& at(int key) const {
-			_check_bounds(key);
-			return v[key].val;
+		const Val& operator[](Handle handle) const {
+			return v[handle].val;
 		}
 
 
@@ -250,22 +268,39 @@ struct Context {
 		// interface
 		//
 	public:
-		auto operator[](int key) {
-			DCHECK_GE( key, 0 ) << "index out of bounds";
-			DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
-			return Accessor<MUTAB>(*this, key);
+		auto operator()(Handle handle) {
+			return Accessor<MUTAB>(*this, handle);
 		}
 
-		auto operator[](int key) const {
-			DCHECK_GE( key, 0 ) << "index out of bounds";
-			DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
-			return Accessor<CONST>(*this, key);
+		auto operator()(Handle handle) const {
+			return Accessor<CONST>(*this, handle);
 		}
 
 		template<class... ARGS>
-		void emplace_back(ARGS&&... args) {
-			v.emplace_back( std::forward<ARGS>(args)... );
+		auto emplace(Handle where, ARGS&&... args) {
+			DCHECK(where);
+
+			auto h = v.construct().handle();
+			v[h].val.construct( std::forward<ARGS>(args)... );
+
+			CHECK( v[h].prev );
+			v[h].prev = v[where].prev;
+			v[h].next = where;
+			v[v[h].prev].next = h;
+			v[v[h].next].prev = h;
 			if constexpr(Countable) ++NUM_EXISTING_BASE::num_existing;
+
+			return Accessor<MUTAB>(*this, h);
+		}
+
+		template<class... ARGS>
+		auto emplace_front(ARGS&&... args) {
+			return emplace( v[_front].next, std::forward<ARGS>(args)... );
+		}
+
+		template<class... ARGS>
+		auto emplace_back(ARGS&&... args) {
+			return emplace( _back, std::forward<ARGS>(args)... );
 		}
 
 
@@ -274,62 +309,34 @@ struct Context {
 			return NUM_EXISTING_BASE::num_existing;
 		}
 
-		int domain() const {
-			return v.size();
-		}
-
-
-		void reserve(int capacity) {
-			v.reserve(capacity);
-		}
-
-
-		//
-		// FUN is (int old_key, int new_key) -> void
-		//
-		template<class FUN>
-		void compact(const FUN& fun = [](int,int){}) {
-			int target = 0;
-			for(int i=0; i<(int)v.size(); ++i) {
-				if(v[i].exists && target != i) {
-					v[target].val = std::move( v[i].val );
-					v[target].exists = true;
-					fun(i, target);
-					++target;
-				}
-			}
-
-			v.resize(target);
-		}
-
 
 
 
 
 	public:
 		inline auto begin() {
-			return Iterator<MUTAB>(*this, 0);
+			return Iterator<MUTAB>(this, v[_front].next);
 		}
 
 		inline auto begin() const {
-			return Iterator<CONST>(*this, 0);
+			return Iterator<CONST>(this, v[_front].next);
 		}
 
 		inline auto cbegin() const {
-			return Iterator<CONST>(*this, 0);
+			return Iterator<CONST>(this, v[_front].next);
 		}
 
 
 		inline auto end() {
-			return Iterator<MUTAB>(*this, v.size());
+			return Iterator<MUTAB>(this, _back);
 		}
 
 		inline auto end() const {
-			return Iterator<CONST>(*this, v.size());
+			return Iterator<CONST>(this, _back);
 		}
 
 		inline auto cend() const {
-			return Iterator<CONST>(*this, v.size());
+			return Iterator<CONST>(this, _back);
 		}
 
 	};
@@ -340,14 +347,18 @@ struct Context {
 
 
 
-	struct With_Builder : Sparse_Vector {
-		FORWARDING_CONSTRUCTOR(With_Builder, Sparse_Vector);
+	struct With_Builder : List {
+		FORWARDING_CONSTRUCTOR(With_Builder, List);
+
+		template<class NEW_STORAGE>
+		using STORAGE =
+			typename Context<Val, NEW_STORAGE, Countable> :: With_Builder;
 
 		using COUNTABLE =
-			typename Context<Val,true> :: With_Builder;
+			typename Context<Val, Storage, true> :: With_Builder;
 
 		using FULL =
-			typename Context<Val,true> :: With_Builder;
+			typename Context<Val, Storage, true> :: With_Builder;
 	};
 
 
@@ -363,10 +374,11 @@ struct Context {
 
 
 template<
-	class T
+	class VAL
 >
-using Sparse_Vector = typename internal::Sparse_Vector::Context<
-	T,
+using List = typename internal::List::Context<
+	VAL,
+	Memory_Block_Storage<VAL>,
 	false // COUNTABLE
 > :: With_Builder;
 

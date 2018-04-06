@@ -18,6 +18,13 @@ GENERATE_HAS_MEMBER(_will_compare_with);
 template< Const_Flag C, template<Const_Flag> class CRTP >
 class Iterator_Base {
 
+public:
+	using difference_type = ptrdiff_t;
+	using value_type = char;
+	using pointer = value_type*;
+	using reference = value_type&;
+	using iterator_category = std::bidirectional_iterator_tag;
+
 // make polymorphic for debugging with dynamic_case
 public:
 	#ifndef NDEBUG
@@ -26,12 +33,18 @@ public:
 
 private:
 	auto& _self() {
+		#ifndef NDEBUG
 		DCHECK_EQ(this, dynamic_cast< CRTP<C>* >(this));
+		#endif
+
 		return *reinterpret_cast< CRTP<C>* >(this);
 	}
 
 	auto& _self() const {
+		#ifndef NDEBUG
 		DCHECK_EQ(this, dynamic_cast< const CRTP<C>* >(this));
+		#endif
+		
 		return *reinterpret_cast< const CRTP<C>* >(this);
 	}
 
