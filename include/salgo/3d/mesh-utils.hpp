@@ -48,7 +48,9 @@ template< class MESH >
 std::vector<bool> compute_isolated_vertices( const MESH& mesh, bool use_vert_poly_links = false ) {
 
 	if(use_vert_poly_links) {
-		throw "not implemented";
+		DCHECK(false) << "not implemented";
+		abort();
+		//throw "not implemented";
 	}
 	else {
 		std::vector<bool> isolated( mesh.verts_domain(), true );

@@ -162,7 +162,7 @@ namespace tinyply
 		case PlyProperty::Type::UINT32:     ptr = resize<uint32_t>(v, newSize); break;
 		case PlyProperty::Type::FLOAT32:    ptr = resize<float>(v, newSize);    break;
 		case PlyProperty::Type::FLOAT64:    ptr = resize<double>(v, newSize);   break;
-		case PlyProperty::Type::INVALID:    throw std::invalid_argument("invalid ply property");
+		case PlyProperty::Type::INVALID:    abort();//throw std::invalid_argument("invalid ply property");
 		}
 	}
 
@@ -243,7 +243,7 @@ namespace tinyply
 						if (p.name == propertyKey)
 						{
 							if (PropertyTable[property_type_for_type(source)].stride != PropertyTable[p.propertyType].stride)
-								throw std::runtime_error("destination vector is wrongly typed to hold this property");
+								abort();//throw std::runtime_error("destination vector is wrongly typed to hold this property");
 							return e.size;
 
 						}
@@ -292,7 +292,7 @@ namespace tinyply
 					instanceCounts.push_back(instanceCount);
 					auto result = userDataTable.insert(std::pair<std::string, std::shared_ptr<DataCursor>>(make_key(elementKey, key), cursor));
 					if (result.second == false)
-						throw std::invalid_argument("property has already been requested: " + key);
+						abort();//throw std::invalid_argument("property has already been requested: " + key);
 				}
 				else continue;
 			}

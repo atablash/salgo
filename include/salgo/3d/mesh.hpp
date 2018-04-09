@@ -3,13 +3,13 @@
 
 #include "../common.hpp"
 #include "../iterator-base.hpp"
-#include "../sparse-vector.hpp"
+#include "../vector.hpp"
 #include "../segment.hpp"
 #include "../int-handle.hpp"
 
 #include <Eigen/Dense>
 
-#include <unordered_set>
+//#include <unordered_set>
 
 
 
@@ -128,14 +128,14 @@ namespace Mesh {
 namespace std {
 
 	template<>
-	struct hash<salgo::internal::Mesh::H_Poly_Vert> { // why const?! bug in libstdc++?
+	struct hash<salgo::internal::Mesh::H_Poly_Vert> {
 		size_t operator()(const salgo::internal::Mesh::H_Poly_Vert& pv) const noexcept {
 			return (pv.poly << 2) ^ pv.ith;
 		}
 	};
 
 	template<>
-	struct hash<salgo::internal::Mesh::H_Poly_Edge> { // why const?! bug in libstdc++?
+	struct hash<salgo::internal::Mesh::H_Poly_Edge> {
 		size_t operator()(const salgo::internal::Mesh::H_Poly_Edge& pe) const noexcept {
 			return (pe.poly << 2) ^ pe.ith;
 		}
@@ -167,29 +167,10 @@ namespace Mesh {
 	template<class T, bool> struct Add_link { T link = T(); };
 	template<class T> struct Add_link<T,false> {};
 
-	using Vert_Poly_Links = std::unordered_set<H_Poly_Vert>;
+	using Vert_Poly_Links = // std::unordered_set<H_Poly_Vert>;
 
 	template<bool> struct Add_poly_links { Vert_Poly_Links poly_links; };
 	template<> struct Add_poly_links<false> {};
-
-
-	// add Sparse_Vector-like interface to std::vector
-	template<class T, class... REST>
-	class Vector : public std::vector<T, REST...> {
-		using BASE = std::vector<T>;
-
-	public:
-		template<class... ARGS>
-		Vector(ARGS&&... args) : BASE(std::forward<ARGS>(args)...) {}
-
-		int domain() const {
-			return BASE::size();
-		}
-
-		static constexpr bool exists(int) {
-			return true;
-		}
-	};
 
 
 	template<
@@ -1042,11 +1023,11 @@ namespace Mesh {
 		template<Const_Flag C>
 		class A_Vert_Poly_Verts {
 		public:
-			auto begin()       { return I_Vert_Poly_Vert<C>    (_mesh, _mesh.vs.at(_vert).poly_links.begin()); }
-			auto begin() const { return I_Vert_Poly_Vert<CONST>(_mesh, _mesh.vs.at(_vert).poly_links.begin()); }
+			auto begin()       { return I_Vert_Poly_Vert<C>    (_mesh, _mesh.vs[_vert].poly_links.begin()); }
+			auto begin() const { return I_Vert_Poly_Vert<CONST>(_mesh, _mesh.vs[_vert].poly_links.begin()); }
 
-			auto end()         { return I_Vert_Poly_Vert<C>    (_mesh, _mesh.vs.at(_vert).poly_links.end()); }
-			auto end()   const { return I_Vert_Poly_Vert<CONST>(_mesh, _mesh.vs.at(_vert).poly_links.end()); }
+			auto end()         { return I_Vert_Poly_Vert<C>    (_mesh, _mesh.vs[_vert].poly_links.end()); }
+			auto end()   const { return I_Vert_Poly_Vert<CONST>(_mesh, _mesh.vs[_vert].poly_links.end()); }
 
 		private:
 			A_Vert_Poly_Verts(Const<Mesh,C>& mesh, H_Vert poly) : _mesh(mesh), _vert(poly) {}
@@ -1175,8 +1156,8 @@ namespace Mesh {
 
 
 		private:
-			using Vs = std::conditional_t<Verts_Erasable, ::salgo::Sparse_Vector<Vert>, Vector<Vert>>;
-			using Ps = std::conditional_t<Polys_Erasable, ::salgo::Sparse_Vector<Poly>, Vector<Poly>>;
+			using Vs = std::conditional_t<Verts_Erasable, typename salgo::Vector<Vert>::SPARSE::EXISTS, salgo::Vector<Vert>>;
+			using Ps = std::conditional_t<Polys_Erasable, typename salgo::Vector<Poly>::SPARSE::EXISTS, salgo::Vector<Poly>>;
 			Vs vs;
 			Ps ps;
 
@@ -1211,7 +1192,7 @@ namespace Mesh {
 				static_assert(Verts_Erasable, "erase() called on non-erasable vert");
 
 				if constexpr(Has_Vert_Poly_Links) {
-					auto& poly_links = vs.at(handle).poly_links;
+					auto& poly_links = vs[handle].poly_links;
 
 					for(auto it = poly_links.begin(); it != poly_links.end();) {
 						auto next = std::next(it);
@@ -1224,7 +1205,7 @@ namespace Mesh {
 					DLOG(WARNING) << "erasing vertex without vert-pv links - make sure it's isolated";
 				}
 
-				vs.erase(handle);
+				vs.destruct( handle );
 			}
 
 
@@ -1234,20 +1215,20 @@ namespace Mesh {
 				// unlink vert->pv links
 				if constexpr(Has_Vert_Poly_Links) {
 					for(int ith=0; ith < 3; ++ith) {
-						auto& pv = ps.at(handle).verts[ith];
+						auto& pv = ps[handle].verts[ith];
 
-						auto& v = vs.at(pv.vert);
+						auto& v = vs[pv.vert];
 						DCHECK( v.poly_links.find( H_Poly_Vert(handle, ith) ) != v.poly_links.end() );
 						v.poly_links.erase( H_Poly_Vert(handle, ith) );
 					}
 				}
 
-				ps.erase(handle);
+				ps.destruct( handle );
 			}
 
 			// erase and unlink edge links
 			void safe_erase(H_Poly handle) {
-				auto& p = ps.at(handle);
+				auto& p = ps[handle];
 
 				// unlink edge links
 				if constexpr(Has_Edge_Links) {
@@ -1266,18 +1247,18 @@ namespace Mesh {
 			// fast interface - can be accessed via the accessors
 			//
 		public:
-			inline auto& vert_pos(H_Vert handle)       {  return vs.at(handle).pos;  }
-			inline auto& vert_pos(H_Vert handle) const {  return vs.at(handle).pos;  }
+			inline auto& vert_pos(H_Vert handle)       {  return vs[handle].pos;  }
+			inline auto& vert_pos(H_Vert handle) const {  return vs[handle].pos;  }
 
 
 			inline auto& vert_props(H_Vert handle) {
 				static_assert(Has_Vert_Props, "accessing non-existing vert_props");
-				return vs.at(handle).props;
+				return vs[handle].props;
 			}
 
 			inline auto& vert_props(H_Vert handle) const {
 				static_assert(Has_Vert_Props, "accessing non-existing vert_props");
-				return vs.at(handle).props;
+				return vs[handle].props;
 			}
 
 			auto poly_vert_vert(H_Poly_Vert handle)       { return _poly_vert(handle).vert; }
@@ -1301,14 +1282,14 @@ namespace Mesh {
 
 			void poly_vert_change(H_Poly_Vert pv, H_Vert v) {
 				if constexpr(Has_Vert_Poly_Links) {
-					auto& old_poly_links = vs.at( _poly_vert(pv).vert ).poly_links;
+					auto& old_poly_links = vs[ _poly_vert(pv).vert ].poly_links;
 
 					DCHECK(old_poly_links.find( pv ) != old_poly_links.end())
 						<< "old vert-pv link should be present before poly_vert_change()";
 
 					old_poly_links.erase(pv);
 
-					auto& new_poly_links = vs.at(v).poly_links;
+					auto& new_poly_links = vs[v].poly_links;
 
 					DCHECK(new_poly_links.find( pv ) == new_poly_links.end())
 						<< "new vert-pv link should NOT be present before poly_vert_change()";
@@ -1364,12 +1345,12 @@ namespace Mesh {
 				if constexpr(Has_Vert_Poly_Links) {
 
 					auto handle = ps.domain()-1;
-					auto& p = ps.at(handle);
+					auto& p = ps[handle];
 
 					for(int ith=0; ith < 3; ++ith) {
 						auto& pv = p.verts[ith];
 
-						auto& v = vs.at(pv.vert);
+						auto& v = vs[pv.vert];
 						DCHECK( v.poly_links.find( H_Poly_Vert(handle, ith) ) == v.poly_links.end() );
 						v.poly_links.insert( H_Poly_Vert(handle, ith) );
 					}
@@ -1392,12 +1373,12 @@ namespace Mesh {
 			//
 			//
 		private:
-			auto& _poly_vert(H_Poly_Vert handle)       { return ps.at( handle.poly ).verts[ handle.ith ]; }
-			auto& _poly_vert(H_Poly_Vert handle) const { return ps.at( handle.poly ).verts[ handle.ith ]; }
+			auto& _poly_vert(H_Poly_Vert handle)       { return ps[ handle.poly ].verts[ handle.ith ]; }
+			auto& _poly_vert(H_Poly_Vert handle) const { return ps[ handle.poly ].verts[ handle.ith ]; }
 			// auto _poly_vert(H_Poly poly, int ith) const {  return ps.at(        poly ).verts[        ith ].vert;  }
 
-			auto& _poly_edge(H_Poly_Edge handle)       { return ps.at( handle.poly ).edges[ handle.ith ]; }
-			auto& _poly_edge(H_Poly_Edge handle) const { return ps.at( handle.poly ).edges[ handle.ith ]; }
+			auto& _poly_edge(H_Poly_Edge handle)       { return ps[ handle.poly ].edges[ handle.ith ]; }
+			auto& _poly_edge(H_Poly_Edge handle) const { return ps[ handle.poly ].edges[ handle.ith ]; }
 			// auto& _poly_edge(H_Poly poly, int ith) { return ps.at(        poly ).edges[        ith ]; }
 			// auto& _poly_edge(H_Poly poly, int ith) const { return ps.at(        poly ).edges[        ith ]; }
 

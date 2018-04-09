@@ -4,7 +4,7 @@
 #include "const-flag.hpp"
 #include "iterator-base.hpp"
 #include "stack-storage.hpp"
-#include "memory-block-storage.hpp"
+#include "sparse-vector-storage.hpp"
 
 
 namespace salgo {
@@ -378,7 +378,7 @@ template<
 >
 using List = typename internal::List::Context<
 	VAL,
-	Memory_Block_Storage<VAL>,
+	Sparse_Vector_Storage<VAL>,
 	false // COUNTABLE
 > :: With_Builder;
 

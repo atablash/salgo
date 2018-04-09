@@ -43,11 +43,11 @@ struct Context {
 		}
 
 		inline Const<Val,C>& val() {
-			return _owner.at( _key );
+			return _owner[ _key ];
 		}
 
 		inline const Val& val() const {
-			return _owner.at( _key );
+			return _owner[ _key ];
 		}
 
 		inline void erase() {

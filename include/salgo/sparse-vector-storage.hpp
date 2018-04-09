@@ -1,6 +1,6 @@
 #pragma once
 
-#include "memory-block.hpp"
+#include "vector.hpp"
 
 namespace salgo {
 
@@ -16,7 +16,7 @@ namespace salgo {
 
 
 namespace internal {
-namespace Memory_Block_Storage {
+namespace Sparse_Vector_Storage {
 
 template<
 	class _VAL
@@ -25,12 +25,12 @@ struct Context {
 
 	using Val = _VAL;
 
-	using Memory_Block = salgo::Memory_Block<Val>;
-	using Handle = typename Memory_Block::Handle;
+	using Sparse_Vector = typename salgo::Vector<Val> :: SPARSE;
+	using Handle = typename Sparse_Vector::Handle;
 
 
 	// forward
-	class Memory_Block_Storage;
+	class Sparse_Vector_Storage;
 
 
 
@@ -61,14 +61,14 @@ struct Context {
 
 
 	private:
-		Accessor(Const<Memory_Block_Storage,C>& owner, Handle handle)
+		Accessor(Const<Sparse_Vector_Storage,C>& owner, Handle handle)
 			: _owner(owner), _handle(handle) {}
 
-		friend Memory_Block_Storage;
+		friend Sparse_Vector_Storage;
 
 
 	private:
-		Const<Memory_Block_Storage,C>& _owner;
+		Const<Sparse_Vector_Storage,C>& _owner;
 		const Handle _handle;
 	};
 
@@ -77,9 +77,9 @@ struct Context {
 
 
 
-	class Memory_Block_Storage {
+	class Sparse_Vector_Storage {
 	private:
-		Memory_Block v;
+		Sparse_Vector v;
 
 	public:
 		using Val = Context::Val;
@@ -104,7 +104,7 @@ struct Context {
 
 
 
-	struct With_Builder : Memory_Block_Storage {
+	struct With_Builder : Sparse_Vector_Storage {
 
 		template<class NEW_VAL>
 		using VAL = typename
@@ -124,7 +124,7 @@ struct Context {
 
 
 template< class VAL >
-using Memory_Block_Storage = typename internal::Memory_Block_Storage::Context<VAL>::With_Builder;
+using Sparse_Vector_Storage = typename internal::Sparse_Vector_Storage::Context<VAL>::With_Builder;
 
 
 

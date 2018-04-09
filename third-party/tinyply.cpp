@@ -55,7 +55,7 @@ PlyFile::PlyFile(std::istream & is)
 {
     if (!parse_header(is))
     {
-        throw std::runtime_error("file is not ply or encounted junk in header");
+        abort();//throw std::runtime_error("file is not ply or encounted junk in header");
     }
 }
 
@@ -150,7 +150,7 @@ void PlyFile::read_property_binary(PlyProperty::Type t, void * dest, size_t & de
         case PlyProperty::Type::UINT32:     ply_cast<uint32_t>(dest, src.data(), isBigEndian);      break;
         case PlyProperty::Type::FLOAT32:    ply_cast_float<float>(dest, src.data(), isBigEndian);   break;
         case PlyProperty::Type::FLOAT64:    ply_cast_double<double>(dest, src.data(), isBigEndian); break;
-        case PlyProperty::Type::INVALID:    throw std::invalid_argument("invalid ply property");
+        case PlyProperty::Type::INVALID:    abort();//throw std::invalid_argument("invalid ply property");
     }
     destOffset += PropertyTable[t].stride;
 }
@@ -167,7 +167,7 @@ void PlyFile::read_property_ascii(PlyProperty::Type t, void * dest, size_t & des
         case PlyProperty::Type::UINT32:     ply_cast_ascii<uint32_t>(dest, is);                     break;
         case PlyProperty::Type::FLOAT32:    ply_cast_ascii<float>(dest, is);                        break;
         case PlyProperty::Type::FLOAT64:    ply_cast_ascii<double>(dest, is);                       break;
-        case PlyProperty::Type::INVALID:    throw std::invalid_argument("invalid ply property");
+        case PlyProperty::Type::INVALID:    abort();//throw std::invalid_argument("invalid ply property");
     }
     destOffset += PropertyTable[t].stride;
 }
@@ -184,7 +184,7 @@ void PlyFile::write_property_ascii(PlyProperty::Type t, std::ostream & os, uint8
         case PlyProperty::Type::UINT32:     os << *reinterpret_cast<uint32_t*>(src);    break;
         case PlyProperty::Type::FLOAT32:    os << *reinterpret_cast<float*>(src);       break;
         case PlyProperty::Type::FLOAT64:    os << *reinterpret_cast<double*>(src);      break;
-        case PlyProperty::Type::INVALID:    throw std::invalid_argument("invalid ply property");
+        case PlyProperty::Type::INVALID:    abort();//throw std::invalid_argument("invalid ply property");
     }
     os << " ";
     srcOffset += PropertyTable[t].stride;

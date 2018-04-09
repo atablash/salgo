@@ -51,7 +51,7 @@ public:
 		DCHECK(!constructed);
 		#endif
 
-		construct( std::move( *(const T*)&o.data[0] ) );
+		construct( std::move( *(T*)&o.data[0] ) );
 	}
 
 	Stack_Storage__nt& operator=(const Stack_Storage__nt& o) {

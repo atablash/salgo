@@ -25,11 +25,11 @@ TEST(Unordered_vector, test_push_delete) {
 
 	EXPECT_EQ(5, m.size());
 
-	EXPECT_EQ(1, m[0].val());
-	EXPECT_EQ(2, m[1].val());
-	EXPECT_EQ(3, m[2].val());
-	EXPECT_EQ(4, m[3].val());
-	EXPECT_EQ(5, m[4].val());
+	EXPECT_EQ(1, m(0).val());
+	EXPECT_EQ(2, m(1).val());
+	EXPECT_EQ(3, m(2).val());
+	EXPECT_EQ(4, m(3).val());
+	EXPECT_EQ(5, m(4).val()); EXPECT_EQ(5, m[4]);
 
 	{
 		int sum = 0;
@@ -37,9 +37,9 @@ TEST(Unordered_vector, test_push_delete) {
 		EXPECT_EQ(15, sum);
 	}
 
-	m[0].erase();
-	m[2].erase();
-	m[2].erase();
+	m(0).erase();
+	m(2).erase();
+	m(2).erase();
 
 	EXPECT_EQ(2, m.size());
 

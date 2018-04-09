@@ -6,6 +6,7 @@
 #include "iterator-base.hpp"
 #include "int-handle.hpp"
 
+#include <cstring> // memcpy
 
 
 namespace salgo {
@@ -27,18 +28,20 @@ template<bool> struct Add_exists { bool exists = false; };
 template<> struct Add_exists<false> {};
 
 
+template<bool> struct Add_exists_bitset {
+	std::vector<bool> exists; // TODO: don't store size and capacity here
+};
+template<> struct Add_exists_bitset<false> {};
 
-template<class _VAL, bool _ITERABLE, bool _COUNTABLE>
+
+
+template<class _VAL, class _ALLOCATOR, int _STACK_BUFFER, bool _DENSE,
+	bool _EXISTS_INPLACE, bool _EXISTS_BITSET, bool _COUNT>
 struct Context {
-
-	using Val = _VAL;
-	static constexpr bool Iterable = _ITERABLE;
-	static constexpr bool Countable = _COUNTABLE;
 
 	//
 	// forward declarations
 	//
-
 	struct Node;
 	template<Const_Flag C> class Accessor;
 	template<Const_Flag C> class Iterator;
@@ -48,17 +51,26 @@ struct Context {
 
 
 
+	using Val = _VAL;
+	using Allocator = typename std::allocator_traits< _ALLOCATOR >::template rebind_alloc<Node>;
+	static constexpr int  Stack_Buffer = _STACK_BUFFER;
+	static constexpr bool Dense = _DENSE;
+	static constexpr bool Sparse = !Dense;
+	static constexpr bool Exists_Inplace = _EXISTS_INPLACE;
+	static constexpr bool Exists_Bitset = _EXISTS_BITSET;
+	static constexpr bool Exists = _EXISTS_BITSET || _EXISTS_INPLACE;
+	static constexpr bool Count = _COUNT;
+
+
+
+
+
+
 	struct Handle : Int_Handle<Handle> { FORWARDING_CONSTRUCTOR(Handle,Int_Handle<Handle>); };
 
 
 
-	struct Node : Add_exists<Iterable> {
-		Stack_Storage<Val> val;
-
-		~Node() {
-			if constexpr(Iterable) if(Add_exists<Iterable>::exists) val.destruct();
-		}
-	};
+	struct Node : Stack_Storage<Val>, Add_exists<Exists_Inplace> {};
 
 
 
@@ -76,12 +88,12 @@ struct Context {
 		}
 
 		Const<Val,C>& val() {
-			if constexpr(Iterable) DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
+			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
 			return _owner[ _key ];
 		}
 
 		const Val& val() const {
-			if constexpr(Iterable) DCHECK( _owner.v[ _key ].exists ) << "accessing erased element";
+			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
 			return _owner[ _key ];
 		}
 
@@ -129,12 +141,14 @@ struct Context {
 	private:
 		friend Iterator_Base<C,Iterator>;
 
-		inline void _increment() {
-			do ++_key; while(_key != _owner.domain() && !_owner.v[ _key ].exists);
+		void _increment() {
+			if constexpr(Dense) ++_key;
+			else do ++_key; while( _key != _owner.size() && !_owner.exists( _key ) );
 		}
 
-		inline void _decrement() {
-			do --_key; while(!_owner.v[ _key ].exists);
+		void _decrement() {
+			if constexpr(Dense) --_key;
+			else do --_key; while( !_owner.exists( _key ) );
 		}
 
 		auto _get_comparable() const {  return _key;  }
@@ -147,7 +161,7 @@ struct Context {
 
 
 	public:
-		inline auto operator*() const {  return Accessor<C>(_owner, _key);  }
+		auto operator*() const {  return Accessor<C>(_owner, _key);  }
 
 		// unable to implement if using accessors:
 		// auto operator->()       {  return &container[idx];  }
@@ -156,9 +170,9 @@ struct Context {
 
 
 	private:
-		inline Iterator(Const<Memory_Block,C>& owner, Handle key)
+		Iterator(Const<Memory_Block,C>& owner, Handle key)
 				: _owner(owner), _key(key) {
-			if((int)key != owner.domain() && !owner.v[key].exists) _increment();
+			if( (int)key != owner.size() && !owner.exists(key) ) _increment();
 		}
 
 		friend Memory_Block;
@@ -175,13 +189,23 @@ struct Context {
 
 
 
-	class Memory_Block : private Add_num_existing<Countable> {
-		using NUM_EXISTING_BASE = Add_num_existing<Countable>;
+	class Memory_Block :
+			private Allocator,
+			private Add_num_existing<Count>,
+			private Add_exists_bitset<Exists_Bitset> {
+
+		using NUM_EXISTING_BASE = Add_num_existing<Count>;
+		using EXISTS_BITSET_BASE = Add_exists_bitset<Exists_Bitset>;
 
 	public:
 		using Val = Context::Val;
-		static constexpr bool Is_Iterable = Context::Iterable;
-		static constexpr bool Is_Countable = Context::Countable;
+		using Allocator = Context::Allocator;
+		static constexpr bool Is_Dense = Context::Dense;
+		static constexpr bool Is_Sparse = Context::Sparse;
+		static constexpr bool Has_Exists_Inplace = Context::Exists_Inplace;
+		static constexpr bool Has_Exists_Bitset = Context::Exists_Bitset;
+		static constexpr bool Has_Exists = Context::Exists;
+		static constexpr bool Has_Count = Context::Count;
 
 		using Handle = Context::Handle;
 
@@ -194,21 +218,186 @@ struct Context {
 		friend Iterator<CONST>;
 
 
+	private:
+		// avoid instantiating Node if not needed
+		static constexpr int _stack_buffer_sizeof() {
+			if constexpr(Stack_Buffer > 0) {
+				return Stack_Buffer * sizeof(Node);
+			} else return 0;
+		}
+
 		//
 		// data
 		//
 	private:
-		std::vector<Node> v;
+		Node* _data = _get_stack_buffer();
+		char _stack_buffer[ _stack_buffer_sizeof() ];
+
+		int _size = Stack_Buffer;
+
+		auto _get_stack_buffer() {
+			return (Node*)_stack_buffer;
+		}
+
+		auto _get_stack_buffer() const {
+			return (const Node*)_stack_buffer;
+		}
+
+		auto& _get(Handle key)       { return _data[key]; }
+		auto& _get(Handle key) const { return _data[key]; }
 
 
 		//
 		// construction
 		//
 	public:
-		Memory_Block() = default;
-		Memory_Block(int size) : v(size) {
-			// if constexpr(Countable) NUM_EXISTING_BASE::num_existing = size; // uninitialized at first!
+		Memory_Block() {
+			static_assert(!Exists_Inplace || !Exists_Bitset, "can't have both");
+			static_assert(!Dense || !Exists, "can't have both");
+			static_assert(!Dense || !Count, "can't have both");
 		}
+
+		template<class... ARGS>
+		Memory_Block(int size, ARGS&&... args) : _size(size) {
+			if(_size > Stack_Buffer) {
+				_data = std::allocator_traits<Allocator>::allocate(_allocator(), _size);
+			}
+			else {
+				_data = _get_stack_buffer();
+			}
+
+			for(int i=0; i<_size; ++i) {
+				std::allocator_traits<Allocator>::construct(_allocator(), _data+i);
+				if constexpr(Dense) {
+					_get(i).construct( args... );
+				}
+			}
+
+			if constexpr(Exists_Bitset) EXISTS_BITSET_BASE::exists.resize( _size );
+		}
+
+		~Memory_Block() {
+			if constexpr(Exists) {
+				_destruct_block(_data, _size);
+			}
+
+			// remove heap block
+			if(_size > Stack_Buffer) {
+				std::allocator_traits<Allocator>::deallocate(_allocator(), _data, _size);
+			}
+		}
+
+	private:
+		auto& _allocator()       { return *static_cast<      Allocator*>(this); }
+		auto& _allocator() const { return *static_cast<const Allocator*>(this); }
+
+
+	private:
+		void _destruct_block(Node* data, int size) {
+			static_assert(Dense || Exists || std::is_trivially_destructible_v<Val>,
+				"can't destroy non-POD container if no EXISTS or DENSE flags");
+				
+			_destruct_block(data, size, [this](int i){ return exists(i); });
+		}
+
+		// destruct nodes+values
+		template<class EXISTS_FUN>
+		void _destruct_block(Node* data, int size, EXISTS_FUN&& exists_fun) {
+			(void)data;
+			if constexpr(!std::is_trivially_destructible_v<Val>) {
+
+				// destruct values
+				for(int i=0; i<size; ++i) if(exists_fun(i)) {
+					_get(i).destruct();
+				}
+			}
+
+			// destruct nodes
+			for(int i=0; i<size; ++i) {
+				std::allocator_traits<Allocator>::destroy(_allocator(), data+i);
+			}
+		}
+
+	public:
+		void resize(int new_size) {
+			static_assert(Dense || Exists || std::is_trivially_copy_constructible_v<Val>,
+				"can't resize non-POD container if no EXISTS or DENSE flags");
+
+			if constexpr(std::is_trivially_copy_constructible_v<Val>) {
+				_resize(new_size, [](int){ return true; });
+			}
+			else _resize(new_size, [this](int i){ return exists(i); });
+		}
+
+		template<class EXISTS_FUN>
+		void resize(int new_size, EXISTS_FUN&& exists_fun) {
+			static_assert(!Dense && !Exists, "can only supply EXISTS_FUN if not Dense and Exists");
+
+			_resize(new_size, std::forward<EXISTS_FUN>(exists_fun));
+		}
+
+	private:
+		template<class EXISTS_FUN>
+		void _resize(int new_size, EXISTS_FUN&& exists_fun) {
+
+			decltype(_data) new_data;
+
+			if(new_size > Stack_Buffer) {
+				new_data = std::allocator_traits<Allocator>::allocate(_allocator(), new_size);
+			}
+			else {
+				new_data = _get_stack_buffer();
+			}
+
+			int n = std::min(_size, new_size);
+
+			// new memory location?
+			if(new_data != _data) {
+
+				if constexpr(!std::is_trivially_copy_constructible_v<Val>) {
+					for(int i=0; i<n; ++i) {
+						if(exists_fun(i)) {
+							// move-construct node+value
+							std::allocator_traits<Allocator>::construct(_allocator(), new_data+i, std::move( _data[i] ));
+						}
+						else {
+							// construct empty node
+							std::allocator_traits<Allocator>::construct(_allocator(), new_data+i);
+						}
+					}
+				}
+				else {
+					static_assert(std::is_trivially_copy_constructible_v<Node>);
+					std::memcpy(new_data, _data, n * sizeof(Node));
+				}
+
+				_destruct_block(_data, _size, std::forward<EXISTS_FUN>(exists_fun));
+			}
+			else {
+				// same memory location
+				_destruct_block(_data + n, _size - n, std::forward<EXISTS_FUN>(exists_fun));
+			}
+
+			// construct new nodes
+			for(int i=_size; i<new_size; ++i) {
+				std::allocator_traits<Allocator>::construct(_allocator(), new_data+i);
+			}
+
+
+			// remove old block
+			if(_size > Stack_Buffer) {
+				std::allocator_traits<Allocator>::deallocate(_allocator(), _data, _size);
+			}
+
+			_data = new_data;
+			_size = new_size;
+
+			if constexpr(Exists_Bitset) EXISTS_BITSET_BASE::exists.resize( new_size );
+		}
+
+
+	public:
+		auto size() const { return _size; }
 
 
 
@@ -218,61 +407,65 @@ struct Context {
 	public:
 		template<class... ARGS>
 		void construct(Handle key, ARGS&&... args) {
+			static_assert(!Dense, "construct() not supported for DENSE memory-blocks");
+
 			_check_bounds(key);
-			if constexpr(Iterable) {
-				DCHECK(!v[key].exists) << "element already constructed";
-				v[key].exists = true;
+			if constexpr(Exists) {
+				DCHECK( !exists(key) ) << "element already constructed";
+				_set_exists(key, true);
 			}
-			v[key].val.construct( std::forward<ARGS>(args)... );
-			if constexpr(Countable) ++NUM_EXISTING_BASE::num_existing;
+			_get(key).construct( std::forward<ARGS>(args)... );
+			if constexpr(Count) ++NUM_EXISTING_BASE::num_existing;
 		}
 
 		void destruct(Handle key) {
+			static_assert(!Dense, "destruct() not supported for DENSE memory-blocks");
+
 			_check_bounds(key);
-			if constexpr(Iterable) {
-				DCHECK( v[key].exists ) << "erasing already erased element";
-				v[key].exists = false;
+			if constexpr(Exists) {
+				DCHECK( exists(key) ) << "erasing already erased element";
+				_set_exists(key, false);
 			}
-			v[key].val.destruct();
-			if constexpr(Countable) --NUM_EXISTING_BASE::num_existing;
+			_get(key).destruct();
+			if constexpr(Count) --NUM_EXISTING_BASE::num_existing;
 		}
 
 		bool exists(Handle key) const {
 			_check_bounds(key);
-			return v[key].exists;
+			static_assert(Dense || Exists, "called exists() on object without EXISTS or DENSE");
+
+			if constexpr(Dense) {
+				return true;
+			} else if constexpr(Exists_Inplace) {
+				return _get(key).exists;
+			} else if constexpr(Exists_Bitset) {
+				return EXISTS_BITSET_BASE::exists[key];
+			}
 		}
 
 		Val& operator[](Handle key) {
 			_check_bounds(key);
-			if constexpr(Iterable) DCHECK( v[key].exists ) << "accessing non-existing element";
-			return v[key].val;
+			if constexpr(Exists) DCHECK( exists(key) ) << "accessing non-existing element";
+			return _get(key);
 		}
 
 		const Val& operator[](Handle key) const {
 			_check_bounds(key);
-			if constexpr(Iterable) DCHECK( v[key].exists ) << "accessing non-existing element";
-			return v[key].val;
+			if constexpr(Exists) DCHECK( exists(key) ) << "accessing non-existing element";
+			return _get(key);
 		}
 
 
 		template<class... ARGS>
 		void construct_all(const ARGS&... args) {
-			for(int i=0; i<(int)v.size(); ++i) {
-				if constexpr(Iterable) {
-					DCHECK(!v[i].exists) << "can't construct_all() if some elements already exist";
+			static_assert(!Dense, "construct_all() not supported for DENSE memory-blocks");
+
+			for(int i=0; i<_size; ++i) {
+				if constexpr(Exists) {
+					DCHECK( !exists(i) ) << "can't construct_all() if some elements already exist";
 				}
 				construct(i, args...);
 			}
-		}
-
-
-
-
-
-	private:
-		inline void _check_bounds(Handle key) const {
-			DCHECK_GE( key, 0 ) << "index out of bounds";
-			DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
 		}
 
 
@@ -284,101 +477,75 @@ struct Context {
 		//
 	public:
 		auto operator()(Handle key) {
-			DCHECK_GE( key, 0 ) << "index out of bounds";
-			DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
+			_check_bounds(key);
 			return Accessor<MUTAB>(*this, key);
 		}
 
 		auto operator()(Handle key) const {
-			DCHECK_GE( key, 0 ) << "index out of bounds";
-			DCHECK_LT( key, (int)v.size() ) << "index out of bounds";
+			_check_bounds(key);
 			return Accessor<CONST>(*this, key);
-		}
-
-		template<class... ARGS>
-		Accessor<MUTAB> emplace_back(ARGS&&... args) {
-			// because of vector realloc:
-			static_assert( Iterable || std::is_trivially_copy_constructible_v<Val>,
-				"non-trivially-constructible types require ITERABLE to emplace_back()" );
-
-			v.emplace_back();
-			v.back().val.construct( std::forward<ARGS>(args)... );
-			if constexpr(Iterable) v.back().exists = true;
-
-			if constexpr(Countable) ++NUM_EXISTING_BASE::num_existing;
-			return Accessor<MUTAB>(*this, v.size()-1);
 		}
 
 
 		int count() const {
-			static_assert(Countable, "count() called on non countable Memory_Block");
-			return NUM_EXISTING_BASE::num_existing;
+			static_assert(Dense || Count, "count() called on non countable Memory_Block");
+			if constexpr(Dense) return size();
+			else return NUM_EXISTING_BASE::num_existing;
 		}
-
-		int domain() const {
-			return v.size();
-		}
-
-
-		void reserve(int capacity) {
-			v.reserve(capacity);
-		}
-
-
-		//
-		// FUN is (int old_key, int new_key) -> void
-		//
-		template<class FUN>
-		void compact(const FUN& fun = [](int,int){}) {
-			static_assert(Iterable, "can only compact if ITERABLE");
-
-			int target = 0;
-			for(int i=0; i<(int)v.size(); ++i) {
-				if(v[i].exists && target != i) {
-					v[target].val = std::move( v[i].val );
-					v[target].exists = true;
-					fun(i, target);
-					++target;
-				}
-			}
-
-			v.resize(target);
-		}
-
 
 
 
 
 	public:
-		inline auto begin() {
-			static_assert(Iterable, "not ITERABLE");
+		auto begin() {
+			static_assert(Exists, "not iterable if don't have EXISTS flags");
 			return Iterator<MUTAB>(*this, 0);
 		}
 
-		inline auto begin() const {
-			static_assert(Iterable, "not ITERABLE");
+		auto begin() const {
+			static_assert(Exists, "not iterable if don't have EXISTS flags");
 			return Iterator<CONST>(*this, 0);
 		}
 
-		inline auto cbegin() const {
-			static_assert(Iterable, "not ITERABLE");
+		auto cbegin() const {
+			static_assert(Exists, "not iterable if don't have EXISTS flags");
 			return Iterator<CONST>(*this, 0);
 		}
 
 
-		inline auto end() {
-			static_assert(Iterable, "not ITERABLE");
-			return Iterator<MUTAB>(*this, v.size());
+		auto end() {
+			static_assert(Exists, "not iterable if don't have EXISTS flags");
+			return Iterator<MUTAB>(*this, _size);
 		}
 
-		inline auto end() const {
-			static_assert(Iterable, "not ITERABLE");
-			return Iterator<CONST>(*this, v.size());
+		auto end() const {
+			static_assert(Exists, "not iterable if don't have EXISTS flags");
+			return Iterator<CONST>(*this, _size);
 		}
 
-		inline auto cend() const {
-			static_assert(Iterable, "not ITERABLE");
-			return Iterator<CONST>(*this, v.size());
+		auto cend() const {
+			static_assert(Exists, "not iterable if don't have EXISTS flags");
+			return Iterator<CONST>(*this, _size);
+		}
+
+
+
+
+	private:
+		void _set_exists(Handle key, bool new_exists) {
+			static_assert(Exists);
+
+			if constexpr(Exists_Inplace) {
+				_get(key).exists = new_exists;
+			}
+			else if constexpr(Exists_Bitset) {
+				EXISTS_BITSET_BASE::exists[key] = new_exists;
+			}
+		}
+
+		void _check_bounds(Handle key) const {
+			DCHECK_GE( key, 0 ) << "index out of bounds";
+			DCHECK_LT( key, _size ) << "index out of bounds";
 		}
 
 	};
@@ -392,14 +559,35 @@ struct Context {
 	struct With_Builder : Memory_Block {
 		FORWARDING_CONSTRUCTOR(With_Builder, Memory_Block);
 
-		using ITERABLE =
-			typename Context< Val, true, Countable > :: With_Builder;
+		template<class NEW_ALLOCATOR>
+		using ALLOCATOR =
+			typename Context< Val, NEW_ALLOCATOR, Stack_Buffer, Dense, Exists_Inplace, Exists_Bitset, Count > :: With_Builder;
 
-		using COUNTABLE =
-			typename Context< Val, Iterable, true > :: With_Builder;
+		template<int NEW_STACK_BUFFER>
+		using STACK_BUFFER =
+			typename Context< Val, Allocator, NEW_STACK_BUFFER, Dense, Exists_Inplace, Exists_Bitset, Count > :: With_Builder;
+
+
+		using DENSE =
+			typename Context< Val, Allocator, Stack_Buffer, true, Exists_Inplace, Exists_Bitset, Count > :: With_Builder;
+
+		using SPARSE = // (default)
+			typename Context< Val, Allocator, Stack_Buffer, false, Exists_Inplace, Exists_Bitset, Count > :: With_Builder;
+
+
+		using EXISTS_INPLACE =
+			typename Context< Val, Allocator, Stack_Buffer, Dense, true, false, Count > :: With_Builder;
+
+		using EXISTS_BITSET =
+			typename Context< Val, Allocator, Stack_Buffer, Dense, false, true, Count > :: With_Builder;
+
+		using EXISTS = EXISTS_BITSET; // seems to be faster than inplace version
+
+		using COUNT =
+			typename Context< Val, Allocator, Stack_Buffer, Dense, Exists_Inplace, Exists_Bitset, true > :: With_Builder;
 
 		using FULL =
-			typename Context< Val, true, true > :: With_Builder;
+			typename Context< Val, Allocator, Stack_Buffer, Dense, false, true, true > :: With_Builder; // by default bitset-exists
 	};
 
 
@@ -419,8 +607,12 @@ template<
 >
 using Memory_Block = typename internal::Memory_Block::Context<
 	T,
-	false, // ITERABLE
-	false  // COUNTABLE
+	std::allocator<T>, // ALLCOATOR
+	0, // STACK_BUFFER
+	false, // DENSE
+	false, // EXISTS_INPLACE
+	false, // EXISTS_BITSET
+	false  // COUNT
 > :: With_Builder;
 
 
