@@ -5,12 +5,12 @@ namespace salgo {
 
 
 
-template<class T, class CRTP>
+template<class PTR, class CRTP>
 struct Pointer_Handle {
-	T* pointer = nullptr;
+	PTR pointer = nullptr;
 
 	Pointer_Handle() = default;
-	Pointer_Handle(T* new_pointer) : pointer(new_pointer) {}
+	Pointer_Handle(PTR new_pointer) : pointer(new_pointer) {}
 
 	bool valid() const { return pointer != nullptr; }
 	void reset() { pointer = nullptr; }
@@ -18,7 +18,7 @@ struct Pointer_Handle {
 	bool operator==(const CRTP& o) const { return pointer == o.pointer; }
 	bool operator!=(const CRTP& o) const { return pointer != o.pointer; }
 
-	operator T*() const { return pointer; }
+	operator PTR() const { return pointer; }
 };
 
 

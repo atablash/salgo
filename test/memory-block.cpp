@@ -6,10 +6,18 @@ using namespace salgo;
 
 
 
+
+
+
+
 namespace {
 	int g_destructors = 0;
 	int g_constructors = 0;
 }
+
+
+
+
 
 TEST(Memory_block, stack_optim_inplace_nontrivial) {
 
@@ -61,5 +69,101 @@ TEST(Memory_block, stack_optim_inplace_nontrivial) {
 
 	EXPECT_EQ(g_constructors, g_destructors);
 }
+
+
+
+TEST(Memory_block, destructors_called_exists) {
+	struct S {
+		S()  { ++g_constructors; }
+		S(const S&) { ++g_constructors; }
+		~S() { ++g_destructors;  }
+	};
+
+	g_destructors = 0;
+	g_constructors = 0;
+
+	{
+		Memory_Block<S>::EXISTS::COUNT block(10);
+		block.construct_all();
+
+		EXPECT_EQ(10, block.size());
+		EXPECT_EQ(10, block.count());
+	}
+
+	EXPECT_EQ(g_constructors, g_destructors);
+}
+
+
+
+
+
+
+
+TEST(Memory_block, copy_container_exists) {
+	struct S {
+		S()  { ++g_constructors; }
+		S(const S&) { ++g_constructors; }
+		~S() { ++g_destructors;  }
+	};
+
+	g_destructors = 0;
+	g_constructors = 0;
+
+	{
+		Memory_Block<S>::EXISTS block(10);
+		block.construct_all();
+
+		auto block2 = block;
+	}
+
+	EXPECT_EQ(g_constructors, g_destructors);
+}
+
+TEST(Memory_block, copy_container_dense) {
+	struct S {
+		S()  { ++g_constructors; }
+		S(const S&) { ++g_constructors; }
+		~S() { ++g_destructors;  }
+	};
+
+	g_destructors = 0;
+	g_constructors = 0;
+
+	{
+		Memory_Block<S>::DENSE block(10);
+		//block.construct_all();
+
+		auto block2 = block;
+		block2 = block;
+	}
+
+	EXPECT_EQ(g_constructors, g_destructors);
+}
+
+
+
+
+
+TEST(Memory_block, move_container_exists) {
+	struct S {
+		S()  { ++g_constructors; }
+		S(S&&) { ++g_constructors; }
+		~S() { ++g_destructors;  }
+	};
+
+	g_destructors = 0;
+	g_constructors = 0;
+
+	{
+		Memory_Block<S>::EXISTS::STACK_BUFFER<2> block(10);
+		block.construct_all();
+
+		auto block2 = std::move(block);
+		block2 = std::move(block);
+	}
+
+	EXPECT_EQ(g_constructors, g_destructors);
+}
+
 
 

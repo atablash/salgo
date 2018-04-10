@@ -4,7 +4,7 @@
 #include "const-flag.hpp"
 #include "iterator-base.hpp"
 #include "stack-storage.hpp"
-#include "sparse-vector-storage.hpp"
+#include "allocator.hpp"
 
 
 namespace salgo {
@@ -28,7 +28,7 @@ template<> struct Add_num_existing<false> {};
 
 
 
-template<class _VAL, class _STORAGE, bool _COUNTABLE>
+template<class _VAL, class _ALLOCATOR, bool _COUNTABLE>
 struct Context {
 
 	//
@@ -44,10 +44,10 @@ struct Context {
 	// template arguments
 	//
 	using Val = _VAL;
-	using Storage = typename _STORAGE :: template VAL<Node>;
+	using Allocator = typename _ALLOCATOR :: template VAL<Node>;
 	static constexpr bool Countable = _COUNTABLE;
 
-	using Handle = typename Storage::Handle;
+	using Handle = typename Allocator :: Small_Handle; // Small_Handle is faster than Handle
 
 
 
@@ -57,7 +57,7 @@ struct Context {
 
 
 	struct Node {
-		Stack_Storage<Val> val;
+		typename salgo::Stack_Storage<Val>::PERSISTENT val; // make sure it's not moved
 
 		Handle next = Handle();
 		Handle prev = Handle();
@@ -74,7 +74,7 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor {
 	public:
-		int handle() const {
+		auto handle() const {
 			return _handle;
 		}
 
@@ -125,12 +125,12 @@ struct Context {
 		friend Iterator_Base<C,Iterator>;
 
 		inline void _increment() {
-			_handle = _owner->v[ _handle ].next;
+			_handle = _owner->_alloc()[ _handle ].next;
 			DCHECK( _handle.valid() ) << "followed broken list link";
 		}
 
 		inline void _decrement() {
-			_handle = _owner->v[ _handle ].prev;
+			_handle = _owner->_alloc()[ _handle ].prev;
 			DCHECK( _handle.valid() ) << "followed broken list link";
 		}
 
@@ -168,7 +168,10 @@ struct Context {
 
 
 
-	class List : private Add_num_existing<Countable> {
+	class List :
+			private Allocator,
+			private Add_num_existing<Countable> {
+
 		using NUM_EXISTING_BASE = Add_num_existing<Countable>;
 
 	public:
@@ -188,23 +191,25 @@ struct Context {
 		// data
 		//
 	private:
-		Storage v;
 		Handle _front;
 		Handle _back;
 
+	private:
+		auto& _alloc()       { return *static_cast<Allocator*>(this); }
+		auto& _alloc() const { return *static_cast<Allocator*>(this); }
 
 		//
 		// construction
 		//
 	public:
 		List() {
-			_front = v.construct().handle();
-			_back = v.construct().handle();
-			v[_front].next = _back;
-			v[_back].prev = _front;
+			_front = _alloc().construct().handle();
+			_back = _alloc().construct().handle();
+			_alloc()[_front].next = _back;
+			_alloc()[_back].prev = _front;
 			#ifndef NDEBUG
-			v[_front].prev.reset();
-			v[_back].next.reset();
+			_alloc()[_front].prev.reset();
+			_alloc()[_back].next.reset();
 			#endif
 		};
 
@@ -217,13 +222,15 @@ struct Context {
 		}
 
 		~List() {
+			static_assert(std::is_trivially_destructible_v<Node>);
+
 			for(auto e : *this) {
-				v[ e.handle() ].val.destruct();
-				v.destruct( e.handle() );
+				_alloc()[ e.handle() ].val.destruct();
+				//_alloc().destruct( e.handle() );
 			}
 
-			v.destruct( _front );
-			v.destruct( _back );
+			//_alloc().destruct( _front );
+			//_alloc().destruct( _back );
 		}
 
 
@@ -233,17 +240,17 @@ struct Context {
 		//
 	public:
 		void erase(Handle handle) {
-			auto next = v[handle].next;
-			auto prev = v[handle].prev;
+			auto next = _alloc()[handle].next;
+			auto prev = _alloc()[handle].prev;
 
-			DCHECK(prev);
-			DCHECK(next);
+			DCHECK(prev.valid());
+			DCHECK(next.valid());
 
-			v[prev].next = next;
-			v[next].prev = prev;
+			_alloc()[prev].next = next;
+			_alloc()[next].prev = prev;
 
-			v[handle].val.destruct();
-			v.destruct(handle);
+			_alloc()[handle].val.destruct();
+			_alloc().destruct(handle);
 
 			if constexpr(Countable) --NUM_EXISTING_BASE::num_existing;
 		}
@@ -253,11 +260,11 @@ struct Context {
 		//}
 
 		Val& operator[](Handle handle) {
-			return v[handle].val;
+			return _alloc()[handle].val;
 		}
 
 		const Val& operator[](Handle handle) const {
-			return v[handle].val;
+			return _alloc()[handle].val;
 		}
 
 
@@ -278,16 +285,16 @@ struct Context {
 
 		template<class... ARGS>
 		auto emplace(Handle where, ARGS&&... args) {
-			DCHECK(where);
+			DCHECK( where.valid() );
 
-			auto h = v.construct().handle();
-			v[h].val.construct( std::forward<ARGS>(args)... );
+			auto h = _alloc().construct().handle();
+			_alloc()[h].val.construct( std::forward<ARGS>(args)... );
 
-			CHECK( v[h].prev );
-			v[h].prev = v[where].prev;
-			v[h].next = where;
-			v[v[h].prev].next = h;
-			v[v[h].next].prev = h;
+			DCHECK( _alloc()[where].prev.valid() );
+			_alloc()[h].prev = _alloc()[where].prev;
+			_alloc()[h].next = where;
+			_alloc()[_alloc()[h].prev].next = h;
+			_alloc()[_alloc()[h].next].prev = h;
 			if constexpr(Countable) ++NUM_EXISTING_BASE::num_existing;
 
 			return Accessor<MUTAB>(*this, h);
@@ -295,7 +302,7 @@ struct Context {
 
 		template<class... ARGS>
 		auto emplace_front(ARGS&&... args) {
-			return emplace( v[_front].next, std::forward<ARGS>(args)... );
+			return emplace( _alloc()[_front].next, std::forward<ARGS>(args)... );
 		}
 
 		template<class... ARGS>
@@ -315,15 +322,15 @@ struct Context {
 
 	public:
 		inline auto begin() {
-			return Iterator<MUTAB>(this, v[_front].next);
+			return Iterator<MUTAB>(this, _alloc()[_front].next);
 		}
 
 		inline auto begin() const {
-			return Iterator<CONST>(this, v[_front].next);
+			return Iterator<CONST>(this, _alloc()[_front].next);
 		}
 
 		inline auto cbegin() const {
-			return Iterator<CONST>(this, v[_front].next);
+			return Iterator<CONST>(this, _alloc()[_front].next);
 		}
 
 
@@ -350,15 +357,15 @@ struct Context {
 	struct With_Builder : List {
 		FORWARDING_CONSTRUCTOR(With_Builder, List);
 
-		template<class NEW_STORAGE>
-		using STORAGE =
-			typename Context<Val, NEW_STORAGE, Countable> :: With_Builder;
+		template<class NEW_ALLOCATOR>
+		using ALLOCATOR =
+			typename Context<Val, NEW_ALLOCATOR, Countable> :: With_Builder;
 
 		using COUNTABLE =
-			typename Context<Val, Storage, true> :: With_Builder;
+			typename Context<Val, Allocator, true> :: With_Builder;
 
 		using FULL =
-			typename Context<Val, Storage, true> :: With_Builder;
+			typename Context<Val, Allocator, true> :: With_Builder;
 	};
 
 
@@ -378,7 +385,7 @@ template<
 >
 using List = typename internal::List::Context<
 	VAL,
-	Sparse_Vector_Storage<VAL>,
+	Allocator<VAL>,
 	false // COUNTABLE
 > :: With_Builder;
 

@@ -97,3 +97,41 @@ TEST(Stack_storage, trivial) {
 
 
 
+
+
+TEST(Stack_storage, copy_noop) {
+	int magic = rand();
+	Stack_Storage<int>::TREAT_AS_VOID s1;
+	s1.construct(magic);
+
+	Stack_Storage<int>::TREAT_AS_VOID s2(s1);
+	EXPECT_NE(s1, s2);
+
+	s2 = s1;
+	EXPECT_NE(s1, s2);
+
+	s2 = std::move(s1);
+	EXPECT_EQ(magic, s1);
+	EXPECT_NE(magic, s2);
+
+	Stack_Storage<int>::TREAT_AS_VOID s3( std::move(s1) );
+	EXPECT_NE(magic, s3);
+}
+
+
+TEST(Stack_storage, copy_as_pod) {
+	struct S {
+		int val = 0;
+
+		S(const S&) { val = 69; }
+	};
+
+	Stack_Storage<S>::TREAT_AS_POD s;
+
+	auto s2 = s;
+
+	DCHECK_EQ(0, ((S&)s2).val);
+}
+
+
+

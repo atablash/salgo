@@ -66,11 +66,14 @@ struct Context {
 
 
 
-	struct Handle : Int_Handle<Handle> { FORWARDING_CONSTRUCTOR(Handle,Int_Handle<Handle>); };
+	struct Handle : Int_Handle<int,Handle> {
+		using BASE = Int_Handle<int,Handle>;
+		FORWARDING_CONSTRUCTOR( Handle, BASE );
+	};
 
 
 
-	struct Node : Stack_Storage<Val>, Add_exists<Exists_Inplace> {};
+	struct Node : salgo::Stack_Storage<Val>, Add_exists<Exists_Inplace> {};
 
 
 
@@ -247,6 +250,65 @@ struct Context {
 		auto& _get(Handle key) const { return _data[key]; }
 
 
+	public:
+		// copy-construct
+		Memory_Block(const Memory_Block& o) :
+				Allocator(o),
+				NUM_EXISTING_BASE(o),
+				EXISTS_BITSET_BASE(o),
+				_size(o._size) {
+
+			static_assert(Dense || Exists || std::is_trivially_copy_constructible_v<Val>,
+				"can't copy-construct non-POD container if no EXISTS or DENSE flags");
+
+			if(_size > Stack_Buffer) {
+				_data = std::allocator_traits<Allocator>::allocate(_allocator(), _size);
+			}
+			else {
+				_data = _get_stack_buffer();
+			}
+
+			for(int i=0; i<_size; ++i) {
+				std::allocator_traits<Allocator>::construct(_allocator(), _data+i);
+				if( o.exists(i) ) {
+					_get(i).construct( o._get(i) );
+				}
+			}
+		}
+
+		// move-construct
+		Memory_Block(Memory_Block&& o) :
+				Allocator( std::move(o) ),
+				NUM_EXISTING_BASE( std::move(o) ),
+				EXISTS_BITSET_BASE( std::move(o) ),
+				_size( std::move(o._size) ) {
+
+			if(_size > Stack_Buffer) {
+				_data = o._data;
+			}
+			else if constexpr( _stack_buffer_sizeof() > 0 ) {
+				_data = _get_stack_buffer();
+				std::memcpy( _stack_buffer, o._stack_buffer, _stack_buffer_sizeof() );
+			}
+
+			o._size = 0;
+		}
+
+		// copy assignment
+		Memory_Block& operator=(const Memory_Block& o) {
+			this->~Memory_Block();
+			new(this) Memory_Block(o);
+			return *this;
+		}
+
+		// move assignment
+		Memory_Block& operator=(Memory_Block&& o) {
+			this->~Memory_Block();
+			new(this) Memory_Block( std::move(o) );
+			return *this;
+		}
+
+
 		//
 		// construction
 		//
@@ -277,7 +339,7 @@ struct Context {
 		}
 
 		~Memory_Block() {
-			if constexpr(Exists) {
+			if constexpr(Dense || Exists) {
 				_destruct_block(_data, _size);
 			}
 

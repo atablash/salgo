@@ -37,6 +37,7 @@ set(sources
 	memory-block.cpp
 	sparse-vector.cpp
 	dense-vector.cpp
+	allocator.cpp
 	list.cpp
 	unordered-vector.cpp
 	#3d/compute-normals.cpp

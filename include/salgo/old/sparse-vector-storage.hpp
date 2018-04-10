@@ -25,7 +25,12 @@ struct Context {
 
 	using Val = _VAL;
 
-	using Sparse_Vector = typename salgo::Vector<Val> :: SPARSE;
+	using Sparse_Vector = std::conditional_t<
+		std::is_trivially_copy_constructible_v<Val>,
+		typename salgo::Vector<Val> :: SPARSE,
+		typename salgo::Vector<Val> :: SPARSE :: EXISTS
+	>;
+
 	using Handle = typename Sparse_Vector::Handle;
 
 
@@ -110,6 +115,9 @@ struct Context {
 		using VAL = typename
 			Context<NEW_VAL> :: With_Builder;
 
+		// hack to avoid circular dependency in List
+		template<class>
+		using HANDLE_FOR_VAL = internal::Vector::Handle;
 	};
 
 

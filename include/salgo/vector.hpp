@@ -21,6 +21,11 @@ namespace internal {
 namespace Vector {
 
 
+struct Handle : Int_Handle<int,Handle> {
+	using BASE = Int_Handle<int,Handle>;
+	FORWARDING_CONSTRUCTOR(Handle, BASE);
+};
+
 
 template<class _VAL, bool _SPARSE, class _MEMORY_BLOCK>
 struct Context {
@@ -49,13 +54,12 @@ struct Context {
 	static constexpr bool Sparse         = _SPARSE;
 	static constexpr bool Dense          = !Sparse;
 
+	using Handle = internal::Vector::Handle;
 
 
 
 
 
-
-	struct Handle : Int_Handle<Handle> { FORWARDING_CONSTRUCTOR(Handle,Int_Handle<Handle>); };
 
 
 
@@ -71,6 +75,9 @@ struct Context {
 		Handle handle() const {
 			return _key;
 		}
+
+		auto& operator()()       { return val(); }
+		auto& operator()() const { return val(); }
 
 		Const<Val,C>& val() {
 			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
@@ -252,12 +259,12 @@ struct Context {
 		//
 	public:
 		template<class... ARGS>
-		void construct(Handle key, ARGS&&... args) {
+		void construct(Handle key, ARGS&&... args) {  static_assert(Sparse);
 			_check_bounds(key);
 			_mb.construct( key, std::forward<ARGS>(args)... );
 		}
 
-		void destruct(Handle key) {
+		void destruct(Handle key) {  static_assert(Sparse);
 			_check_bounds(key);
 			_mb.destruct( key );
 		}
@@ -345,6 +352,9 @@ struct Context {
 			_mb.destruct(--_size);
 			return result;
 		}
+
+		auto back()       { return Accessor<MUTAB>(*this, _size-1); }
+		auto back() const { return Accessor<CONST>(*this, _size-1); }
 
 
 		int count() const {

@@ -3,12 +3,12 @@
 namespace salgo {
 
 
-template<class CRTP>
+template<class INT, class CRTP>
 struct Int_Handle {
-	int key = -1;
+	INT key = -1;
 
 	Int_Handle() = default;
-	Int_Handle(int new_key) : key(new_key) {}
+	Int_Handle(INT new_key) : key(new_key) {}
 
 	bool valid() const { return key >= 0; }
 	void reset() { key = -1; }
@@ -16,7 +16,10 @@ struct Int_Handle {
 	bool operator==(const CRTP& o) const { return key == o.key; }
 	bool operator!=(const CRTP& o) const { return key != o.key; }
 
-	operator int() const { return key; }
+	operator INT() const { return key; }
+	//operator long() const { return key; }
+
+	//operator bool() const { return valid(); }
 };
 
 
