@@ -416,7 +416,7 @@ struct Context {
 			// new memory location?
 			if(new_data != _data) {
 
-				if constexpr(!std::is_trivially_copy_constructible_v<Val>) {
+				if constexpr(!std::is_trivially_move_constructible_v<Val>) {
 					for(int i=0; i<n; ++i) {
 						if(exists_fun(i)) {
 							// move-construct node+value
@@ -429,7 +429,7 @@ struct Context {
 					}
 				}
 				else {
-					static_assert(std::is_trivially_copy_constructible_v<Node>);
+					static_assert(std::is_trivially_move_constructible_v<Node>);
 					std::memcpy(new_data, _data, n * sizeof(Node));
 				}
 

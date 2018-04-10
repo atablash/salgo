@@ -317,7 +317,7 @@ struct Context {
 		template<class... ARGS>
 		Accessor<MUTAB> emplace_back(ARGS&&... args) {
 			// because of vector realloc:
-			static_assert( Dense || Exists || std::is_trivially_copy_constructible_v<Val>,
+			static_assert( Dense || Exists || std::is_trivially_move_constructible_v<Val>,
 				"non-trivially-constructible types require EXISTS to emplace_back()" );
 
 			if(_size == _mb.size()) {

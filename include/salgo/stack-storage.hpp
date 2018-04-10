@@ -25,8 +25,6 @@ struct Context {
 	static constexpr bool Treat_As_Void = _TREAT_AS_VOID;
 	static constexpr bool Persistent = _PERSISTENT;
 
-	static_assert(!Treat_As_Pod || !Treat_As_Void, "can't have both");
-
 
 
 	//
@@ -43,6 +41,7 @@ struct Context {
 		bool constructed = false;
 		#endif
 
+		static_assert(Treat_As_Pod + Treat_As_Void + Persistent <= 1, "can have max 1");
 
 	public:
 		Stack_Storage__nt() = default;
@@ -164,6 +163,7 @@ struct Context {
 		bool constructed = false;
 		#endif
 
+		static_assert(Treat_As_Pod + Treat_As_Void + Persistent <= 1, "can have max 1");
 
 	public:
 		template<class... ARGS>
@@ -194,6 +194,8 @@ struct Context {
 	class Stack_Storage__noop {
 	private:
 		char data[ sizeof(T) ];
+
+		static_assert(Treat_As_Pod + Treat_As_Void + Persistent <= 1, "can have max 1");
 
 	public:
 		Stack_Storage__noop() {}
@@ -232,73 +234,22 @@ struct Context {
 
 
 
-	// no copies
-	class Stack_Storage__persistent {
-	private:
-		char data[ sizeof(T) ];
-
-	public:
-		Stack_Storage__persistent() {}
-		//#ifdef NDEBUG
-		Stack_Storage__persistent(const Stack_Storage__persistent&) = delete;
-		Stack_Storage__persistent(Stack_Storage__persistent&&) = delete;
-		Stack_Storage__persistent& operator=(const Stack_Storage__persistent&) = delete;
-		Stack_Storage__persistent& operator=(Stack_Storage__persistent&&) = delete;
-		//#else
-		/*
-		Stack_Storage__persistent(const Stack_Storage__persistent&) { static_assert(false, "persistent"); }
-		Stack_Storage__persistent(Stack_Storage__persistent&&) { static_assert(false, "persistent"); }
-		Stack_Storage__persistent& operator=(const Stack_Storage__persistent&) { static_assert(false, "persistent"); }
-		Stack_Storage__persistent& operator=(Stack_Storage__persistent&&) { static_assert(false, "persistent"); }
-		*/
-		//#endif
-
-	public:
-		template<class... ARGS>
-		void construct(ARGS&&... args) {
-			new (&get()) T( std::forward<ARGS>(args)... );
-		}
-
-		void destruct() {}
-
-
-		inline operator auto&()       { return get(); }
-		inline operator auto&() const { return get(); }
-
-
-		inline T& get() {
-			return *reinterpret_cast<T*>( &data[0] );
-		}
-
-		inline const T& get() const {
-			return *reinterpret_cast<const T*>( &data[0] );
-		}
-	};
-
-
-
-
-
-
-
-
-
 
 	using Stack_Storage = std::conditional_t<
 		Treat_As_Void,
 		Stack_Storage__noop,
 		std::conditional_t<
-			Persistent,
-			Stack_Storage__persistent,
-			std::conditional_t<
-				std::is_trivially_copy_constructible_v<T> || Treat_As_Pod,
-				Stack_Storage__t,
-				Stack_Storage__nt
-			>
+			Treat_As_Pod || std::is_trivially_move_constructible_v<T>,
+			Stack_Storage__t,
+			Stack_Storage__nt
 		>
 	>;
 
 
+
+
+	// forward declaration
+	struct With_Builder_Persistent;
 
 
 
@@ -306,13 +257,22 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(With_Builder, Stack_Storage);
 
 		using TREAT_AS_POD =
-			typename Context<T, true, false, false>::With_Builder;
+			typename Context<T, true, Treat_As_Void, Persistent> :: With_Builder;
 
 		using TREAT_AS_VOID =
-			typename Context<T, false, true, false>::With_Builder;
+			typename Context<T, Treat_As_Pod, true, Persistent> :: With_Builder;
 
 		using PERSISTENT =
-			typename Context<T, false, false, true>::With_Builder;
+			typename Context<T, Treat_As_Pod, Treat_As_Void, true> :: With_Builder_Persistent;
+	};
+
+
+	struct With_Builder_Persistent : With_Builder {
+		With_Builder_Persistent() { static_assert(Persistent); }
+		With_Builder_Persistent(const With_Builder_Persistent&) = delete;
+		With_Builder_Persistent(With_Builder_Persistent&&) = delete;
+		With_Builder_Persistent& operator=(const With_Builder_Persistent&) = delete;
+		With_Builder_Persistent& operator=(With_Builder_Persistent&&) = delete;
 	};
 
 

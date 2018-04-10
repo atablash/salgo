@@ -298,16 +298,14 @@ auto run_salgo_list_countable_malloc(const int N) {
 
 
 TEST(List, perf) {
-	const int N = FLAGS_perf;
+	const int N = FLAGS_perf * 2;
 	if(N == 0) return;
 
-	const int n = N/5;
-
-	double t0 = run_std_list(n);
-	double t1 = run_salgo_list(n);
-	double t2 = run_salgo_list_noacc(n);
-	double t3 = run_salgo_list_countable(n);
-	double t4 = run_salgo_list_countable_malloc(n);
+	double t0 = run_std_list(N);
+	double t1 = run_salgo_list(N);
+	double t2 = run_salgo_list_noacc(N);
+	double t3 = run_salgo_list_countable(N);
+	double t4 = run_salgo_list_countable_malloc(N);
 
 	cout.precision(3);
 	cout << "std::list\t\t" << t0 << endl;
