@@ -6,8 +6,97 @@
 #include "stack-storage.hpp"
 #include "allocator.hpp"
 
+#ifndef NDEBUG
+#include <unordered_set>
+#endif
+
 
 namespace salgo {
+
+
+
+
+
+//
+// operations on list nodes
+//
+template<class ALLOC, class HANDLE>
+inline auto list_next(const ALLOC& alloc, Handle handle) { DCHECK(handle.valid()); return alloc[handle].next; }
+
+template<class ALLOC, class HANDLE>
+inline auto list_prev(const ALLOC& alloc, Handle handle) { DCHECK(handle.valid()); return alloc[handle].prev; }
+
+
+
+namespace internal {
+	template<class ALLOC, class HANDLE>
+	inline auto list_erase(const ALLOC& alloc, Handle handle) {
+		auto& me = alloc[handle];
+
+		auto prev = me.prev;
+		auto next = me.next;
+
+		DCHECK( prev.valid() ) << "erasing dummy list element";
+		DCHECK( next.valid() ) << "erasing dummy list element";
+
+		alloc[prev].next = next;
+		alloc[next].prev = prev;
+
+		me.val.destruct();
+		alloc.destruct(handle);
+
+		return next;
+	}
+}
+
+
+template<class ALLOC, class HANDLE>
+inline auto list_erase(const ALLOC& alloc, Handle handle) {
+
+	static_assert(! decltype(alloc[handle])::Countable )
+		<< "element of COUNTABLE list must be erased though the list object";
+
+	return internal::list_erase(alloc, handle);
+}
+
+
+
+
+
+
+
+namespace internal {
+	template<class ALLOC, class HANDLE, class... ARGS>
+	inline auto list_emplace(const ALLOC& alloc, Handle where, ARGS&&... args) {
+		DCHECK( where.valid() ) << "handle invalid";
+
+		auto h = alloc.construct().handle();
+		alloc[h].val.construct( std::forward<ARGS>(args)... );
+
+		DCHECK( alloc[where].prev.valid() ) << "where->prev link invalid";
+		alloc[h].prev = alloc[where].prev;
+		alloc[h].next = where;
+		alloc[alloc[h].prev].next = h;
+		alloc[alloc[h].next].prev = h;
+
+		return h;
+	}
+}
+
+
+template<class ALLOC, class HANDLE, class... ARGS>
+inline auto list_emplace(const ALLOC& alloc, Handle where, ARGS&&... args) {
+
+	static_assert(! decltype(alloc[handle])::Countable )
+		<< "element of COUNTABLE list must be emplaced though the list object";
+
+	return internal::list_emplace(alloc, where, std::forward<ARGS>(args)...);
+}
+
+
+
+
+
 
 
 
@@ -47,7 +136,8 @@ struct Context {
 	using Allocator = typename _ALLOCATOR :: template VAL<Node>;
 	static constexpr bool Countable = _COUNTABLE;
 
-	using Handle = typename Allocator :: Small_Handle; // Small_Handle is faster than Handle
+	using       Handle = typename Allocator ::       Handle;
+	using Small_Handle = typename Allocator :: Small_Handle; // Small_Handle is faster than Handle for List
 
 
 
@@ -59,8 +149,10 @@ struct Context {
 	struct Node {
 		typename salgo::Stack_Storage<Val>::PERSISTENT val; // make sure it's not moved
 
-		Handle next = Handle();
-		Handle prev = Handle();
+		Small_Handle next;
+		Small_Handle prev;
+
+		static constexpr bool Countable = Context::_COUNTABLE;
 	};
 
 
@@ -74,22 +166,27 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor {
 	public:
-		auto handle() const {
-			return _handle;
-		}
+		// get handle
+		operator Handle() const { return _handle; }
+		auto     handle() const { return _handle; }
 
-		Const<Val,C>& val() {
-			return _owner[ _handle ];
-		}
 
-		const Val& val() const {
-			return _owner[ _handle ];
-		}
+		// get val
+		auto& operator()()       { return _owner[ _handle ]; }
+		auto& operator()() const { return _owner[ _handle ]; }
+		operator auto&()       { return operator()(); }
+		operator auto&() const { return operator()(); }
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
 			_owner.erase( _handle );
 		}
+
+		auto next()       { return _owner.next( _handle ); }
+		auto next() const { return _owner.next( _handle ); }
+
+		auto prev()       { return _owner.prev( _handle ); }
+		auto prev() const { return _owner.prev( _handle ); }
 
 		//bool exists() const {
 		//	return _owner.exists( _handle );
@@ -178,6 +275,9 @@ struct Context {
 		using Val = Context::Val;
 		static constexpr bool Is_Countable = Context::Countable;
 
+		using       Handle = Context::      Handle;
+		using Small_Handle = Context::Small_Handle;
+
 
 	private:
 		friend Accessor<MUTAB>;
@@ -195,8 +295,8 @@ struct Context {
 		Handle _back;
 
 	private:
-		auto& _alloc()       { return *static_cast<Allocator*>(this); }
-		auto& _alloc() const { return *static_cast<Allocator*>(this); }
+		auto& _alloc()       { return *static_cast<      Allocator*>(this); }
+		auto& _alloc() const { return *static_cast<const Allocator*>(this); }
 
 		//
 		// construction
@@ -214,8 +314,6 @@ struct Context {
 		};
 
 		List(int size) : List() {
-			if constexpr(Countable) NUM_EXISTING_BASE::num_existing = size;
-
 			for(int i=0; i<size; ++i) {
 				emplace( _back );
 			}
@@ -235,23 +333,42 @@ struct Context {
 
 
 
+
+
+	public:
+		// copy
+		List(const List& o) : List() {
+			*this = o;
+		}
+
+		// trivial move
+		List(List&& o) = default;
+
+		// copy assignment
+		List& operator=(const List& o) {
+			clear();
+			*this += o;
+		}
+
+		// move assignment: todo
+
+		List& operator+=(const List& o) {
+			for(auto e : o) {
+				emplace(_back, e());
+			}
+		}
+
+		// todo
+		//List& operator+=(List&& o) {}
+
+
+
 		//
 		// interface: manipulate element - can be accessed via the Accessor
 		//
 	public:
 		void erase(Handle handle) {
-			auto next = _alloc()[handle].next;
-			auto prev = _alloc()[handle].prev;
-
-			DCHECK(prev.valid());
-			DCHECK(next.valid());
-
-			_alloc()[prev].next = next;
-			_alloc()[next].prev = prev;
-
-			_alloc()[handle].val.destruct();
-			_alloc().destruct(handle);
-
+			internal::list_erase( _alloc(), handle );
 			if constexpr(Countable) --NUM_EXISTING_BASE::num_existing;
 		}
 
@@ -283,21 +400,17 @@ struct Context {
 			return Accessor<CONST>(*this, handle);
 		}
 
+		auto next(Handle handle)       { return Accessor<MUTAB>(*this, list_next(_alloc(), handle)); }
+		auto next(Handle handle) const { return Accessor<CONST>(*this, list_next(_alloc(), handle)); }
+
+		auto prev(Handle handle)       { return Accessor<MUTAB>(*this, list_prev(_alloc(), handle)); }
+		auto prev(Handle handle) const { return Accessor<CONST>(*this, list_prev(_alloc(), handle)); }
+
+
 		template<class... ARGS>
 		auto emplace(Handle where, ARGS&&... args) {
-			DCHECK( where.valid() );
-
-			auto h = _alloc().construct().handle();
-			_alloc()[h].val.construct( std::forward<ARGS>(args)... );
-
-			DCHECK( _alloc()[where].prev.valid() );
-			_alloc()[h].prev = _alloc()[where].prev;
-			_alloc()[h].next = where;
-			_alloc()[_alloc()[h].prev].next = h;
-			_alloc()[_alloc()[h].next].prev = h;
 			if constexpr(Countable) ++NUM_EXISTING_BASE::num_existing;
-
-			return Accessor<MUTAB>(*this, h);
+			return Accessor<MUTAB>(*this, internal::list_emplace(_alloc(), where, std::forward<ARGS>(args)...));
 		}
 
 		template<class... ARGS>
@@ -315,7 +428,6 @@ struct Context {
 			static_assert(Countable, "count() called on non countable Sparse_Vector");
 			return NUM_EXISTING_BASE::num_existing;
 		}
-
 
 
 
@@ -385,7 +497,7 @@ template<
 >
 using List = typename internal::List::Context<
 	VAL,
-	Allocator<VAL>,
+	Allocator<VAL> :: SINGLETON,
 	false // COUNTABLE
 > :: With_Builder;
 

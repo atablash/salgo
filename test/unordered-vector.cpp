@@ -14,7 +14,7 @@ using namespace std::chrono;
 
 
 
-TEST(Unordered_vector, test_push_delete) {
+TEST(Unordered_Vector, push_delete) {
 
 	Unordered_Vector<int> m;
 	m.add(1); //
@@ -25,15 +25,15 @@ TEST(Unordered_vector, test_push_delete) {
 
 	EXPECT_EQ(5, m.size());
 
-	EXPECT_EQ(1, m(0).val());
-	EXPECT_EQ(2, m(1).val());
-	EXPECT_EQ(3, m(2).val());
-	EXPECT_EQ(4, m(3).val());
-	EXPECT_EQ(5, m(4).val()); EXPECT_EQ(5, m[4]);
+	EXPECT_EQ(1, m[0]);
+	EXPECT_EQ(2, m[1]);
+	EXPECT_EQ(3, m(2));
+	EXPECT_EQ(4, m(3)());
+	EXPECT_EQ(5, m[4]);
 
 	{
 		int sum = 0;
-		for(const auto& e : m) sum += e.val();
+		for(const auto& e : m) sum += e;
 		EXPECT_EQ(15, sum);
 	}
 
@@ -45,17 +45,37 @@ TEST(Unordered_vector, test_push_delete) {
 
 	{
 		int sum = 0;
-		for(const auto& e : m) sum += e.val();
+		for(const auto& e : m) sum += e;
 		EXPECT_EQ(7, sum);
 	}
 }
 
 
+TEST(Unordered_Vector, no_invalidation) {
 
+	Unordered_Vector<int> m;
+	m.add(100); //
+	m.add(2);
+	m.add(300); //
+	m.add(4);
+	m.add(500); //
 
+	{
+		int sum = 0;
+		for(auto e : m) {
+			sum += e;
 
+			if(e >= 100) e.erase();
+		}
+		EXPECT_EQ(906, sum);
+	}
 
-
+	{
+		int sum = 0;
+		for(const auto& e : m) sum += e;
+		EXPECT_EQ(6, sum);
+	}
+}
 
 
 

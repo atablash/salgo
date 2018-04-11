@@ -21,8 +21,8 @@ namespace internal {
 namespace Vector {
 
 
-struct Handle : Int_Handle<int,Handle> {
-	using BASE = Int_Handle<int,Handle>;
+struct Handle : Int_Handle<Handle,int> {
+	using BASE = Int_Handle<Handle,int>;
 	FORWARDING_CONSTRUCTOR(Handle, BASE);
 };
 
@@ -72,19 +72,17 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor {
 	public:
-		Handle handle() const {
-			return _key;
-		}
+		// get handle
+		auto     handle() const { return _key; }
+		operator Handle() const { return _key; }
 
-		auto& operator()()       { return val(); }
-		auto& operator()() const { return val(); }
-
-		Const<Val,C>& val() {
+		// get value
+		auto& operator()() {
 			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
 			return _owner[ _key ];
 		}
 
-		const Val& val() const {
+		auto& operator()() const {
 			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
 			return _owner[ _key ];
 		}
@@ -227,6 +225,13 @@ struct Context {
 				}
 			}
 		}
+
+
+		Vector(const Vector&) = default;
+		Vector(Vector&&) = default;
+
+		Vector& operator=(const Vector&) = default;
+		Vector& operator=(Vector&&) = default;
 
 
 

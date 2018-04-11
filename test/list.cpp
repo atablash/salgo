@@ -28,7 +28,7 @@ TEST(List, simple) {
 
 	vector<int> vals;
 
-	for(auto e : m) vals.push_back( e.val() );
+	for(auto e : m) vals.push_back( e );
 
 	EXPECT_EQ(1, vals[0]);
 	EXPECT_EQ(2, vals[1]);
@@ -50,7 +50,7 @@ TEST(List, count) {
 	EXPECT_EQ(5, m.count());
 
 	vector<int> vals;
-	for(auto e : m) vals.push_back( e.val() );
+	for(auto e : m) vals.push_back( e );
 
 	EXPECT_EQ(1, vals[0]);
 	EXPECT_EQ(2, vals[1]);
@@ -83,7 +83,7 @@ TEST(List, count_nontrivial) {
 	EXPECT_EQ(5, m.count());
 
 	vector<int> vals;
-	for(auto e : m) vals.push_back( e.val() );
+	for(auto e : m) vals.push_back( e() );
 
 	EXPECT_EQ(1, vals[0]);
 	EXPECT_EQ(2, vals[1]);
@@ -163,7 +163,7 @@ auto run_salgo_list(const int N) {
 
 	for(auto e : li) {
 		result *= 2;
-		result += e.val();
+		result += e;
 	}
 
 	duration<double> diff = steady_clock::now() - t0;
@@ -202,7 +202,7 @@ auto run_salgo_list_noacc(const int N) {
 
 	for(auto e : li) {
 		result *= 2;
-		result += e.val();
+		result += e;
 	}
 
 	duration<double> diff = steady_clock::now() - t0;
@@ -239,7 +239,7 @@ auto run_salgo_list_countable(const int N) {
 
 	for(auto e : li) {
 		result *= 2;
-		result += e.val();
+		result += e;
 	}
 
 	duration<double> diff = steady_clock::now() - t0;
@@ -277,7 +277,7 @@ auto run_salgo_list_countable_malloc(const int N) {
 
 	for(auto e : li) {
 		result *= 2;
-		result += e.val();
+		result += e;
 	}
 
 	duration<double> diff = steady_clock::now() - t0;

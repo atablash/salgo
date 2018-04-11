@@ -50,9 +50,9 @@ TEST(Memory_block, stack_optim_inplace_nontrivial) {
 		m.resize(3);
 		m(2).construct(3);
 
-		EXPECT_EQ(1, m(0).val());
-		EXPECT_EQ(2, m(1).val());
-		EXPECT_EQ(3, m(2).val());
+		EXPECT_EQ(1, m(0)());
+		EXPECT_EQ(2, m(1)());
+		EXPECT_EQ(3, m[2]);
 
 		m(1).destruct();
 
@@ -61,7 +61,7 @@ TEST(Memory_block, stack_optim_inplace_nontrivial) {
 
 		int sum = 0;
 		for(auto e : m) {
-			sum += e.val();
+			sum += e();
 		}
 		EXPECT_EQ(4, sum);
 	}
@@ -93,6 +93,16 @@ TEST(Memory_block, destructors_called_exists) {
 	EXPECT_EQ(g_constructors, g_destructors);
 }
 
+
+
+
+TEST(Memory_block, dense_constructor) {
+	Memory_Block<int>::DENSE mb(10, 10);
+
+	int sum = 0;
+	for(auto e : mb) sum += e;
+	EXPECT_EQ(100, sum);
+}
 
 
 

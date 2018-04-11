@@ -239,7 +239,7 @@ struct Context {
 		Treat_As_Void,
 		Stack_Storage__noop,
 		std::conditional_t<
-			Treat_As_Pod || std::is_trivially_move_constructible_v<T>,
+			Persistent || Treat_As_Pod || std::is_trivially_move_constructible_v<T>,
 			Stack_Storage__t,
 			Stack_Storage__nt
 		>

@@ -66,8 +66,8 @@ struct Context {
 
 
 
-	struct Handle : Int_Handle<int,Handle> {
-		using BASE = Int_Handle<int,Handle>;
+	struct Handle : Int_Handle<Handle,int> {
+		using BASE = Int_Handle<Handle,int>;
 		FORWARDING_CONSTRUCTOR( Handle, BASE );
 	};
 
@@ -86,19 +86,22 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor {
 	public:
-		Handle handle() const {
-			return _key;
-		}
+		auto     handle() const { return _key; }
+		operator Handle() const { return _key; }
 
-		Const<Val,C>& val() {
+		auto& operator()() {
 			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
 			return _owner[ _key ];
 		}
 
-		const Val& val() const {
+		auto& operator()() const {
 			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
 			return _owner[ _key ];
 		}
+
+		operator auto&()       { return operator()(); }
+		operator auto&() const { return operator()(); }
+
 
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
@@ -321,6 +324,9 @@ struct Context {
 
 		template<class... ARGS>
 		Memory_Block(int size, ARGS&&... args) : _size(size) {
+
+			static_assert(Dense || sizeof...(ARGS) == 0, "only DENSE memory_blocks can supply construction args");
+
 			if(_size > Stack_Buffer) {
 				_data = std::allocator_traits<Allocator>::allocate(_allocator(), _size);
 			}
@@ -560,33 +566,33 @@ struct Context {
 
 	public:
 		auto begin() {
-			static_assert(Exists, "not iterable if don't have EXISTS flags");
+			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
 			return Iterator<MUTAB>(*this, 0);
 		}
 
 		auto begin() const {
-			static_assert(Exists, "not iterable if don't have EXISTS flags");
+			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
 			return Iterator<CONST>(*this, 0);
 		}
 
 		auto cbegin() const {
-			static_assert(Exists, "not iterable if don't have EXISTS flags");
+			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
 			return Iterator<CONST>(*this, 0);
 		}
 
 
 		auto end() {
-			static_assert(Exists, "not iterable if don't have EXISTS flags");
+			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
 			return Iterator<MUTAB>(*this, _size);
 		}
 
 		auto end() const {
-			static_assert(Exists, "not iterable if don't have EXISTS flags");
+			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
 			return Iterator<CONST>(*this, _size);
 		}
 
 		auto cend() const {
-			static_assert(Exists, "not iterable if don't have EXISTS flags");
+			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
 			return Iterator<CONST>(*this, _size);
 		}
 

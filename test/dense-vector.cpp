@@ -36,15 +36,15 @@ static void push_pop_resize_common(MB& m) {
 
 	EXPECT_EQ(5, m.domain());
 
-	EXPECT_EQ(1, m(0).val());
-	EXPECT_EQ(2, m(1).val());
-	EXPECT_EQ(3, m(2).val());
-	EXPECT_EQ(4, m(3).val());
-	EXPECT_EQ(5, m(4).val());
+	EXPECT_EQ(1, m(0)());
+	EXPECT_EQ(2, m(1)());
+	EXPECT_EQ(3, m(2)());
+	EXPECT_EQ(4, m(3)());
+	EXPECT_EQ(5, m(4)());
 
 	{
 		int sum = 0;
-		for(const auto& e : m) sum += e.val();
+		for(const auto& e : m) sum += e();
 		EXPECT_EQ(15, sum);
 	}
 
@@ -56,7 +56,7 @@ static void push_pop_resize_common(MB& m) {
 
 	{
 		int sum = 0;
-		for(const auto& e : m) sum += e.val();
+		for(const auto& e : m) sum += e();
 		EXPECT_EQ(10, sum);
 	}
 
@@ -64,7 +64,7 @@ static void push_pop_resize_common(MB& m) {
 
 	{
 		int sum = 0;
-		for(const auto& e : m) sum += e.val();
+		for(const auto& e : m) sum += e();
 		EXPECT_EQ(14, sum);
 	}
 }
@@ -214,7 +214,7 @@ static void run_salgo_vector(int N, int type) {
 		}
 
 		for(const auto& e : v) {
-			result += e.val();
+			result += e();
 		}
 	}
 	else {
@@ -224,13 +224,13 @@ static void run_salgo_vector(int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = fast_rand() % N;
 
-			v(ii).val() = fast_rand();
+			v(ii)() = fast_rand();
 		}
 
 		for(int i=0; i<N; ++i) {
 			int ii = fast_rand() % N;
 
-			result += v(ii).val();
+			result += v(ii)();
 		}
 	}
 
@@ -260,7 +260,7 @@ static void run_salgo_vector_index(int N, int type) {
 		}
 
 		for(int i=0; i<N; ++i) {
-			result += v(i).val();
+			result += v(i)();
 		}
 	}
 	else {
@@ -270,13 +270,13 @@ static void run_salgo_vector_index(int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = fast_rand() % N;
 
-			v(ii).val() = fast_rand();
+			v(ii)() = fast_rand();
 		}
 
 		for(int i=0; i<N; ++i) {
 			int ii = fast_rand() % N;
 
-			result += v(ii).val();
+			result += v(ii)();
 		}
 	}
 

@@ -33,13 +33,14 @@ endif()
 
 set(sources
 	main.cpp
-	stack-storage.cpp
-	memory-block.cpp
-	sparse-vector.cpp
-	dense-vector.cpp
-	allocator.cpp
-	list.cpp
+	#stack-storage.cpp
+	#memory-block.cpp
+	#sparse-vector.cpp
+	#dense-vector.cpp
+	#allocator.cpp
+	#list.cpp
 	unordered-vector.cpp
+	#hash-table.cpp
 	#3d/compute-normals.cpp
 	#3d/collapse-edges.cpp
 	#3d/cap-holes.cpp

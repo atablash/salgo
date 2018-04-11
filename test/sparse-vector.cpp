@@ -29,11 +29,11 @@ TEST(Sparse_vector, not_iterable) {
 
 	EXPECT_EQ(5, m.domain());
 
-	EXPECT_EQ(1, m(0).val());
-	EXPECT_EQ(2, m(1).val());
-	EXPECT_EQ(3, m(2).val());
-	EXPECT_EQ(4, m(3).val());
-	EXPECT_EQ(5, m(4).val());
+	EXPECT_EQ(1, m[0]);
+	EXPECT_EQ(2, m(1)());
+	EXPECT_EQ(3, m[2]);
+	EXPECT_EQ(4, m[3]);
+	EXPECT_EQ(5, m[4]);
 
 	m(0).destruct();
 	m(1).destruct();
@@ -67,9 +67,9 @@ TEST(Sparse_vector, not_iterable_nontrivial) {
 	m[1] = make_unique<A>(2,&counter);
 	m[2] = make_unique<A>(3,&counter);
 
-	EXPECT_EQ(1, m(0).val()->val);
-	EXPECT_EQ(2, m(1).val()->val);
-	EXPECT_EQ(3, m(2).val()->val);
+	EXPECT_EQ(1, m(0)()->val);
+	EXPECT_EQ(2, m[1]->val);
+	EXPECT_EQ(3, m(2)()->val);
 
 	m(0).destruct();
 	m(1).destruct();
@@ -95,15 +95,15 @@ static void push_delete_compact_common(MB& m) {
 
 	EXPECT_EQ(5, m.domain());
 
-	EXPECT_EQ(1, m(0).val());
-	EXPECT_EQ(2, m(1).val());
-	EXPECT_EQ(3, m(2).val());
-	EXPECT_EQ(4, m(3).val());
-	EXPECT_EQ(5, m(4).val());
+	EXPECT_EQ(1, m(0)());
+	EXPECT_EQ(2, m(1)());
+	EXPECT_EQ(3, m(2)());
+	EXPECT_EQ(4, m(3)());
+	EXPECT_EQ(5, m(4)());
 
 	{
 		int sum = 0;
-		for(const auto& e : m) sum += e.val();
+		for(const auto& e : m) sum += e();
 		EXPECT_EQ(15, sum);
 	}
 
@@ -116,7 +116,7 @@ static void push_delete_compact_common(MB& m) {
 
 	{
 		int sum = 0;
-		for(const auto& e : m) sum += e.val();
+		for(const auto& e : m) sum += e();
 		EXPECT_EQ(6, sum);
 	}
 
@@ -128,7 +128,7 @@ static void push_delete_compact_common(MB& m) {
 
 	{
 		int sum = 0;
-		for(const auto& e : m) sum += e.val();
+		for(const auto& e : m) sum += e();
 		EXPECT_EQ(6, sum);
 	}
 }
@@ -193,6 +193,55 @@ TEST(Sparse_vector, push_delete_compact_inplace_nontrivial) {
 }
 
 
+
+
+
+TEST(Sparse_vector, copy_container_exists) {
+	struct S {
+		S()  { ++g_constructors; }
+		S(const S&) { ++g_constructors; }
+		~S() { ++g_destructors;  }
+	};
+
+	g_destructors = 0;
+	g_constructors = 0;
+
+	{
+		Vector<S>::SPARSE::EXISTS block;
+		block.emplace_back();
+		block.emplace_back();
+		block.emplace_back();
+
+		auto block2 = block;
+		block2 = block;
+	}
+
+	EXPECT_EQ(g_constructors, g_destructors);
+}
+
+
+TEST(Sparse_vector, move_container_exists) {
+	struct S {
+		S()  { ++g_constructors; }
+		S(S&&) { ++g_constructors; }
+		~S() { ++g_destructors;  }
+	};
+
+	g_destructors = 0;
+	g_constructors = 0;
+
+	{
+		Vector<S>::SPARSE::EXISTS::STACK_BUFFER<2> block(10);
+		block.emplace_back();
+		block.emplace_back();
+		block.emplace_back();
+
+		auto block2 = std::move(block);
+		block2 = std::move(block);
+	}
+
+	EXPECT_EQ(g_constructors, g_destructors);
+}
 
 
 
@@ -358,12 +407,12 @@ static void run_sparse_vector_common(VEC& v, int N, int type) {
 	if(type == 0) {
 		// sequential
 		for(auto e : v) {
-			e.val() = fast_rand();
+			e() = fast_rand();
 			if(fast_rand()%2) e.destruct();
 		}
 
 		for(const auto& e : v) {
-			result += e.val();
+			result += e();
 		}
 	}
 	else {
@@ -372,7 +421,7 @@ static void run_sparse_vector_common(VEC& v, int N, int type) {
 			int ii = fast_rand() % N;
 
 			if(v(ii).exists()) {
-				v(ii).val() = fast_rand();
+				v(ii)() = fast_rand();
 				if(fast_rand()%2) v(ii).destruct();
 			}
 		}
@@ -380,7 +429,7 @@ static void run_sparse_vector_common(VEC& v, int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = fast_rand() % N;
 
-			if(v(ii).exists()) result += v(ii).val();
+			if(v(ii).exists()) result += v(ii)();
 		}
 	}
 
@@ -444,12 +493,12 @@ static void run_sparse_vector_index(int N, int type) {
 	if(type == 0) {
 		// sequential
 		for(int i=0; i<N; ++i) {
-			v(i).val() = fast_rand();
+			v(i)() = fast_rand();
 			if(fast_rand()%2) v(i).destruct();
 		}
 
 		for(int i=0; i<N; ++i) {
-			if(v(i).exists()) result += v(i).val();
+			if(v(i).exists()) result += v(i)();
 		}
 	}
 	else {
@@ -458,7 +507,7 @@ static void run_sparse_vector_index(int N, int type) {
 			int ii = fast_rand() % N;
 
 			if(v(ii).exists()) {
-				v(ii).val() = fast_rand();
+				v(ii)() = fast_rand();
 				if(fast_rand()%2) v(ii).destruct();
 			}
 		}
@@ -466,7 +515,7 @@ static void run_sparse_vector_index(int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = fast_rand() % N;
 
-			if(v(ii).exists()) result += v(ii).val();
+			if(v(ii).exists()) result += v(ii)();
 		}
 	}
 

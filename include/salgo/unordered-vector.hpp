@@ -2,6 +2,8 @@
 
 #include "const-flag.hpp"
 #include "iterator-base.hpp"
+#include "int-handle.hpp"
+#include "vector.hpp"
 
 #include <glog/logging.h>
 
@@ -18,113 +20,91 @@ namespace Unordered_Vector {
 
 
 
+
+
 template<class _VAL>
 struct Context {
 
 	using Val = _VAL;
 
+	struct Handle : Int_Handle<Handle,int> {
+		using BASE = Int_Handle<Handle,int>;
+		FORWARDING_CONSTRUCTOR(Handle, BASE);
+	};
+
+
+
+
 	//
 	// forward declarations
 	//
 	template<Const_Flag C> class Accessor;
-	template<Const_Flag C> class Iterator;
 	class Unordered_Vector;
 
 
 
+
+
+
 	//
-	// accessor
+	// accessor / iterator
 	//
 	template<Const_Flag C>
-	class Accessor {
+	class Accessor : public Iterator_Base<C,Accessor> {
 	public:
-		inline int handle() const {
-			return _key;
-		}
+		auto     handle() const { DCHECK(!_just_erased); return _handle; }
+		operator Handle() const { return handle(); }
 
-		inline Const<Val,C>& val() {
-			return _owner[ _key ];
-		}
+		// get val
+		auto& operator()()       { DCHECK(!_just_erased); return (*_owner)[ _handle ]; }
+		auto& operator()() const { DCHECK(!_just_erased); return (*_owner)[ _handle ]; }
+		operator auto&()       { return operator()(); }
+		operator auto&() const { return operator()(); }
 
-		inline const Val& val() const {
-			return _owner[ _key ];
-		}
 
-		inline void erase() {
+		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			_owner.erase( _key );
+			DCHECK(!_just_erased);
+			(*_owner)[_handle] = std::move( (*_owner).front() );
+			(*_owner).pop_front();
+			_just_erased = true;
+		}
+
+
+		// for ITERATOR_BASE:
+	private:
+		friend Iterator_Base<C,Accessor>;
+
+		inline void _increment() {
+			--_handle;
+			_just_erased = false;
+		}
+		inline void _decrement() {
+			if(!_just_erased) ++_handle;
+			_just_erased = false;
+		}
+
+		auto _get_comparable() const { return _handle; }
+
+		template<Const_Flag CC>
+		auto _will_compare_with(const Accessor<CC>& o) const {
+			DCHECK_EQ(_owner, o._owner);
 		}
 
 
 	private:
-		Accessor(Const<Unordered_Vector,C>& owner, int key)
-			: _owner(owner), _key(key) {}
-
-		friend Unordered_Vector;
-		friend Iterator<C>;
-
-
-	private:
-		Const<Unordered_Vector,C>& _owner;
-		const int _key;
-	};
-
-
-
-
-
-	//
-	// iterator
-	//
-	template<Const_Flag C>
-	class Iterator : public Iterator_Base<C,Iterator>{
-
-
-			// member functions accessed by BASE:
-		private:
-			friend Iterator_Base<C, Iterator>;
-
-			inline void _increment() {
-				++_key;
-			}
-
-			inline void _decrement() {
-				--_key;
-			}
-
-			auto _get_comparable() const {
-				return _key;
-			}
-
-			template<Const_Flag CC>
-			auto _will_compare_with(const Iterator<CC>& o) const {
-				DCHECK_EQ(&_owner, &o._owner);
-			}
-
-
-
-	public:
-		inline auto operator*() const {  return Accessor<C>(_owner, _key);  }
-
-		// unable to implement if using accessors:
-		// auto operator->()       {  return &container[idx];  }
-
-
-
-	private:
-		inline Iterator(Const<Unordered_Vector,C>& owner, int key)
-				: _owner(owner), _key(key) {}
+		Accessor(Const<Unordered_Vector,C>* owner, Handle handle)
+			: _owner(owner), _handle(handle) {}
 
 		friend Unordered_Vector;
 
+
 	private:
-		Const<Unordered_Vector,C>& _owner;
-		int _key;
+		Const<Unordered_Vector,C>* _owner;
+		Handle _handle;
+
+		bool _just_erased = false;
 	};
-
-
-
-
 
 
 
@@ -141,14 +121,13 @@ struct Context {
 
 	public:
 		using Val = Context::Val;
-
-		using Handle = int;
+		using Handle = Context::Handle;
 
 		//
 		// data
 		//
 	private:
-		std::vector<Val> v;
+		salgo::Vector<Val> v;
 
 
 		//
@@ -164,31 +143,10 @@ struct Context {
 		// interface: manipulate element - can be accessed via the Accessor
 		//
 	public:
-		inline void erase(Handle handle) {
-			_check_bounds(handle);
-			v[handle] = std::move( v.back() );
-			v.pop_back();
-		}
+		auto& operator[](Handle handle)       { _check(handle); return v[handle]; }
+		auto& operator[](Handle handle) const { _check(handle); return v[handle]; }
 
-		inline Val& operator[](Handle handle) {
-			_check_bounds(handle);
-			return v[handle];
-		}
-
-		inline const Val& operator[](Handle handle) const {
-			_check_bounds(handle);
-			return v[handle];
-		}
-
-
-
-	private:
-		inline void _check_bounds(Handle handle) const {
-			DCHECK_GE( handle, 0 ) << "index out of bounds";
-			DCHECK_LT( handle, (int)v.size() ) << "index out of bounds";
-		}
-
-
+		// inline void erase(Handle handle) = delete; // only through accessor
 
 
 
@@ -197,59 +155,50 @@ struct Context {
 		// interface
 		//
 	public:
-		auto operator()(int handle) {
-			DCHECK_GE( handle, 0 ) << "index out of bounds";
-			DCHECK_LT( handle, (int)v.size() ) << "index out of bounds";
-			return Accessor<MUTAB>(*this, handle);
-		}
-
-		auto operator()(int handle) const {
-			DCHECK_GE( handle, 0 ) << "index out of bounds";
-			DCHECK_LT( handle, (int)v.size() ) << "index out of bounds";
-			return Accessor<CONST>(*this, handle);
-		}
+		auto operator()(Handle handle)       { _check(handle); return _accessor(handle); }
+		auto operator()(Handle handle) const { _check(handle); return _accessor(handle); }
 
 		template<class... ARGS>
-		void add(ARGS&&... args) {
+		auto add(ARGS&&... args) {
 			v.emplace_back( std::forward<ARGS>(args)... );
+			return _accessor( v.size()-1 );
+		}
+
+		auto pop_front() {
+			Val val = std::move( v[ v.size()-1 ] );
+			v.pop_back();
+			return val;
 		}
 
 
-		int size() const {
-			return v.size();
-		}
+		auto front()       { return _accessor( v.size()-1 ); }
+		auto front() const { return _accessor( v.size()-1 ); }
+
+		auto back()       { return _accessor( 0 ); }
+		auto back() const { return _accessor( 0 ); }
 
 
-		void reserve(int capacity) {
-			v.reserve(capacity);
-		}
+		int size() const { return v.size(); }
+
+		void reserve(int capacity) { v.reserve(capacity); }
 
 
 
 	public:
-		inline auto begin() {
-			return Iterator<MUTAB>(*this, 0);
-		}
+		auto begin()       { return _accessor( v.size()-1 ); }
+		auto begin() const { return _accessor( v.size()-1 ); }
 
-		inline auto begin() const {
-			return Iterator<CONST>(*this, 0);
-		}
-
-		inline auto cbegin() const {
-			return Iterator<CONST>(*this, 0);
-		}
+		auto end()       { return _accessor( -1 ); }
+		auto end() const { return _accessor( -1 ); }
 
 
-		inline auto end() {
-			return Iterator<MUTAB>(*this, v.size());
-		}
+	private:
+		auto _accessor(Handle handle)       { return Accessor<MUTAB>(this, handle); }
+		auto _accessor(Handle handle) const { return Accessor<CONST>(this, handle); }
 
-		inline auto end() const {
-			return Iterator<CONST>(*this, v.size());
-		}
-
-		inline auto cend() const {
-			return Iterator<CONST>(*this, v.size());
+	private:
+		void _check(Handle handle) const {
+			DCHECK( 0 <= handle && handle < v.size() ) << "index " << handle << " out of bounds";
 		}
 
 	};

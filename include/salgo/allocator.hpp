@@ -21,44 +21,62 @@ namespace Allocator {
 
 
 //
-// handles
+// HANDLES
 //
-struct Small_Handle;
-template<class,class> struct Handle_T;
+// defined outside Context to specialize std::hash<>
+//
+// parametrized by unused context X, to make Handles from different Contexts incompatible
+//
+template<class> struct Handle;
+template<class> struct Small_Handle;
 
-struct Small_Handle : Int_Handle<unsigned int, Small_Handle> {
-	using BASE = Int_Handle<unsigned int, Small_Handle>;
 
-	FORWARDING_CONSTRUCTOR(Small_Handle, BASE);
-	
-	template<class A, class B>
-	Small_Handle( Handle_T<A,B> h ) : BASE((h.a << 24) | h.b) {}
-};
+// big
+using Handle_A = int;
+using Handle_B = int;
 
-template<class A, class B>
-struct Handle_T {
-	A a = A(-1);
-	B b;
+template<class>
+struct Handle {
+	Handle_A a = -1;
+	Handle_B b;
 
-	Handle_T() = default;
-	Handle_T(const Handle_T&) = default;
+	Handle() = default;
+	Handle(const Handle&) = default;
 
-	Handle_T(A aa, B bb) : a(aa), b(bb) {
+	Handle(Handle_A aa, Handle_B bb) : a(aa), b(bb) {
 		DCHECK_GE(a, 0); DCHECK_LT(a, 1<<8);
 		DCHECK_GE(b, 0); DCHECK_LT(b, 1<<24);
 	}
 
-	Handle_T( Small_Handle h ) : a(h>>24), b(h&0xffffff) {}
+	//operator Small_Handle() { return Small_Handle(*this); }
+
+	//Handle( Small_Handle h ) : a(h>>24), b(h&0xffffff) {}
 
 	bool valid() const { return a != -1; }
 
-	void reset() { a = A(-1); }
+	void reset() { a = -1; }
 
-	bool operator==(const Handle_T& o) const { return a==o.a && b==o.b; }
-	bool operator!=(const Handle_T& o) const { return !(*this == o); }
+	bool operator==(const Handle& o) const { return a==o.a && b==o.b; }
+	bool operator!=(const Handle& o) const { return !(*this == o); }
 };
 
-using Handle = Handle_T<int, int>;
+
+
+// small
+template<class X>
+struct Small_Handle : Int_Handle<unsigned int, Small_Handle<X>> {
+	using BASE = Int_Handle<unsigned int, Small_Handle<X>>;
+
+	Small_Handle() = default;
+	Small_Handle(unsigned int v) : BASE(v) {}
+
+	Small_Handle( const Handle<X>& h ) { *this = h; }
+	Small_Handle& operator=(const Handle<X>& h) { return *this = (h.a << 24) | h.b; }
+
+	operator Handle<X>() const { return Handle<X>((*this)>>24, (*this)&0xffffff); }
+};
+
+
 
 
 
@@ -66,21 +84,37 @@ using Handle = Handle_T<int, int>;
 
 template<
 	class _VAL,
-	bool _AUTO_DESTRUCT
+	bool _AUTO_DESTRUCT,
+	bool _SINGLETON
 >
 struct Context {
 
+	//
+	// TEMPLATE PARAMETERS
+	//
 	using Val = _VAL;
 	static constexpr bool Auto_Destruct = _AUTO_DESTRUCT;
-
-	using Small_Handle = Allocator::Small_Handle;
-	using Handle = Allocator::Handle;
+	using Singleton = _SINGLETON;
 
 	using Memory_Block = std::conditional_t<
 		Auto_Destruct,
 		typename salgo::Memory_Block<Val> :: EXISTS,
 		salgo::Memory_Block<Val>
 	>;
+
+
+
+
+
+	using       Handle = Allocator::      Handle<Context>;
+	using Small_Handle = Allocator::Small_Handle<Context>;
+
+
+
+
+
+
+
 
 
 
@@ -103,10 +137,12 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor {
 	public:
-		Handle handle() const { return _handle; }
+		// get handle
+		auto     handle() const { return _handle; }
+		operator Handle() const { return _handle; }
 
-		auto& val()       { return _owner[_handle]; }
-		auto& val() const { return _owner[_handle]; }
+		auto& operator()()       { return _owner[_handle]; }
+		auto& operator()() const { return _owner[_handle]; }
 
 		void destruct() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
@@ -142,8 +178,6 @@ struct Context {
 		using Small_Handle = Context::Small_Handle;
 		using       Handle = Context::      Handle;
 
-		//Allocator() : v( 1, 1 ) {}
-
 
 	public:
 		template<class... ARGS>
@@ -165,15 +199,9 @@ struct Context {
 		void destruct( Small_Handle h )  { destruct( Handle(h) ); }
 		void destruct(   Handle h )  { v[h.a].destruct( h.b ); }
 
-		auto& operator[]( Small_Handle h )       { return operator[]( Handle(h) ); }
-		auto& operator[]( Small_Handle h ) const { return operator[]( Handle(h) ); }
 
 		auto& operator[]( Handle h )       { return v[h.a][h.b]; }
 		auto& operator[]( Handle h ) const { return v[h.a][h.b]; }
-
-
-		auto operator()( Small_Handle h )       { return operator()( Handle(h) ); };
-		auto operator()( Small_Handle h ) const { return operator()( Handle(h) ); };
 
 		auto operator()( Handle h )       { return Accessor<MUTAB>(*this, h); }
 		auto operator()( Handle h ) const { return Accessor<CONST>(*this, h); }
@@ -181,18 +209,54 @@ struct Context {
 
 
 
-	struct With_Builder : Allocator {
+
+
+
+
+	class Allocator_Proxy {
+		static auto& _get() { return global_instance<Allocator>(); }
+
+	public:
+		using          Val = Allocator::Val;
+		using Small_Handle = Allocator::Small_Handle;
+		using       Handle = Allocator::Handle;
+
+	public:
+		template<class... ARGS>	auto construct(ARGS&&... args) { _get(). construct( std::forward<ARGS>(args)... ); }
+		template<class... ARGS>	auto  destruct(ARGS&&... args) { _get().  destruct( std::forward<ARGS>(args)... ); }
+
+		template<class... ARGS>	auto& operator[](ARGS&&... args)       { _get().operator[]( std::forward<ARGS>(args)... ); }
+		template<class... ARGS>	auto& operator[](ARGS&&... args) const { _get().operator[]( std::forward<ARGS>(args)... ); }
+
+		template<class... ARGS>	auto operator()(ARGS&&... args)       { _get().operator()( std::forward<ARGS>(args)... ); }
+		template<class... ARGS>	auto operator()(ARGS&&... args) const { _get().operator()( std::forward<ARGS>(args)... ); }
+	};
+
+
+
+
+
+
+	using My_Allocator = std::conditional_t<
+		Singleton,
+		Allocator_Proxy,
+		Allocator
+	>;
+
+
+
+
+	struct With_Builder : My_Allocator {
 
 		template<class NEW_VAL>
 		using VAL = typename
-			Context<NEW_VAL, Auto_Destruct> :: With_Builder;
+			Context<NEW_VAL, Auto_Destruct, Singleton> :: With_Builder;
 
 		using AUTO_DESTRUCT = typename
-			Context<Val, true> :: With_Builder;
+			Context<Val, true, Singleton> :: With_Builder;
 
-		// hack to avoid circular dependency in List
-		//template<class>
-		//using HANDLE_FOR_VAL = Handle;
+		using SINGLETON =
+			Context<Val, Auto_Destruct, true> :: With_Builder;
 	};
 
 
@@ -211,7 +275,8 @@ template<
 >
 using Allocator = typename internal::Allocator::Context<
 	VAL,
-	false // auto-destruct
+	false, // auto-destruct
+	false // singleton
 >::With_Builder;
 
 
@@ -225,4 +290,15 @@ using Allocator = typename internal::Allocator::Context<
 
 
 
+
+
+
+
+
+template<class X>
+struct std::hash<salgo::internal::Allocator::Small_Handle<X>> {
+	size_t operator()(const salgo::internal::Allocator::Small_Handle<X>& h) const {
+		return h;
+	}
+};
 
