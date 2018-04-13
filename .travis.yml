@@ -29,7 +29,8 @@ matrix:
         - CC=gcc-7
         - CXX=g++-7
         - USE_LIBCXX=OFF
-        - CMAKE_ARGS=""
+        - CMAKE_ARGS=
+        - CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
 
 
     # g++ 7  +  libc++
