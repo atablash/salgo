@@ -14,6 +14,6 @@ git clone https://github.com/google/glog.git --depth 1
 
 
 
-#cd $PWDD && rm -rf $DIR
+cd $PWDD && rm -rf $DIR
 
 
