@@ -6,8 +6,10 @@ language: cpp
 
 
 matrix:
-  include:
+  - include:
 
+
+    # g++ 7  +  libstdc++
     - os: linux
       addons:
         apt:
@@ -15,15 +17,35 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-7
+            - libstdc++-7-dev # not required, installed by g++-7 anyway
             # dependencies
             - libgoogle-glog-dev
             - libgtest-dev
             - libgflags-dev
             - libeigen3-dev
       env:
-        - MATRIX_EVAL="export CC=gcc-7 && export CXX=g++-7"
+        - MATRIX_EVAL="export CC=gcc-7 && export CXX=g++-7 && USE_LIBCXX=OFF"
 
 
+    # g++ 7  +  libc++
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+            - libc++-dev
+            # dependencies
+            - libgoogle-glog-dev
+            - libgtest-dev
+            - libgflags-dev
+            - libeigen3-dev
+      env:
+        - MATRIX_EVAL="export CC=gcc-7 && export CXX=g++-7 && USE_LIBCXX=ON"
+
+
+    # clang++ 5.0  +  libstdc++
     - os: linux
       addons:
         apt:
@@ -39,7 +61,26 @@ matrix:
             - libgflags-dev
             - libeigen3-dev
       env:
-        - MATRIX_EVAL="export CC=clang-5.0 && export CXX=clang++-5.0"
+        - MATRIX_EVAL="export CC=clang-5.0 && export CXX=clang++-5.0 && USE_LIBCXX=OFF"
+
+
+    # clang++ 5.0  +  libc++
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-trusty-5.0
+            #- ubuntu-toolchain-r-test # libstdc++-7-dev
+          packages:
+            - clang-5.0
+            - libc++-dev
+            # dependencies
+            - libgoogle-glog-dev
+            - libgtest-dev
+            - libgflags-dev
+            - libeigen3-dev
+      env:
+        - MATRIX_EVAL="export CC=clang-5.0 && export CXX=clang++-5.0 && USE_LIBCXX=ON"
 
 
 
@@ -55,8 +96,9 @@ install:
 
 script:
   # build
-  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON .
+  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX="${USE_LIBCXX}" .
   - make VERBOSE=1
+  - /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+" # print libstdc++ and libc++ versions
   - ctest --verbose
   - benchmark/hash-table
 

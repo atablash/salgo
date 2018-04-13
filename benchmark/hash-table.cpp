@@ -281,7 +281,7 @@ static void ITERATE__std(State& state) {
 		s.emplace( rand() % N );
 	}
 
-	for(auto _ : state) {
+	while( state.KeepRunningBatch(s.size()) ) {
 		long long result = 0;
 		for(auto e : s) result += e;
 		DoNotOptimize(result);
@@ -303,7 +303,7 @@ static void ITERATE__salgo(State& state) {
 		s.emplace( rand() % N );
 	}
 
-	for(auto _ : state) {
+	while( state.KeepRunningBatch(s.count()) ) {
 		long long result = 0;
 		for(auto e : s) result += e;
 		DoNotOptimize(result);

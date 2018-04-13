@@ -14,8 +14,8 @@ if (Benchmark_FOUND)
 	include_directories( ${Benchmark_INCLUDE_DIRS} )
 	link_libraries( ${Benchmark_LIBRARIES} )
 
-	#message("Benchmark_INCLUDE_DIRS: " ${Benchmark_INCLUDE_DIRS})
-	#message("Benchmark_LIBRARIES: " ${Benchmark_LIBRARIES})
+	message("Benchmark_INCLUDE_DIRS: " ${Benchmark_INCLUDE_DIRS})
+	message("Benchmark_LIBRARIES: " ${Benchmark_LIBRARIES})
 
 	set(THREADS_PREFER_PTHREAD_FLAG ON)
 	find_package(Threads REQUIRED)

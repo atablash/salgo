@@ -18,6 +18,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 #===============================================================================
 option(SALGO_BUILD_TESTS "Build salgo tests" ON) # TODO: set to off
 option(SALGO_BUILD_BENCHMARKS "Build salgo benchmarks" ON) # TODO: set to off
+option(SALGO_USE_LIBCXX "Link with libc++ (instead of default, usually libstdc++)" OFF) # TODO: set to off
 
 
 
@@ -46,6 +47,24 @@ add_definitions(
 	-Wall -Wextra -Werror -Wshadow
 )
 
+
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	message(STATUS "Detected clang")
+	if(SALGO_USE_LIBCXX)
+		add_definitions( -stdlib=libc++ )
+	endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	message(STATUS "Detected gcc")
+	if(SALGO_USE_LIBCXX)
+		add_definitions( -stdlib=libc++ )
+	endif()
+else()
+	message(WARNING "COMPILER " ${} " IS UNSUPPORTED BY SALGO!")
+	if(SALGO_USE_LIBCXX)
+		add_definitions( -stdlib=libc++ )
+	endif()
+endif()
 
 
 
@@ -117,6 +136,7 @@ message("Build configuration:\n")
 message("** Build type: " ${CMAKE_BUILD_TYPE})
 message("** Build tests: " ${SALGO_BUILD_TESTS})
 message("** Build benchmarks: " ${SALGO_BUILD_BENCHMARKS})
+message("** Use libc++ (instead of default, usually libstdc++): " ${SALGO_USE_LIBCXX})
 #message("** salgo version: " ${SALGO_VERSION})
 #message("** Build shared libs: " ${SALGO_BUILD_SHARED})
 #message("** Build docs: " ${SALGO_BUILD_DOC})

@@ -11,6 +11,8 @@ using namespace salgo;
 
 
 
+
+
 static void INSERT_std(State& state) {
 	srand(69);
 
@@ -22,6 +24,42 @@ static void INSERT_std(State& state) {
 	}
 }
 BENCHMARK( INSERT_std );
+
+
+
+
+static void INSERT_salgo(State& state) {
+	srand(69);
+
+	salgo::List<int> li;
+
+	for(auto _ : state) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+}
+BENCHMARK( INSERT_salgo );
+
+
+
+
+static void INSERT_salgo_countable(State& state) {
+	srand(69);
+
+	salgo::List<int> :: COUNTABLE li;
+
+	for(auto _ : state) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+}
+BENCHMARK( INSERT_salgo_countable );
+
+
+
+
+
+
 
 
 
@@ -39,21 +77,59 @@ static void ERASE_std(State& state) {
 		li.emplace_front( rand() );
 	}
 
-	int ith = 0;
-	auto it = li.begin();
+	while( state.KeepRunningBatch(li.size()) ) {
+		int ith = 0;
+		for(auto it = li.begin(); it != li.end(); ++it) {
+			auto ne = std::next(it);
 
-	for(auto _ : state) {
-		auto ne = std::next(it);
+			if(ith%2) {
+				li.erase(it);
+			}
 
-		if(ith%2) {
-			li.erase(it);
+			it = ne;
+			++ith;
 		}
-
-		it = ne;
-		++ith;
 	}
 }
 BENCHMARK( ERASE_std );
+
+
+
+
+static void ERASE_salgo_countable(State& state) {
+	srand(69);
+
+	const int N = state.iterations();
+	salgo::List<int> :: COUNTABLE li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch(li.count()) ) {
+		int ith = 0;
+		for(auto it = li.begin(); it != li.end(); ++it) {
+			auto ne = std::next(it);
+
+			if(ith%2) {
+				li.erase(it);
+			}
+
+			it = ne;
+			++ith;
+		}
+	}
+}
+BENCHMARK( ERASE_salgo_countable );
+
+
+
+
+
+
+
+
 
 
 
@@ -73,7 +149,7 @@ static void ITERATE_std(State& state) {
 		li.emplace_front( rand() );
 	}
 
-	for(auto _ : state) {
+	while( state.KeepRunningBatch( li.size() ) ) {
 		for(auto& e : li) {
 			DoNotOptimize(e);
 		}
@@ -83,6 +159,38 @@ static void ITERATE_std(State& state) {
 
 }
 BENCHMARK( ITERATE_std );
+
+
+
+
+
+static void ITERATE_salgo_countable(State& state) {
+	srand(69);
+
+	const int N = state.iterations();
+	salgo::List<int> :: COUNTABLE li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch( li.count() ) ) {
+		for(auto& e : li) {
+			DoNotOptimize(e);
+		}
+	}
+
+
+
+}
+BENCHMARK( ITERATE_salgo_countable );
+
+
+
+
+
+
 
 
 
