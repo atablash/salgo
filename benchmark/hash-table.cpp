@@ -3,11 +3,6 @@
 #include <salgo/hash-table.hpp>
 
 #include <unordered_set>
-#include <iostream>
-#include <chrono>
-#include <thread>
-using namespace std;
-using namespace std::chrono;
 
 using namespace benchmark;
 
@@ -327,96 +322,10 @@ BENCHMARK( ITERATE__salgo );
 
 
 
-
-
-
-/*
-static double run_unordered_set_alloc(int N) {
-	//clear_cache();
-
-	auto t0 = steady_clock::now();
-
-	fast_srand(69);
-
-	using Alloc = Allocator<int> :: SINGLETON;
-	using Std_Alloc = Std_From_Salgo_Allocator< Alloc >;
-
-	std::unordered_multiset<int, std::hash<int>, std::equal_to<int>, Std_Alloc> s;
-
-	s.reserve(N);
-
-	//cout << "max_load_factor: " << s.max_load_factor() << endl;
-
-	for(int i=0; i<N; ++i) {
-		s.emplace( rand() % N );
-	}
-
-	for(int i=0; i<N; ++i) {
-		auto iter = s.find( rand() % N );
-		if(iter != s.end()) s.erase( iter );
-	}
-
-	long long result = 0;
-	for(auto e : s) result += e;
-
-	duration<double> diff = steady_clock::now() - t0;
-	return diff.count();
-}
-*/
-
-
-
-
-
-
-
-
-
-
 BENCHMARK_MAIN();
 
 
 
 
 
-
-
-
-
-/* TODO
-
-
-static double run_hash_table_malloc(int N) {
-	//clear_cache();
-
-	auto t0 = steady_clock::now();
-
-	fast_srand(69);
-
-	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
-
-	Hash_Table<int> :: ALLOCATOR<Alloc> s;
-
-	s.rehash(N);
-
-	for(int i=0; i<N; ++i) {
-		s.emplace( rand() % N );
-	}
-
-	for(int i=0; i<N; ++i) {
-		auto e = s( rand() % N );
-		if(e.exists()) e.erase();
-	}
-
-	long long result = 0;
-	for(auto e : s) result += e;
-
-	duration<double> diff = steady_clock::now() - t0;
-	return diff.count();
-}
-
-
-
-	
-*/
 
