@@ -108,6 +108,10 @@ matrix:
 
 
 before_install:
+  - echo "CC:" ${CC}
+  - echo "CXX:" ${CXX}
+  - echo "USE_LIBCXX:" ${USE_LIBCXX}
+  - echo "CMAKE_ARGS:" ${CMAKE_ARGS}
   - echo "CMAKE_PREFIX_PATH:" ${CMAKE_PREFIX_PATH}
 
 install:
