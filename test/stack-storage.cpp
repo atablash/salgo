@@ -100,22 +100,31 @@ TEST(Stack_storage, trivial) {
 
 
 TEST(Stack_storage, copy_noop) {
+	using VS = Stack_Storage<int>::TREAT_AS_VOID;
+
 	int magic = rand();
+
 	Stack_Storage<int>::TREAT_AS_VOID s1;
 	s1.construct(magic);
 
-	Stack_Storage<int>::TREAT_AS_VOID s2(s1);
-	EXPECT_NE(s1, s2);
+	auto s2 = (VS*)std::calloc( sizeof(VS), 1 );
+	new(s2) VS(s1);
+	EXPECT_NE(s1, *s2);
 
-	s2 = s1;
-	EXPECT_NE(s1, s2);
+	*s2 = s1;
+	EXPECT_NE(s1, *s2);
 
-	s2 = std::move(s1);
+	*s2 = std::move(s1);
 	EXPECT_EQ(magic, s1);
-	EXPECT_NE(magic, s2);
+	EXPECT_NE(magic, *s2);
 
-	Stack_Storage<int>::TREAT_AS_VOID s3( std::move(s1) );
-	EXPECT_NE(magic, s3);
+
+	auto s3 = (VS*)std::calloc( sizeof(VS), 1 );
+	new(s3) VS( std::move(s1) );
+	EXPECT_NE(magic, *s3);
+
+	free(s2);
+	free(s3);
 }
 
 

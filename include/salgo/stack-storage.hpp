@@ -204,6 +204,9 @@ struct Context {
 		Stack_Storage__noop& operator=(const Stack_Storage__noop&) { return *this; }
 		Stack_Storage__noop& operator=(Stack_Storage__noop&&) { return *this; }
 
+		bool operator==(const Stack_Storage__noop& o) const { return get() == o.get(); }
+		bool operator!=(const Stack_Storage__noop& o) const { return get() != o.get(); }
+
 
 	public:
 		template<class... ARGS>

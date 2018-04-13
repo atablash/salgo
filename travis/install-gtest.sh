@@ -1,8 +1,8 @@
 #!/bin/bash
-PWD=$(pwd)
+PWDD=$(pwd)
 DIR=install-gtest-temp
-PREFIX=$PWD/INSTALL_ROOT
-mkdir $DIR && cd $DIR
+PREFIX=$PWDD/INSTALL_ROOT
+rm -rf $DIR && mkdir $DIR && cd $DIR
 
 
 #
@@ -20,6 +20,6 @@ git clone https://github.com/google/googletest.git --depth 1
 
 
 
-#cd $PWD && rm -rf $DIR
+cd $PWDD && rm -rf $DIR
 
 

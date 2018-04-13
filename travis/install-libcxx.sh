@@ -1,8 +1,8 @@
 #!/bin/bash
-PWD=$(pwd)
+PWDD=$(pwd)
 DIR=install-libcxx-temp
-PREFIX=$PWD/INSTALL_ROOT
-mkdir $DIR && cd $DIR
+PREFIX=$PWDD/INSTALL_ROOT
+rm -rf $DIR && mkdir $DIR && cd $DIR
 
 
 
@@ -27,4 +27,4 @@ svn co http://llvm.org/svn/llvm-project/libcxxabi/trunk libcxxabi
 
 
 
-cd $PWD && rm -rf $DIR
+cd $PWDD && rm -rf $DIR

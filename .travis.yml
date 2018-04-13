@@ -18,31 +18,41 @@ matrix:
           packages:
             - g++-7
             - libstdc++-7-dev # not required, installed by g++-7 anyway
+            - autoconf # for compiling glog
+            - libtool # for compiling glog
             # dependencies
-            - libgoogle-glog-dev
-            - libgtest-dev
+            #- libgoogle-glog-dev
+            #- libgtest-dev
             - libgflags-dev
             - libeigen3-dev
       env:
-        - MATRIX_EVAL="export CC=gcc-7 && export CXX=g++-7 && USE_LIBCXX=OFF"
+        - CC=gcc-7
+        - CXX=g++-7
+        - USE_LIBCXX=OFF
+        - CMAKE_ARGS=""
 
 
     # g++ 7  +  libc++
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-7
-            - libc++-dev
-            # dependencies
-            - libgoogle-glog-dev
-            - libgtest-dev
-            - libgflags-dev
-            - libeigen3-dev
-      env:
-        - MATRIX_EVAL="export CC=gcc-7 && export CXX=g++-7 && USE_LIBCXX=ON"
+    # - os: linux
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - ubuntu-toolchain-r-test
+    #      packages:
+    #         - g++-7
+    #         - libc++-dev
+    #         - autoconf # for compiling glog
+    #         - libtool # for compiling glog
+    #         # dependencies
+    #         #- libgoogle-glog-dev
+    #         #- libgtest-dev
+    #         - libgflags-dev
+    #         - libeigen3-dev
+    #   env:
+    #     - CC=gcc-7
+    #     - CXX=g++-7
+    #     - USE_LIBCXX=ON
+    #     - CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"    # TODO
 
 
     # clang++ 5.0  +  libstdc++
@@ -55,13 +65,18 @@ matrix:
           packages:
             - clang-5.0
             - libstdc++-7-dev
+            - autoconf # for compiling glog
+            - libtool # for compiling glog
             # dependencies
-            - libgoogle-glog-dev
-            - libgtest-dev
+            #- libgoogle-glog-dev
+            #- libgtest-dev
             - libgflags-dev
             - libeigen3-dev
       env:
-        - MATRIX_EVAL="export CC=clang-5.0 && export CXX=clang++-5.0 && USE_LIBCXX=OFF"
+        - CC=clang-5.0
+        - CXX=clang++-5.0
+        - USE_LIBCXX=OFF
+        - CMAKE_ARGS=""
 
 
     # clang++ 5.0  +  libc++
@@ -74,29 +89,32 @@ matrix:
           packages:
             - clang-5.0
             - libc++-dev
+            - autoconf # for compiling glog
+            - libtool # for compiling glog
             # dependencies
-            - libgoogle-glog-dev
-            - libgtest-dev
+            #- libgoogle-glog-dev
+            #- libgtest-dev
             - libgflags-dev
             - libeigen3-dev
       env:
-        - MATRIX_EVAL="export CC=clang-5.0 && export CXX=clang++-5.0 && USE_LIBCXX=ON"
+        - CC=clang-5.0
+        - CXX=clang++-5.0
+        - USE_LIBCXX=ON
+        - CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
 
 
 
-
-
-before_install:
-  - eval "${MATRIX_EVAL}"
 
 install:
-  - travis/fix-gtest.sh
-  - travis/install-google-benchmark.sh
+  - travis/install-gtest.sh             "$CMAKE_ARGS"
+  - travis/install-glog.sh              "$CMAKE_ARGS"
+  - travis/install-gtest.sh             "$CMAKE_ARGS"
+  - travis/install-google-benchmark.sh  "$CMAKE_ARGS"
 
 
 script:
   # build
-  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX="${USE_LIBCXX}" .
+  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX .
   - make VERBOSE=1
   - /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+" # print libstdc++ and libc++ versions
   - ctest --verbose

@@ -1,8 +1,8 @@
 #!/bin/bash
-PWD=$(pwd)
+PWDD=`pwd`
 DIR=install-google-benchmark-temp
-PREFIX=$PWD/INSTALL_ROOT
-mkdir $DIR && cd $DIR
+PREFIX=$PWDD/INSTALL_ROOT
+rm -rf $DIR && mkdir $DIR && cd $DIR
 
 
 
@@ -14,9 +14,9 @@ git clone https://github.com/google/benchmark.git google-benchmark --depth 1
 	-DBENCHMARK_ENABLE_GTEST_TESTS=OFF \
 	-DCMAKE_BUILD_TYPE=RELEASE \
 	$1 \
-	&& make -j8 && make install --prefix $PREFIX )
+ 	&& make -j8 && make install DESTDIR=$PREFIX )
 
 
 
 
-cd $PWD && rm -rf $DIR
+cd $PWDD && rm -rf $DIR
