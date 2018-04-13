@@ -10,6 +10,6 @@ inline void clear_cache() {
 	for(auto& e : v) {
 		result += e;
 	}
-	//cout << "cache cleared " << result %2 << endl;
+	//std::cout << "cache cleared " << result %2 << std::endl;
 }
 

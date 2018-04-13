@@ -21,16 +21,16 @@ namespace salgo {
 // operations on list nodes
 //
 template<class ALLOC, class HANDLE>
-inline auto list_next(const ALLOC& alloc, Handle handle) { DCHECK(handle.valid()); return alloc[handle].next; }
+inline auto list_next(const ALLOC& alloc, HANDLE handle) { DCHECK(handle.valid()); return alloc[handle].next; }
 
 template<class ALLOC, class HANDLE>
-inline auto list_prev(const ALLOC& alloc, Handle handle) { DCHECK(handle.valid()); return alloc[handle].prev; }
+inline auto list_prev(const ALLOC& alloc, HANDLE handle) { DCHECK(handle.valid()); return alloc[handle].prev; }
 
 
 
 namespace internal {
 	template<class ALLOC, class HANDLE>
-	inline auto list_erase(const ALLOC& alloc, Handle handle) {
+	inline auto list_erase(ALLOC& alloc, HANDLE handle) {
 		auto& me = alloc[handle];
 
 		auto prev = me.prev;
@@ -43,7 +43,7 @@ namespace internal {
 		alloc[next].prev = prev;
 
 		me.val.destruct();
-		alloc.destruct(handle);
+		// alloc.destruct(handle); // still need links for 'no_invalidation'
 
 		return next;
 	}
@@ -51,10 +51,10 @@ namespace internal {
 
 
 template<class ALLOC, class HANDLE>
-inline auto list_erase(const ALLOC& alloc, Handle handle) {
+inline auto list_erase(ALLOC& alloc, HANDLE handle) {
 
-	static_assert(! decltype(alloc[handle])::Countable )
-		<< "element of COUNTABLE list must be erased though the list object";
+	static_assert(! decltype(alloc[handle])::Countable,
+		"element of COUNTABLE list must be erased though the list object");
 
 	return internal::list_erase(alloc, handle);
 }
@@ -67,7 +67,7 @@ inline auto list_erase(const ALLOC& alloc, Handle handle) {
 
 namespace internal {
 	template<class ALLOC, class HANDLE, class... ARGS>
-	inline auto list_emplace(const ALLOC& alloc, Handle where, ARGS&&... args) {
+	inline auto list_emplace(ALLOC& alloc, HANDLE where, ARGS&&... args) {
 		DCHECK( where.valid() ) << "handle invalid";
 
 		auto h = alloc.construct().handle();
@@ -85,10 +85,10 @@ namespace internal {
 
 
 template<class ALLOC, class HANDLE, class... ARGS>
-inline auto list_emplace(const ALLOC& alloc, Handle where, ARGS&&... args) {
+inline auto list_emplace(ALLOC& alloc, HANDLE where, ARGS&&... args) {
 
-	static_assert(! decltype(alloc[handle])::Countable )
-		<< "element of COUNTABLE list must be emplaced though the list object";
+	static_assert(! decltype(alloc[where])::Countable,
+		"element of COUNTABLE list must be emplaced though the list object");
 
 	return internal::list_emplace(alloc, where, std::forward<ARGS>(args)...);
 }
@@ -125,7 +125,6 @@ struct Context {
 	//
 	struct Node;
 	template<Const_Flag C> class Accessor;
-	template<Const_Flag C> class Iterator;
 	class List;
 
 
@@ -152,7 +151,7 @@ struct Context {
 		Small_Handle next;
 		Small_Handle prev;
 
-		static constexpr bool Countable = Context::_COUNTABLE;
+		static constexpr bool Countable = Context::Countable;
 	};
 
 
@@ -164,62 +163,37 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor {
+	class Accessor : public Accessor_Base<C,Accessor>, public Iterator_Base<C,Accessor> {
 	public:
 		// get handle
-		operator Handle() const { return _handle; }
 		auto     handle() const { return _handle; }
 
-
 		// get val
-		auto& operator()()       { return _owner[ _handle ]; }
-		auto& operator()() const { return _owner[ _handle ]; }
-		operator auto&()       { return operator()(); }
-		operator auto&() const { return operator()(); }
+		auto& operator()()       { return (*_owner)[ _handle ]; }
+		auto& operator()() const { return (*_owner)[ _handle ]; }
+
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			_owner.erase( _handle );
+			_owner->erase( _handle );
 		}
 
-		auto next()       { return _owner.next( _handle ); }
-		auto next() const { return _owner.next( _handle ); }
+		auto next()       { return _owner->next( _handle ); }
+		auto next() const { return _owner->next( _handle ); }
 
-		auto prev()       { return _owner.prev( _handle ); }
-		auto prev() const { return _owner.prev( _handle ); }
+		auto prev()       { return _owner->prev( _handle ); }
+		auto prev() const { return _owner->prev( _handle ); }
 
 		//bool exists() const {
 		//	return _owner.exists( _handle );
 		//}
 
 
+
+
+	// member functions accessed by BASE:
 	private:
-		Accessor(Const<List,C>& owner, Handle handle)
-			: _owner(owner), _handle(handle) {}
-
-		friend List;
-		friend Iterator<C>;
-
-
-	private:
-		Const<List,C>& _owner;
-		const Handle _handle;
-	};
-
-
-
-
-
-
-	//
-	// iterator
-	//
-	template<Const_Flag C>
-	class Iterator : public Iterator_Base<C,Iterator> {
-
-		// member functions accessed by BASE:
-	private:
-		friend Iterator_Base<C,Iterator>;
+		friend Iterator_Base<C,Accessor>;
 
 		inline void _increment() {
 			_handle = _owner->_alloc()[ _handle ].next;
@@ -234,29 +208,31 @@ struct Context {
 		auto _get_comparable() const {  return _handle;  }
 
 		template<Const_Flag CC>
-		auto _will_compare_with(const Iterator<CC>& o) const {
+		auto _will_compare_with(const Accessor<CC>& o) const {
 			DCHECK_EQ(_owner, o._owner);
 		}
 
 
 
-	public:
-		inline auto operator*() const {  return Accessor<C>(*_owner, _handle);  }
-
-		// unable to implement if using accessors:
-		// auto operator->()       {  return &container[idx];  }
-
-
 
 
 	private:
-		inline Iterator(Const<List,C>* owner, Handle handle) : _owner(owner), _handle(handle) {}
+		Accessor(Const<List,C>* owner, Handle handle)
+			: _owner(owner), _handle(handle) {}
+
 		friend List;
+
 
 	private:
 		Const<List,C>* _owner;
 		Handle _handle;
 	};
+
+
+
+
+
+
 
 
 
@@ -282,9 +258,6 @@ struct Context {
 	private:
 		friend Accessor<MUTAB>;
 		friend Accessor<CONST>;
-
-		friend Iterator<MUTAB>;
-		friend Iterator<CONST>;
 
 
 		//
@@ -320,7 +293,9 @@ struct Context {
 		}
 
 		~List() {
+			#ifdef NDEBUG
 			static_assert(std::is_trivially_destructible_v<Node>);
+			#endif
 
 			for(auto e : *this) {
 				_alloc()[ e.handle() ].val.destruct();
@@ -331,6 +306,19 @@ struct Context {
 			//_alloc().destruct( _back );
 		}
 
+		void clear() {
+			#ifdef NDEBUG
+			static_assert(std::is_trivially_destructible_v<Node>);
+			#endif
+
+			for(auto e : *this) {
+				_alloc()[ e.handle() ].val.destruct();
+				//_alloc().destruct( e.handle() );
+			}
+
+			_alloc()[_front].next = _back;
+			_alloc()[_back].prev = _front;
+		}
 
 
 
@@ -393,24 +381,24 @@ struct Context {
 		//
 	public:
 		auto operator()(Handle handle) {
-			return Accessor<MUTAB>(*this, handle);
+			return Accessor<MUTAB>(this, handle);
 		}
 
 		auto operator()(Handle handle) const {
-			return Accessor<CONST>(*this, handle);
+			return Accessor<CONST>(this, handle);
 		}
 
-		auto next(Handle handle)       { return Accessor<MUTAB>(*this, list_next(_alloc(), handle)); }
-		auto next(Handle handle) const { return Accessor<CONST>(*this, list_next(_alloc(), handle)); }
+		auto next(Handle handle)       { return Accessor<MUTAB>(this, list_next(_alloc(), handle)); }
+		auto next(Handle handle) const { return Accessor<CONST>(this, list_next(_alloc(), handle)); }
 
-		auto prev(Handle handle)       { return Accessor<MUTAB>(*this, list_prev(_alloc(), handle)); }
-		auto prev(Handle handle) const { return Accessor<CONST>(*this, list_prev(_alloc(), handle)); }
+		auto prev(Handle handle)       { return Accessor<MUTAB>(this, list_prev(_alloc(), handle)); }
+		auto prev(Handle handle) const { return Accessor<CONST>(this, list_prev(_alloc(), handle)); }
 
 
 		template<class... ARGS>
 		auto emplace(Handle where, ARGS&&... args) {
 			if constexpr(Countable) ++NUM_EXISTING_BASE::num_existing;
-			return Accessor<MUTAB>(*this, internal::list_emplace(_alloc(), where, std::forward<ARGS>(args)...));
+			return Accessor<MUTAB>(this, internal::list_emplace(_alloc(), where, std::forward<ARGS>(args)...));
 		}
 
 		template<class... ARGS>
@@ -434,28 +422,20 @@ struct Context {
 
 	public:
 		inline auto begin() {
-			return Iterator<MUTAB>(this, _alloc()[_front].next);
+			return Accessor<MUTAB>(this, _alloc()[_front].next);
 		}
 
 		inline auto begin() const {
-			return Iterator<CONST>(this, _alloc()[_front].next);
-		}
-
-		inline auto cbegin() const {
-			return Iterator<CONST>(this, _alloc()[_front].next);
+			return Accessor<CONST>(this, _alloc()[_front].next);
 		}
 
 
 		inline auto end() {
-			return Iterator<MUTAB>(this, _back);
+			return Accessor<MUTAB>(this, _back);
 		}
 
 		inline auto end() const {
-			return Iterator<CONST>(this, _back);
-		}
-
-		inline auto cend() const {
-			return Iterator<CONST>(this, _back);
+			return Accessor<CONST>(this, _back);
 		}
 
 	};
@@ -497,7 +477,7 @@ template<
 >
 using List = typename internal::List::Context<
 	VAL,
-	Allocator<VAL> :: SINGLETON,
+	typename Allocator<VAL> :: SINGLETON,
 	false // COUNTABLE
 > :: With_Builder;
 

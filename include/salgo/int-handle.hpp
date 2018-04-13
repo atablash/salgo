@@ -27,16 +27,8 @@ struct Int_Handle {
 
 	static_assert(std::is_integral_v<INT>);
 
-private:
-	auto& _self()       { _check_crtp(); return *reinterpret_cast<      CRTP*>(this); }
-	auto& _self() const { _check_crtp(); return *reinterpret_cast<const CRTP*>(this); }
 
-	#ifndef NDEBUG
-		public:	virtual ~Int_Handle() = default;
-		private: void _check_crtp() const { DCHECK(dynamic_cast<const CRTP*>(this)); }
-	#else
-		private: void _check_crtp() const {}
-	#endif
+CRTP_COMMON(Int_Handle, CRTP)
 };
 
 

@@ -1,6 +1,8 @@
 #pragma once
 
-#include "list.hpp"
+#include "memory-block.hpp"
+#include "unordered-vector.hpp"
+#include "allocator.hpp"
 
 
 namespace salgo {
@@ -11,7 +13,7 @@ namespace salgo {
 
 
 namespace internal {
-namespace Hash_Table {
+namespace hash_table {
 
 
 
@@ -25,17 +27,15 @@ template<> struct Add_val<void> {};
 
 
 
-template<class _KEY, class _VAL, class _HASH>
+
+
+
+
+
+
+
+template<class _KEY, class _VAL, class _HASH, class _ALLOCATOR, bool _INPLACE>
 struct Context {
-
-	//
-	// forward declarations
-	//
-	struct Node;
-	template<Const_Flag C> class Accessor;
-	template<Const_Flag C> class Iterator;
-	class Hash_Table;
-
 
 	//
 	// template arguments
@@ -43,30 +43,60 @@ struct Context {
 	using Key = _KEY;
 	using Val = _VAL;
 	using Hash = _HASH;
+	static constexpr bool Inplace = _INPLACE;
 
 	static constexpr bool Has_Val = !std::is_same_v<Val, void>;
 
-	using List = salgo::List<Node>;
-
-	using Allocator = List :: Allocator;
-
-
-	using       Handle = typename List::      Handle;
-	using Small_Handle = typename List::Small_Handle;
 
 
 
 
-	struct Node : Add_val<Val> {
+	struct Key_Val : Add_val<Val> {
 		const Key key;
 
 		// 1 or 2 arguments
 		template<class K, class... V>
-		Node(K&& k, V&&... v) : Add_val<Val>( std::forward<V>(v)... ), key( std::forward<K>(k) ) {}
+		Key_Val(K&& k, V&&... v) : Add_val<Val>( std::forward<V>(v)... ), key( std::forward<K>(k) ) {}
 	};
 
 
 
+	using Allocator = typename _ALLOCATOR :: template VAL<Key_Val>;
+
+
+	using Node = std::conditional_t<
+		Inplace,
+		Key_Val,
+		typename Allocator::Small_Handle
+	>;
+
+	using List = typename salgo::Unordered_Vector<Node> :: template STACK_BUFFER<5>;
+	using Buckets = typename salgo::Memory_Block<List> :: DENSE;
+
+
+
+	struct Handle {
+		typename Buckets::Handle a;
+		typename List::Handle b;
+
+		bool valid() const { return a.valid(); }
+	};
+
+	using Small_Handle = Handle; // the same currently
+
+
+
+
+
+
+
+
+
+
+	//
+	// forward declarations
+	//
+	class Hash_Table;
 
 
 
@@ -74,92 +104,87 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor {
+	class Accessor : public Accessor_Base<C,Accessor>, public Iterator_Base<C,Accessor> {
 	public:
 		// get handle
-		operator Handle() const { return _handle; }
 		auto     handle() const { return _handle; }
 
 		// get val
-		auto& operator()()       { return _owner[ _handle ]; }
-		auto& operator()() const { return _owner[ _handle ]; }
-		operator auto&()       { return operator()(); }
-		operator auto&() const { return operator()(); }
+		auto& operator()()       { return (*_owner)[ _handle ]; }
+		auto& operator()() const { return (*_owner)[ _handle ]; }
+
+		// get key
+		auto& key()       { return _owner->key( _handle ); }
+		auto& key() const { return _owner->key( _handle ); }
+
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			_owner.erase( _handle );
+			_owner->erase( _handle );
+			_just_erased = true;
 		}
 
 		bool exists() const {
-			return _handle != *_owner._list.end();
+			return _handle.valid();
 		}
 
 
+
+
+	// for ITERATOR_BASE:
 	private:
-		Accessor(Const<Hash_Table,C>& owner, Handle handle)
-			: _owner(owner), _handle(handle) {}
-
-		friend Hash_Table;
-		friend Iterator<C>;
-
-
-	private:
-		Const<Hash_Table,C>& _owner;
-		const Handle _handle;
-	};
-
-
-
-
-
-
-	//
-	// iterator
-	//
-	template<Const_Flag C>
-	class Iterator : public Iterator_Base<C,Iterator> {
-
-		// member functions accessed by BASE:
-	private:
-		friend Iterator_Base<C,Iterator>;
+		friend Iterator_Base<C,Accessor>;
 
 		inline void _increment() {
-			_handle = _owner->_buckets[0].next( _handle );
-			DCHECK( _handle.valid() ) << "followed broken list link";
+			if(_just_erased) {
+				_just_erased = false;
+				return;
+			}
+			++_handle.b;
+			while(_handle.a < _owner->_buckets.size() && (int)_handle.b == _owner->_buckets[_handle.a].size()) {
+				_handle.b = 0;
+				++_handle.a;
+			}
 		}
 
 		inline void _decrement() {
-			_handle = _owner->_buckets[0].prev( _handle );
-			DCHECK( _handle.valid() ) << "followed broken list link";
+			_just_erased = false;
+			if(_handle.b == 0) {
+				--_handle.a;
+				_handle.b = _owner->_buckets[_handle.a].size() - 1;
+			}
 		}
 
-		auto _get_comparable() const {  return _handle;  }
+		auto _get_comparable() const { return std::make_pair(_handle.a, _handle.b); }
 
 		template<Const_Flag CC>
-		auto _will_compare_with(const Iterator<CC>& o) const {
+		auto _will_compare_with(const Accessor<CC>& o) const {
 			DCHECK_EQ(_owner, o._owner);
 		}
 
 
 
-	public:
-		inline auto operator*() const {  return Accessor<C>(*_owner, _handle);  }
-
-		// unable to implement if using accessors:
-		// auto operator->()       {  return &container[idx];  }
-
-
-
 
 	private:
-		inline Iterator(Const<Hash_Table,C>* owner, Handle handle) : _owner(owner), _handle(handle) {}
+		Accessor(Const<Hash_Table,C>* owner, Handle handle)
+			: _owner(owner), _handle(handle) {}
+
 		friend Hash_Table;
+
 
 	private:
 		Const<Hash_Table,C>* _owner;
 		Handle _handle;
+
+		bool _just_erased = false;
 	};
+
+
+
+
+
+
+
 
 
 
@@ -182,25 +207,38 @@ struct Context {
 		friend Accessor<MUTAB>;
 		friend Accessor<CONST>;
 
-		friend Iterator<MUTAB>;
-		friend Iterator<CONST>;
-
 	public:
 		Hash_Table() = default;
 
 		template<class H>
 		Hash_Table(H&& hash) : Hash( std::forward<H>(hash) ) {}
 
+		~Hash_Table() {
+			if constexpr(!Inplace) {
+				for(auto e : *this) {
+					auto handle = e.handle();
+					_alloc().destruct( _buckets[handle.a][handle.b] );
+				}
+			}
+		}
+
+		Hash_Table(const Hash_Table&) = delete; // todo
+		Hash_Table(Hash_Table&&) = default;
+
+		Hash_Table& operator=(const Hash_Table&) = delete; // todo
+		Hash_Table& operator=(Hash_Table&&) = default;
+
+
 		//
 		// data
 		//
 	private:
-		salgo::Memory_Block< salgo::Unordered_Vector > :: DENSE  _buckets;
+		Buckets  _buckets;
 		int _count = 0;
 
 	private:
-		auto& _alloc()       { return *static_cast<Allocator*>(this); }
-		auto& _alloc() const { return *static_cast<Allocator*>(this); }
+		auto& _alloc()       { return *static_cast<      Allocator*>(this); }
+		auto& _alloc() const { return *static_cast<const Allocator*>(this); }
 
 		//
 		// interface: manipulate element - can be accessed via the Accessor
@@ -211,12 +249,16 @@ struct Context {
 			DCHECK_GT( _count, 0 );
 			DCHECK_GT( _buckets.size(), 0 );
 
-			// lists need to have common allocator
-			list_erase(_alloc(), handle);
 			--_count;
+			if constexpr(!Inplace) _alloc().destruct( _buckets[handle.a][handle.b] );
+			_buckets[handle.a](handle.b).erase();
 		}
 
 
+
+		auto& key(Handle handle) {
+			return _alloc()[ _buckets[handle.a][handle.b] ].key;
+		}
 
 
 		auto& operator[](Handle handle) {
@@ -224,8 +266,8 @@ struct Context {
 			DCHECK_GT( _count, 0 );
 			DCHECK_GT( _buckets.size(), 0 );
 
-			if constexpr(Has_Val) return list_get(_alloc(), handle).val;
-			else return list_get(_alloc(), handle).key;
+			if constexpr(Has_Val) return _kv( _buckets[handle.a][handle.b] ).val;
+			else return _kv( _buckets[handle.a][handle.b] ).key;
 		}
 
 		auto& operator[](Handle handle) const {
@@ -233,31 +275,34 @@ struct Context {
 			DCHECK_GT( _count, 0 );
 			DCHECK_GT( _buckets.size(), 0 );
 
-			if constexpr(Has_Val) return list_get(_alloc(), handle).val;
-			else return list_get(_alloc(), handle).key;
+			if constexpr(Has_Val) return _alloc()[ _buckets[handle.a][handle.b] ].val;
+			else return _alloc()[ _buckets[handle.a][handle.b] ].key;
 		}
 
 
 
 
-		auto operator()(Handle handle)       { return Accessor<MUTAB>(*this, handle); }
-		auto operator()(Handle handle) const { return Accessor<CONST>(*this, handle); }
+		auto operator()(Handle handle)       { return Accessor<MUTAB>(this, handle); }
+		auto operator()(Handle handle) const { return Accessor<CONST>(this, handle); }
 
 
-		auto& operator[](const Key& k)       { return operator[]( _find<false>(k) ); }
-		auto& operator[](const Key& k) const { return operator[]( _find<false>(k) ); }
+		auto& operator[](const Key& k)       { return operator[]( _find(k) ); }
+		auto& operator[](const Key& k) const { return operator[]( _find(k) ); }
 
-		auto operator()(const Key& k)       { return operator()( _find<true>(k) ); }
-		auto operator()(const Key& k) const { return operator()( _find<true>(k) ); }
+		auto operator()(const Key& k)       { return operator()( _find(k) ); }
+		auto operator()(const Key& k) const { return operator()( _find(k) ); }
 
 
 	private:
 		Handle _find(const Key& k) const {
 			if(_buckets.size() == 0) return Handle();
 
-			for(auto e : _buckets[k]) {
-				if(e().key == k) {
-					return e.handle();
+			auto i_bucket = Hash::operator()(k) % _buckets.size();
+			auto& bucket = _buckets[ i_bucket ];
+
+			for(auto e : bucket) {
+				if(_kv(e()).key == k) {
+					return {i_bucket, e.handle()};
 				}
 			}
 
@@ -269,49 +314,87 @@ struct Context {
 	public:
 		template<class K, class... V>
 		auto emplace(K&& k, V&&... v) {
-			++_count;
 
 			// re-bucket
-			int want_buckets = _count;
+			int want_buckets = _count + 1;
 			if(_buckets.size()*3/2 < want_buckets) {
-				_buckets.resize(want_buckets);
+				rehash(want_buckets);
 			}
 
-			return Accessor<MUTAB>(*this, new_element);
+			++_count;
+
+			auto i_bucket = Hash::operator()(k) % _buckets.size();
+
+			if constexpr(Inplace) {
+				auto b = _buckets[i_bucket].add( k, std::forward<V>(v)... ).handle();
+				return Accessor<MUTAB>(this, {i_bucket, b});
+			}
+			else {
+				auto new_element = _alloc().construct( k, std::forward<V>(v)... );
+				auto b = _buckets[i_bucket].add( new_element ).handle();
+				return Accessor<MUTAB>(this, {i_bucket, b});
+			}
 		}
 
 		int count() const {
 			return _count;
 		}
 
+		void rehash(int want_buckets) {
+			Buckets new_buckets(want_buckets);
 
+			for(auto bucket : _buckets) {
+				for(auto e : bucket()) {
+					int i_new_bucket = Hash::operator()( _kv(e()).key ) % want_buckets;
+					new_buckets[ i_new_bucket ].add( std::move(e()) );
+				}
+			}
+			_buckets = std::move(new_buckets);
+		}
+
+		auto bucket_count() { return _buckets.size(); }
+
+		auto max_bucket_size() const {
+			int r = 0;
+			for(auto bucket : _buckets) {
+				r = std::max(r, bucket().size());
+			}
+			return r;
+		}
+
+
+	private:
+		auto& _kv(Node& node) {
+			if constexpr(Inplace) return node;
+			else return _alloc()[node];
+		}
+		auto& _kv(const Node& node) const {
+			if constexpr(Inplace) return node;
+			else return _alloc()[node];
+		}
 
 
 
 	public:
-		inline auto begin() {
-			return Iterator<MUTAB>(this, *_list.begin());
+		auto begin() {
+			Handle h = {0,0};
+			while(h.a < _buckets.size() && _buckets[h.a].empty()) ++h.a;
+			return Accessor<MUTAB>(this, h);
 		}
 
-		inline auto begin() const {
-			return Iterator<CONST>(this, *_list.begin());
+		auto begin() const {
+			Handle h = {0,0};
+			while(h.a < _buckets.size() && _buckets[h.a].empty()) ++h.a;
+			return Accessor<CONST>(this, h);
 		}
 
-		inline auto cbegin() const {
-			return Iterator<CONST>(this, *_list.begin());
+
+		auto end() {
+			return Accessor<MUTAB>(this, {_buckets.size(), 0});
 		}
 
-
-		inline auto end() {
-			return Iterator<MUTAB>(this, *_list.end());
-		}
-
-		inline auto end() const {
-			return Iterator<CONST>(this, *_list.end());
-		}
-
-		inline auto cend() const {
-			return Iterator<CONST>(this, *_list.end());
+		auto end() const {
+			return Accessor<CONST>(this, {_buckets.size(), 0});
 		}
 
 	};
@@ -326,7 +409,12 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(With_Builder, Hash_Table);
 
 		template<class NEW_HASH>
-		using HASH = typename Context<Key, Val, NEW_HASH> :: With_Builder;
+		using HASH = typename Context<Key, Val, NEW_HASH, Allocator, Inplace> :: With_Builder;
+
+		template<class NEW_ALLOCATOR>
+		using ALLOCATOR = typename Context<Key, Val, Hash, NEW_ALLOCATOR, Inplace> :: With_Builder;
+
+		using EXTERNAL = typename Context<Key, Val, Hash, Allocator, false> :: With_Builder;
 	};
 
 
@@ -345,10 +433,12 @@ template<
 	class KEY,
 	class VAL = void
 >
-using Hash_Table = typename internal::Hash_Table::Context<
+using Hash_Table = typename internal::hash_table::Context<
 	KEY,
 	VAL,
-	::std::hash<KEY>
+	::std::hash<KEY>, // HASH
+	salgo::Allocator<int> :: SINGLETON, // ALLOCATOR (int will be rebound anyway)
+	std::is_move_constructible_v<KEY> && (std::is_same_v<VAL,void> || std::is_move_constructible_v<VAL>) // INPLACE
 > :: With_Builder;
 
 

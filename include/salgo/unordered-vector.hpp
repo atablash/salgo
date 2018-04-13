@@ -1,6 +1,7 @@
 #pragma once
 
 #include "const-flag.hpp"
+#include "accessor-base.hpp"
 #include "iterator-base.hpp"
 #include "int-handle.hpp"
 #include "vector.hpp"
@@ -16,16 +17,17 @@ namespace salgo {
 
 
 namespace internal {
-namespace Unordered_Vector {
+namespace unordered_vector {
 
 
 
 
 
-template<class _VAL>
+template<class _VAL, class _VECTOR>
 struct Context {
 
 	using Val = _VAL;
+	using Vector = _VECTOR;
 
 	struct Handle : Int_Handle<Handle,int> {
 		using BASE = Int_Handle<Handle,int>;
@@ -50,22 +52,21 @@ struct Context {
 	// accessor / iterator
 	//
 	template<Const_Flag C>
-	class Accessor : public Iterator_Base<C,Accessor> {
+	class Accessor : public Accessor_Base<C,Accessor>, public Iterator_Base<C,Accessor> {
 	public:
 		auto     handle() const { DCHECK(!_just_erased); return _handle; }
-		operator Handle() const { return handle(); }
 
 		// get val
 		auto& operator()()       { DCHECK(!_just_erased); return (*_owner)[ _handle ]; }
 		auto& operator()() const { DCHECK(!_just_erased); return (*_owner)[ _handle ]; }
-		operator auto&()       { return operator()(); }
-		operator auto&() const { return operator()(); }
 
+		int index() const { return handle(); }
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
 			DCHECK(!_just_erased);
-			(*_owner)[_handle] = std::move( (*_owner).front() );
+			(*_owner)[_handle].~Val();
+			new(&(*_owner)[_handle]) Val( std::move( (*_owner).front()() ) );
 			(*_owner).pop_front();
 			_just_erased = true;
 		}
@@ -127,7 +128,7 @@ struct Context {
 		// data
 		//
 	private:
-		salgo::Vector<Val> v;
+		Vector v;
 
 
 		//
@@ -136,6 +137,13 @@ struct Context {
 	public:
 		Unordered_Vector() = default;
 		Unordered_Vector(int size) : v(size) {}
+
+
+		Unordered_Vector(const Unordered_Vector&) = default;
+		Unordered_Vector(Unordered_Vector&&) = default;
+
+		Unordered_Vector& operator=(const Unordered_Vector&) = default;
+		Unordered_Vector& operator=(Unordered_Vector&&) = default;
 
 
 
@@ -179,6 +187,7 @@ struct Context {
 
 
 		int size() const { return v.size(); }
+		bool empty() const { return size() == 0; }
 
 		void reserve(int capacity) { v.reserve(capacity); }
 
@@ -213,8 +222,12 @@ struct Context {
 
 
 
-	//struct With_Builder : Unordered_Vector {
-	//};
+	struct With_Builder : Unordered_Vector {
+		FORWARDING_CONSTRUCTOR(With_Builder, Unordered_Vector);
+
+		template<int X>
+		using STACK_BUFFER = typename Context<Val, typename Vector :: template STACK_BUFFER<X>> :: With_Builder;
+	};
 
 
 
@@ -231,9 +244,10 @@ struct Context {
 template<
 	class T
 >
-using Unordered_Vector = typename internal::Unordered_Vector::Context<
-	T
-> :: Unordered_Vector;
+using Unordered_Vector = typename internal::unordered_vector::Context<
+	T,
+	salgo::Vector<T> // VECTOR
+> :: With_Builder;
 
 
 

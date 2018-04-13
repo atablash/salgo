@@ -16,7 +16,8 @@ endif(NOT CMAKE_BUILD_TYPE)
 #===============================================================================
 # BUILD OPTIONS
 #===============================================================================
-option(SALGO_BUILD_TESTS "Build salgo tests" OFF)
+option(SALGO_BUILD_TESTS "Build salgo tests" ON) # TODO: set to off
+option(SALGO_BUILD_BENCHMARKS "Build salgo benchmarks" ON) # TODO: set to off
 
 
 
@@ -92,6 +93,18 @@ endif(SALGO_BUILD_TESTS)
 
 
 
+#===============================================================================
+# benchmarking
+#===============================================================================
+if(SALGO_BUILD_BENCHMARKS)
+	#enable_testing()
+	add_subdirectory(benchmark)
+endif(SALGO_BUILD_BENCHMARKS)
+
+
+
+
+
 
 
 
@@ -103,6 +116,7 @@ message("\n")
 message("Build configuration:\n")
 message("** Build type: " ${CMAKE_BUILD_TYPE})
 message("** Build tests: " ${SALGO_BUILD_TESTS})
+message("** Build benchmarks: " ${SALGO_BUILD_BENCHMARKS})
 #message("** salgo version: " ${SALGO_VERSION})
 #message("** Build shared libs: " ${SALGO_BUILD_SHARED})
 #message("** Build docs: " ${SALGO_BUILD_DOC})

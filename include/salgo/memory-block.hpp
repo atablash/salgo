@@ -4,6 +4,7 @@
 #include "const-flag.hpp"
 #include "stack-storage.hpp"
 #include "iterator-base.hpp"
+#include "accessor-base.hpp"
 #include "int-handle.hpp"
 
 #include <cstring> // memcpy
@@ -44,7 +45,6 @@ struct Context {
 	//
 	struct Node;
 	template<Const_Flag C> class Accessor;
-	template<Const_Flag C> class Iterator;
 	class Memory_Block;
 
 
@@ -60,6 +60,11 @@ struct Context {
 	static constexpr bool Exists_Bitset = _EXISTS_BITSET;
 	static constexpr bool Exists = _EXISTS_BITSET || _EXISTS_INPLACE;
 	static constexpr bool Count = _COUNT;
+
+
+
+	static constexpr bool Iterable = Exists || Dense;
+	static constexpr bool Countable = Count || Dense;
 
 
 
@@ -84,109 +89,77 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor {
+	class Accessor : public Accessor_Base<C,Accessor>, public Iterator_Base<C,Accessor> {
 	public:
-		auto     handle() const { return _key; }
-		operator Handle() const { return _key; }
+		auto     handle() const { return _handle; }
 
 		auto& operator()() {
-			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
-			return _owner[ _key ];
+			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
+			return (*_owner)[ _handle ];
 		}
 
 		auto& operator()() const {
-			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
-			return _owner[ _key ];
+			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
+			return (*_owner)[ _handle ];
 		}
 
-		operator auto&()       { return operator()(); }
-		operator auto&() const { return operator()(); }
+		auto index() const { return handle(); }
 
 
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_owner.construct( _key, std::forward<ARGS>(args)... );
+			_owner->construct( _handle, std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_owner.destruct( _key );
+			_owner->destruct( _handle );
 		}
 
 		bool exists() const {
-			return _owner.exists( _key );
+			return _owner->exists( _handle );
 		}
 
 
+
+
+	// for ITERATOR_BASE:
 	private:
-		Accessor(Const<Memory_Block,C>& owner, Handle key)
-			: _owner(owner), _key(key) {}
-
-		friend Memory_Block;
-		friend Iterator<C>;
-
-
-	private:
-		Const<Memory_Block,C>& _owner;
-		const Handle _key;
-	};
-
-
-
-
-
-
-	//
-	// iterator
-	//
-	template<Const_Flag C>
-	class Iterator : public Iterator_Base<C,Iterator> {
-
-		// member functions accessed by BASE:
-	private:
-		friend Iterator_Base<C,Iterator>;
+		friend Iterator_Base<C,Accessor>;
 
 		void _increment() {
-			if constexpr(Dense) ++_key;
-			else do ++_key; while( _key != _owner.size() && !_owner.exists( _key ) );
+			if constexpr(Dense) ++_handle;
+			else do ++_handle; while( (int)_handle != _owner->size() && !_owner->exists( _handle ) );
 		}
 
 		void _decrement() {
-			if constexpr(Dense) --_key;
-			else do --_key; while( !_owner.exists( _key ) );
+			if constexpr(Dense) --_handle;
+			else do --_handle; while( !_owner->exists( _handle ) );
 		}
 
-		auto _get_comparable() const {  return _key;  }
+		auto _get_comparable() const {  return _handle;  }
 
 		template<Const_Flag CC>
-		auto _will_compare_with(const Iterator<CC>& o) const {
-			DCHECK_EQ(&_owner, &o._owner);
+		auto _will_compare_with(const Accessor<CC>& o) const {
+			DCHECK_EQ(_owner, o._owner);
 		}
-
-
-
-	public:
-		auto operator*() const {  return Accessor<C>(_owner, _key);  }
-
-		// unable to implement if using accessors:
-		// auto operator->()       {  return &container[idx];  }
 
 
 
 
 	private:
-		Iterator(Const<Memory_Block,C>& owner, Handle key)
-				: _owner(owner), _key(key) {
-			if( (int)key != owner.size() && !owner.exists(key) ) _increment();
-		}
+		Accessor(Const<Memory_Block,C>* owner, Handle key)
+			: _owner(owner), _handle(key) {}
 
 		friend Memory_Block;
 
+
 	private:
-		Const<Memory_Block,C>& _owner;
-		int _key;
+		Const<Memory_Block,C>* _owner;
+		Handle _handle;
 	};
+
 
 
 
@@ -206,6 +179,7 @@ struct Context {
 	public:
 		using Val = Context::Val;
 		using Allocator = Context::Allocator;
+		static constexpr int Stack_Buffer = Context::Stack_Buffer;
 		static constexpr bool Is_Dense = Context::Dense;
 		static constexpr bool Is_Sparse = Context::Sparse;
 		static constexpr bool Has_Exists_Inplace = Context::Exists_Inplace;
@@ -219,9 +193,6 @@ struct Context {
 	private:
 		friend Accessor<MUTAB>;
 		friend Accessor<CONST>;
-
-		friend Iterator<MUTAB>;
-		friend Iterator<CONST>;
 
 
 	private:
@@ -239,7 +210,7 @@ struct Context {
 		Node* _data = _get_stack_buffer();
 		char _stack_buffer[ _stack_buffer_sizeof() ];
 
-		int _size = Stack_Buffer;
+		int _size = 0; // not Stack_Buffer? if so, need to also construct elements if DENSE
 
 		auto _get_stack_buffer() {
 			return (Node*)_stack_buffer;
@@ -324,7 +295,6 @@ struct Context {
 
 		template<class... ARGS>
 		Memory_Block(int size, ARGS&&... args) : _size(size) {
-
 			static_assert(Dense || sizeof...(ARGS) == 0, "only DENSE memory_blocks can supply construction args");
 
 			if(_size > Stack_Buffer) {
@@ -388,10 +358,10 @@ struct Context {
 
 	public:
 		void resize(int new_size) {
-			static_assert(Dense || Exists || std::is_trivially_copy_constructible_v<Val>,
+			static_assert(Dense || Exists || std::is_trivially_move_constructible_v<Val>,
 				"can't resize non-POD container if no EXISTS or DENSE flags");
 
-			if constexpr(std::is_trivially_copy_constructible_v<Val>) {
+			if constexpr(std::is_trivially_move_constructible_v<Val>) {
 				_resize(new_size, [](int){ return true; });
 			}
 			else _resize(new_size, [this](int i){ return exists(i); });
@@ -449,6 +419,9 @@ struct Context {
 			// construct new nodes
 			for(int i=_size; i<new_size; ++i) {
 				std::allocator_traits<Allocator>::construct(_allocator(), new_data+i);
+				if constexpr(Dense) {
+					new_data[i].construct(); // todo: supply args
+				}
 			}
 
 
@@ -546,19 +519,24 @@ struct Context {
 	public:
 		auto operator()(Handle key) {
 			_check_bounds(key);
-			return Accessor<MUTAB>(*this, key);
+			return Accessor<MUTAB>(this, key);
 		}
 
 		auto operator()(Handle key) const {
 			_check_bounds(key);
-			return Accessor<CONST>(*this, key);
+			return Accessor<CONST>(this, key);
 		}
 
 
 		int count() const {
-			static_assert(Dense || Count, "count() called on non countable Memory_Block");
+			static_assert(Countable);
 			if constexpr(Dense) return size();
 			else return NUM_EXISTING_BASE::num_existing;
+		}
+
+		bool empty() const {
+			static_assert(Countable);
+			return size() == 0;
 		}
 
 
@@ -566,34 +544,28 @@ struct Context {
 
 	public:
 		auto begin() {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<MUTAB>(*this, 0);
+			static_assert(Iterable);
+			auto e = Accessor<MUTAB>(this, 0);
+			if(!e.exists()) ++e;
+			return e;
 		}
 
 		auto begin() const {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<CONST>(*this, 0);
-		}
-
-		auto cbegin() const {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<CONST>(*this, 0);
+			static_assert(Iterable);
+			auto e = Accessor<CONST>(this, 0);
+			if(!e.exists()) ++e;
+			return e;
 		}
 
 
 		auto end() {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<MUTAB>(*this, _size);
+			static_assert(Iterable);
+			return Accessor<MUTAB>(this, _size);
 		}
 
 		auto end() const {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<CONST>(*this, _size);
-		}
-
-		auto cend() const {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<CONST>(*this, _size);
+			static_assert(Iterable);
+			return Accessor<CONST>(this, _size);
 		}
 
 

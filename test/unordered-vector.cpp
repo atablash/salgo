@@ -62,12 +62,15 @@ TEST(Unordered_Vector, no_invalidation) {
 
 	{
 		int sum = 0;
+		int iters = 0;
 		for(auto e : m) {
 			sum += e;
+			++iters;
 
 			if(e >= 100) e.erase();
 		}
 		EXPECT_EQ(906, sum);
+		EXPECT_EQ(5, iters);
 	}
 
 	{

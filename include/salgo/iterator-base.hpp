@@ -54,37 +54,37 @@ public:
 	template<Const_Flag CC>
 	bool operator==(const CRTP<CC>& o) const {
 		_will_compare_with(o);
-		return _self()._get_comparable() == o._self()._get_comparable();
+		return _self()._get_comparable() == o._get_comparable();
 	}
 
 	template<Const_Flag CC>
 	bool operator!=(const CRTP<CC>& o) const {
 		_will_compare_with(o);
-		return _self()._get_comparable() != o._self()._get_comparable();
+		return _self()._get_comparable() != o._get_comparable();
 	}
 
 	template<Const_Flag CC>
 	bool operator<(const CRTP<CC>& o) const {
 		_will_compare_with(o);
-		return _self()._get_comparable() < o._self()._get_comparable();
+		return _self()._get_comparable() < o._get_comparable();
 	}
 
 	template<Const_Flag CC>
 	bool operator>(const CRTP<CC>& o) const {
 		_will_compare_with(o);
-		return _self()._get_comparable() > o._self()._get_comparable();
+		return _self()._get_comparable() > o._get_comparable();
 	}
 
 	template<Const_Flag CC>
 	bool operator<=(const CRTP<CC>& o) const {
 		_will_compare_with(o);
-		return _self()._get_comparable() <= o._self()._get_comparable();
+		return _self()._get_comparable() <= o._get_comparable();
 	}
 
 	template<Const_Flag CC>
 	bool operator>=(const CRTP<CC>& o) const {
 		_will_compare_with(o);
-		return _self()._get_comparable() >= o._self()._get_comparable();
+		return _self()._get_comparable() >= o._get_comparable();
 	}
 
 
@@ -108,19 +108,7 @@ public:
 	auto operator->() const { return &_self()(); }
 
 
-private:
-	auto& _self()       { _check_crtp(); return *reinterpret_cast<       CRTP<C>* >(this); }
-	auto& _self() const { _check_crtp(); return *reinterpret_cast< const CRTP<C>* >(this); }
-
-
-	#ifndef NDEBUG
-		// make polymorphic for debugging with dynamic_cast
-		public:	virtual ~Iterator_Base() = default;
-		private: void _check_crtp() const { DCHECK(dynamic_cast<const CRTP<C>*>(this)); }
-	#else
-		private: void _check_crtp() const {}
-	#endif
-
+	CRTP_COMMON( Iterator_Base, CRTP<C> )
 };
 
 

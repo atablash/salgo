@@ -107,3 +107,33 @@ constexpr X operator ~ (X x)                                                    
   SELF(ARGS&&... args) : BASE( std::forward<ARGS>(args)... ) {}
 
 
+
+
+
+
+
+//
+// CRTP - common
+//
+// in DEBUG mode: make polymorphic for debugging with dynamic_cast
+//
+#ifndef NDEBUG
+  #define CRTP_COMMON(THIS_BASE, CRTP_DERIVED)\
+    private:\
+      auto& _self()       { _check_crtp(); return *static_cast<       CRTP_DERIVED* >(this); }\
+      auto& _self() const { _check_crtp(); return *static_cast< const CRTP_DERIVED* >(this); }\
+    \
+        public: virtual ~THIS_BASE() = default;\
+        private: void _check_crtp() const {\
+          DCHECK_EQ(\
+            dynamic_cast<const CRTP_DERIVED*>(this),\
+            static_cast<const CRTP_DERIVED*>(this)\
+          );\
+        }
+#else
+  #define CRTP_COMMON(THIS_BASE, CRTP_DERIVED)\
+    private:\
+      auto& _self()       { return *static_cast<       CRTP_DERIVED* >(this); }\
+      auto& _self() const { return *static_cast< const CRTP_DERIVED* >(this); }
+#endif
+

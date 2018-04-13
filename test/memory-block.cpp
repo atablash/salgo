@@ -95,6 +95,53 @@ TEST(Memory_block, destructors_called_exists) {
 
 
 
+TEST(Memory_block, destructors_called_dense) {
+	struct S {
+		S()  { ++g_constructors; }
+		S(S&&) { ++g_constructors; }
+		~S() { ++g_destructors;  }
+	};
+
+	g_destructors = 0;
+	g_constructors = 0;
+
+	{
+		Memory_Block<S>::DENSE block(10);
+
+		EXPECT_EQ(10, block.size());
+		EXPECT_EQ(10, block.count());
+	}
+
+	EXPECT_EQ(g_constructors, g_destructors);
+}
+
+
+TEST(Memory_block, destructors_called_dense_resized) {
+	struct S {
+		S()  { ++g_constructors; }
+		S(S&&) { ++g_constructors; }
+		~S() { ++g_destructors;  }
+	};
+
+	g_destructors = 0;
+	g_constructors = 0;
+
+	{
+		Memory_Block<S>::DENSE block;
+		EXPECT_EQ(0, block.size());
+		EXPECT_EQ(0, block.count());
+		block.resize(1);
+
+		EXPECT_EQ(1, block.size());
+		EXPECT_EQ(1, block.count());
+	}
+
+	EXPECT_EQ(g_constructors, g_destructors);
+}
+
+
+
+
 
 TEST(Memory_block, dense_constructor) {
 	Memory_Block<int>::DENSE mb(10, 10);

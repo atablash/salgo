@@ -92,6 +92,35 @@ TEST(List, count_nontrivial) {
 	EXPECT_EQ(5, vals[4]);
 }
 
+TEST(List, erase) {
+	List<int> :: COUNTABLE m;
+	m.emplace_back(123);
+	m.erase( *m.begin() );
+
+	EXPECT_EQ(0, m.count());
+}
+
+TEST(List, no_invalidation) {
+	List<int> m;
+	m.emplace_back(11);
+	m.emplace_back(2);
+	m.emplace_back(13);
+
+	{
+		int sum = 0;
+		for(auto e : m) {
+			sum += e;
+			if(e >= 10) e.erase();
+		}
+		EXPECT_EQ(26, sum);
+	}
+
+	{
+		int sum = 0;
+		for(auto e : m) sum += e;
+		EXPECT_EQ(2, sum);
+	}
+}
 
 
 

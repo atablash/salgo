@@ -34,7 +34,6 @@ struct Context {
 	// forward declarations
 	//
 	template<Const_Flag C> class Accessor;
-	template<Const_Flag C> class Iterator;
 	class Vector;
 
 
@@ -54,6 +53,8 @@ struct Context {
 	static constexpr bool Sparse         = _SPARSE;
 	static constexpr bool Dense          = !Sparse;
 
+	static constexpr bool Iterable = Dense || Exists;
+
 	using Handle = internal::Vector::Handle;
 
 
@@ -70,105 +71,82 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor {
+	class Accessor : public Accessor_Base<C,Accessor>, public Iterator_Base<C,Accessor> {
 	public:
 		// get handle
-		auto     handle() const { return _key; }
-		operator Handle() const { return _key; }
+		auto     handle() const { return _handle; }
 
 		// get value
 		auto& operator()() {
-			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
-			return _owner[ _key ];
+			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
+			return (*_owner)[ _handle ];
 		}
 
 		auto& operator()() const {
-			if constexpr(Exists) DCHECK( _owner.exists( _key ) ) << "accessing erased element";
-			return _owner[ _key ];
+			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
+			return (*_owner)[ _handle ];
 		}
+
+
 
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_owner.construct( _key, std::forward<ARGS>(args)... );
+			_owner->construct( _handle, std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_owner.destruct( _key );
+			_owner->destruct( _handle );
 		}
 
 		bool exists() const {
-			return _owner.exists( _key );
+			return _owner->exists( _handle );
 		}
 
 
+
+
+	// for ITERATOR_BASE:
 	private:
-		Accessor(Const<Vector,C>& owner, Handle key)
-			: _owner(owner), _key(key) {}
-
-		friend Vector;
-		friend Iterator<C>;
-
-
-	private:
-		Const<Vector,C>& _owner;
-		const Handle _key;
-	};
-
-
-
-
-
-
-	//
-	// iterator
-	//
-	template<Const_Flag C>
-	class Iterator : public Iterator_Base<C,Iterator> {
-
-		// member functions accessed by BASE:
-	private:
-		friend Iterator_Base<C,Iterator>;
+		friend Iterator_Base<C,Accessor>;
 
 		void _increment() {
-			do ++_key; while( _key != _owner.domain() && !_owner.exists( _key ) );
+			do ++_handle; while( (int)_handle != _owner->domain() && !_owner->exists( _handle ) );
 		}
 
 		void _decrement() {
-			do --_key; while( !_owner.exists( _key ) );
+			do --_handle; while( !_owner->exists( _handle ) );
 		}
 
-		auto _get_comparable() const {  return _key;  }
+		auto _get_comparable() const {  return _handle;  }
 
 		template<Const_Flag CC>
-		auto _will_compare_with(const Iterator<CC>& o) const {
-			DCHECK_EQ(&_owner, &o._owner);
+		auto _will_compare_with(const Accessor<CC>& o) const {
+			DCHECK_EQ(_owner, o._owner);
 		}
 
-
-
-	public:
-		auto operator*() const {  return Accessor<C>(_owner, _key);  }
-
-		// unable to implement if using accessors:
-		// auto operator->()       {  return &container[idx];  }
 
 
 
 
 	private:
-		Iterator(Const<Vector,C>& owner, Handle key)
-				: _owner(owner), _key(key) {
-			if( (int)key != owner.domain() && !owner.exists(key) ) _increment();
-		}
+		Accessor(Const<Vector,C>* owner, Handle key)
+			: _owner(owner), _handle(key) {}
 
 		friend Vector;
 
+
 	private:
-		Const<Vector,C>& _owner;
-		int _key;
+		Const<Vector,C>* _owner;
+		Handle _handle;
 	};
+
+
+
+
+
+
 
 
 
@@ -193,9 +171,6 @@ struct Context {
 		friend Accessor<MUTAB>;
 		friend Accessor<CONST>;
 
-		friend Iterator<MUTAB>;
-		friend Iterator<CONST>;
-
 
 		//
 		// data
@@ -209,10 +184,10 @@ struct Context {
 		// construction
 		//
 	public:
-		Vector() = default;
+		Vector() : _mb( Memory_Block::Stack_Buffer ) {}
 
 		template<class... ARGS>
-		Vector(int size, ARGS&&... args) : _mb(size), _size(size) {
+		Vector(int size, ARGS&&... args) : _mb( std::max(size, Memory_Block::Stack_Buffer )), _size(size) {
 			for(int i=0; i<size; ++i) {
 				_mb.construct(i, args...);
 			}
@@ -300,12 +275,12 @@ struct Context {
 	public:
 		auto operator()(Handle key) {
 			_check_bounds(key);
-			return Accessor<MUTAB>(*this, key);
+			return Accessor<MUTAB>(this, key);
 		}
 
 		auto operator()(Handle key) const {
 			_check_bounds(key);
-			return Accessor<CONST>(*this, key);
+			return Accessor<CONST>(this, key);
 		}
 
 	private:
@@ -336,7 +311,7 @@ struct Context {
 
 			_mb.construct( _size, std::forward<ARGS>(args)... );
 
-			return Accessor<MUTAB>( *this, _size++ );
+			return Accessor<MUTAB>( this, _size++ );
 		}
 
 		Val pop_back() {
@@ -358,8 +333,9 @@ struct Context {
 			return result;
 		}
 
-		auto back()       { return Accessor<MUTAB>(*this, _size-1); }
-		auto back() const { return Accessor<CONST>(*this, _size-1); }
+		// currently only available for DENSE vectors:
+		auto back()       { static_assert(Dense); return Accessor<MUTAB>(this, _size-1); }
+		auto back() const { static_assert(Dense); return Accessor<CONST>(this, _size-1); }
 
 
 		int count() const {
@@ -382,7 +358,7 @@ struct Context {
 
 
 		//
-		// FUN is (int old_key, int new_key) -> void
+		// FUN is (int old_handle, int new_handle) -> void
 		//
 		// returns count()
 		//
@@ -416,34 +392,29 @@ struct Context {
 
 	public:
 		inline auto begin() {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<MUTAB>(*this, 0);
+			static_assert(Iterable);
+			auto e = (*this)(0);
+			if(!e.exists()) ++e;
+			return e;
 		}
 
 		inline auto begin() const {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<CONST>(*this, 0);
+			static_assert(Iterable);
+			auto e = (*this)(0);
+			if(!e.exists()) ++e;
+			return e;
 		}
 
-		inline auto cbegin() const {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<CONST>(*this, 0);
-		}
 
 
 		inline auto end() {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<MUTAB>(*this, _size);
+			static_assert(Iterable);
+			return Accessor<MUTAB>(this, _size);
 		}
 
 		inline auto end() const {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<CONST>(*this, _size);
-		}
-
-		inline auto cend() const {
-			static_assert(Dense || Exists, "not iterable if don't have EXISTS flags");
-			return Iterator<CONST>(*this, _size);
+			static_assert(Iterable);
+			return Accessor<CONST>(this, _size);
 		}
 
 	};
@@ -457,9 +428,9 @@ struct Context {
 	struct With_Builder : Vector {
 		FORWARDING_CONSTRUCTOR(With_Builder, Vector);
 
-		template<int NEW_STACK_BUFFER>
+		template<int X>
 		using STACK_BUFFER =
-			typename Context< Val, Sparse, typename Memory_Block::template STACK_BUFFER<NEW_STACK_BUFFER> > :: With_Builder;
+			typename Context< Val, Sparse, typename Memory_Block::template STACK_BUFFER<X> > :: With_Builder;
 
 		using SPARSE =
 			typename Context< Val, true, Memory_Block > :: With_Builder;

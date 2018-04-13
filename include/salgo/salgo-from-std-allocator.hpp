@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pointer-handle.hpp"
+#include "accessor-base.hpp"
 
 namespace salgo {
 
@@ -69,12 +70,13 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor {
+	class Accessor : public Accessor_Base<C,Accessor> {
 	public:
 		auto handle() const { return _handle; }
 
-		auto& val()       { return _owner[_handle]; }
-		auto& val() const { return _owner[_handle]; }
+		auto& operator()()       { return _owner[_handle]; }
+		auto& operator()() const { return _owner[_handle]; }
+
 
 		void destruct() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
