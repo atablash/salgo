@@ -57,68 +57,70 @@ matrix:
 
 
     # clang++ 5.0  +  libstdc++
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-trusty-5.0
-            - ubuntu-toolchain-r-test # libstdc++-7-dev
-          packages:
-            - clang-5.0
-            - libstdc++-7-dev
-            - autoconf # for compiling glog
-            - libtool # for compiling glog
-            # dependencies
-            #- libgoogle-glog-dev
-            #- libgtest-dev
-            - libgflags-dev
-            - libeigen3-dev
-      env:
-        - CC=clang-5.0
-        - CXX=clang++-5.0
-        - USE_LIBCXX=OFF
-        - CMAKE_ARGS=
-        - CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
+    # - os: linux
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - llvm-toolchain-trusty-5.0
+    #         - ubuntu-toolchain-r-test # libstdc++-7-dev
+    #       packages:
+    #         - clang-5.0
+    #         - libstdc++-7-dev
+    #         - autoconf # for compiling glog
+    #         - libtool # for compiling glog
+    #         # dependencies
+    #         #- libgoogle-glog-dev
+    #         #- libgtest-dev
+    #         - libgflags-dev
+    #         - libeigen3-dev
+    #   env:
+    #     - CC=clang-5.0
+    #     - CXX=clang++-5.0
+    #     - USE_LIBCXX=OFF
+    #     - CMAKE_ARGS=
+    #     - CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
 
 
-    # clang++ 5.0  +  libc++
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-trusty-5.0
-            #- ubuntu-toolchain-r-test # libstdc++-7-dev
-          packages:
-            - clang-5.0
-            - libc++-dev
-            - autoconf # for compiling glog
-            - libtool # for compiling glog
-            # dependencies
-            #- libgoogle-glog-dev
-            #- libgtest-dev
-            - libgflags-dev
-            - libeigen3-dev
-      env:
-        - CC=clang-5.0
-        - CXX=clang++-5.0
-        - USE_LIBCXX=ON
-        - CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
-        - CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
+    # # clang++ 5.0  +  libc++
+    # - os: linux
+    #   addons:
+    #     apt:
+    #       sources:
+    #         - llvm-toolchain-trusty-5.0
+    #         #- ubuntu-toolchain-r-test # libstdc++-7-dev
+    #       packages:
+    #         - clang-5.0
+    #         - libc++-dev
+    #         - autoconf # for compiling glog
+    #         - libtool # for compiling glog
+    #         # dependencies
+    #         #- libgoogle-glog-dev
+    #         #- libgtest-dev
+    #         - libgflags-dev
+    #         - libeigen3-dev
+    #   env:
+    #     - CC=clang-5.0
+    #     - CXX=clang++-5.0
+    #     - USE_LIBCXX=ON
+    #     - CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
+    #     - CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
 
 
 
+before_install:
+  - echo "CMAKE_PREFIX_PATH:" ${CMAKE_PREFIX_PATH}
 
 install:
-  - travis/install-gtest.sh             "$CMAKE_ARGS"
-  - travis/install-glog.sh              "$CMAKE_ARGS"
-  - travis/install-gtest.sh             "$CMAKE_ARGS"
-  - travis/install-google-benchmark.sh  "$CMAKE_ARGS"
-  - travis/install-eigen.sh             "$CMAKE_ARGS"
+  - travis/install-gtest.sh             "${CMAKE_ARGS}"
+  - travis/install-glog.sh              "${CMAKE_ARGS}"
+  - travis/install-gtest.sh             "${CMAKE_ARGS}"
+  - travis/install-google-benchmark.sh  "${CMAKE_ARGS}"
+  - travis/install-eigen.sh             "${CMAKE_ARGS}"
 
 
 script:
   # build
-  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX .
+  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=${USE_LIBCXX} .
   - make VERBOSE=1
   - /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+" # print libstdc++ and libc++ versions
   - ctest --verbose
