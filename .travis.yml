@@ -109,20 +109,30 @@ matrix:
 
 before_install:
   - echo "CC:" ${CC}
-  - echo "CXX:" ${CXX}
+  - echo "CXX:" $CXX
   - echo "USE_LIBCXX:" ${USE_LIBCXX}
   - echo "CMAKE_ARGS:" ${CMAKE_ARGS}
   - echo "CMAKE_PREFIX_PATH:" ${CMAKE_PREFIX_PATH}
 
 install:
-  - travis/install-gtest.sh             "${CMAKE_ARGS}"
-  - travis/install-glog.sh              "${CMAKE_ARGS}"
-  - travis/install-gtest.sh             "${CMAKE_ARGS}"
-  - travis/install-google-benchmark.sh  "${CMAKE_ARGS}"
-  - travis/install-eigen.sh             "${CMAKE_ARGS}"
+  - echo "CC:" ${CC}
+  - echo "CXX:" ${CXX}
+  - echo "USE_LIBCXX:" ${USE_LIBCXX}
+  - echo "CMAKE_ARGS:" ${CMAKE_ARGS}
+  - echo "CMAKE_PREFIX_PATH:" ${CMAKE_PREFIX_PATH}
+  # - travis/install-gtest.sh             "${CMAKE_ARGS}"
+  # - travis/install-glog.sh              "${CMAKE_ARGS}"
+  # - travis/install-gtest.sh             "${CMAKE_ARGS}"
+  # - travis/install-google-benchmark.sh  "${CMAKE_ARGS}"
+  # - travis/install-eigen.sh             "${CMAKE_ARGS}"
 
 
 script:
+  - echo "CC:" ${CC}
+  - echo "CXX:" ${CXX}
+  - echo "USE_LIBCXX:" ${USE_LIBCXX}
+  - echo "CMAKE_ARGS:" ${CMAKE_ARGS}
+  - echo "CMAKE_PREFIX_PATH:" ${CMAKE_PREFIX_PATH}
   # build
   - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=${USE_LIBCXX} .
   - make VERBOSE=1
