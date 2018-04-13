@@ -57,6 +57,7 @@ script:
   - cmake -D SALGO_BUILD_TESTS=ON .
   - make VERBOSE=1
   - ctest --verbose
+  - benchmark/hash-table
 
 notifications:
   email: false
