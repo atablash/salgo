@@ -68,6 +68,6 @@ target_link_libraries( all-tests
 
 # cotire(all-tests)
 
-add_test( all-tests all-tests --perf 5000000)
+add_test( all-tests all-tests )
 
 

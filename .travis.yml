@@ -50,11 +50,12 @@ before_install:
 
 install:
   - travis/fix-gtest.sh
+  - travis/install-google-benchmark.sh
 
 
 script:
   # build
-  - cmake -D SALGO_BUILD_TESTS=ON .
+  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON .
   - make VERBOSE=1
   - ctest --verbose
   - benchmark/hash-table
