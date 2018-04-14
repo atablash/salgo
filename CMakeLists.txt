@@ -58,11 +58,11 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	message(STATUS "Detected gcc")
 	if(SALGO_USE_LIBCXX)
 		SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -nostdinc++ -I/usr/local/include/c++/v1" )
-		link_libraries(-nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc_s -lgcc)
-		
+		SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc_s -lgcc")
+
 		# required by GTest
-		set(THREADS_PREFER_PTHREAD_FLAG ON)
-		find_package(Threads REQUIRED)
+		#set(THREADS_PREFER_PTHREAD_FLAG ON)
+		#find_package(Threads REQUIRED)
 	endif()
 else()
 	message(WARNING "COMPILER " ${} " IS UNSUPPORTED BY SALGO!")
