@@ -10,13 +10,20 @@ git:
 
 addons:
   apt:
+    sources:
+      # FOR G++-7 BUILDS:
+      - ubuntu-toolchain-r-test
     packages:
+      # FOR ALL BUILDS:
       - libgoogle-glog-dev
       - libgflags-dev
       #- libgtest-dev # we'll compile our own, because it doesn't come with binaries anyway
       - libeigen3-dev
       #- autoconf # for compiling glog
       #- libtool # for compiling glog
+
+      # FOR G++-7 BUILDS:
+      - g++-7
 
 env:
   global:
@@ -26,28 +33,16 @@ env:
 matrix:
   include:
 
-    # g++ 7  +  libstdc++
+    # g++-7  +  libstdc++
     - compiler: g++-7
       env:
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-7
-            #- libstdc++-7-dev # not required, installed by g++-7 anyway
-            #- autoconf # for compiling glog
-            #- libtool # for compiling glog
-            # dependencies
-            #- libgtest-dev
-            #- libeigen3-dev
         #- USE_LIBCXX=OFF
         #- CMAKE_ARGS=
         #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
 
 
-    # clang++ 5.0  +  libstdc++
+    # clang++-5.0  +  libstdc++
     - compiler: clang++
       #env:
         #- COMPILER_OVERRIDE="export CC=clang-5.0 && export CXX=clang++-5.0"
