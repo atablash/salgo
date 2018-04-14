@@ -23,7 +23,8 @@ matrix:
   include:
 
     # g++ 7  +  libstdc++
-    - env:
+    - compiler: g++-7
+      env:
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
       addons:
         apt:
@@ -43,8 +44,9 @@ matrix:
 
 
     # clang++ 5.0  +  libc++
-    - env:
-        - COMPILER_OVERRIDE="export CC=clang-5.0 && export CXX=clang++-5.0"
+    - compiler: clang++
+      #env:
+        #- COMPILER_OVERRIDE="export CC=clang-5.0 && export CXX=clang++-5.0"
         #- USE_LIBCXX=ON
         #- CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
         #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
