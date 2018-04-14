@@ -40,6 +40,23 @@ matrix:
         #- USE_LIBCXX=OFF
         #- CMAKE_ARGS=
         #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
+      # addons copied from the global list
+      addons:
+        apt:
+          sources:
+            # FOR G++-7 BUILDS:
+            - ubuntu-toolchain-r-test
+          packages:
+            # FOR ALL BUILDS:
+            - libgoogle-glog-dev
+            - libgflags-dev
+            #- libgtest-dev # we'll compile our own, because it doesn't come with binaries anyway
+            - libeigen3-dev
+            #- autoconf # for compiling glog
+            #- libtool # for compiling glog
+
+            # FOR G++-7 BUILDS:
+            - g++-7
 
 
     # clang++-5.0  +  libstdc++
