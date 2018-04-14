@@ -12,11 +12,11 @@ rm -rf $DIR && mkdir $DIR && cd $DIR
 #
 git clone https://github.com/google/googletest.git --depth 1
 
+echo "cmake . -DCMAKE_BUILD_TYPE=Release $1"
+
+
 ( cd googletest && \
-	cmake . \
-	-DCMAKE_BUILD_TYPE=Release \
-	$1 \
-	&& make -j8 && make install DESTDIR=$PREFIX )
+	cmake . -DCMAKE_BUILD_TYPE=Release $1 && make -j8 && make install DESTDIR=$PREFIX )
 
 
 
