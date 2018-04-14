@@ -8,9 +8,9 @@ rm -rf $DIR && mkdir $DIR && cd $DIR
 
 
 
-svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm
-svn co http://llvm.org/svn/llvm-project/libcxx/trunk libcxx
-svn co http://llvm.org/svn/llvm-project/libcxxabi/trunk libcxxabi
+svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm           >/dev/null
+svn co http://llvm.org/svn/llvm-project/libcxx/trunk libcxx       >/dev/null
+svn co http://llvm.org/svn/llvm-project/libcxxabi/trunk libcxxabi >/dev/null
 
 # build libc++abi
 ( cd libcxxabi && mkdir build && cd build && export CC=clang-5.0 CXX=clang++-5.0 && \
