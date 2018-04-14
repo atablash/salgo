@@ -4,7 +4,7 @@ sudo: false
 os: linux
 
 git:
-  depth: 3
+  depth: 1
 
 addons:
   apt:
@@ -19,7 +19,9 @@ addons:
 # g++ 7  +  libstdc++
 matrix:
   include:
-    - addons:
+    - env:
+        - COMPILER_OVERRIDE=export CC=gcc-7 && export CXX=g++-7
+      addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
@@ -31,17 +33,13 @@ matrix:
             # dependencies
             #- libgtest-dev
             #- libeigen3-dev
-      env:
-        - CC=gcc-7
-        - CXX=g++-7
         #- USE_LIBCXX=OFF
         #- CMAKE_ARGS=
         #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
 
     # clang++ 5.0  +  libc++
     - env:
-        - CC=clang-5.0
-        - CXX=clang++-5.0
+        - COMPILER_OVERRIDE="export CC=clang-5.0 && export CXX=clang++-5.0"
         #- USE_LIBCXX=ON
         #- CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
         #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
@@ -103,6 +101,7 @@ matrix:
 
 
 before_install:
+  - $COMPILER_OVERRIDE
   - echo "CC:" ${CC}
   - echo "CXX:" $CXX
   - echo "USE_LIBCXX:" ${USE_LIBCXX}
