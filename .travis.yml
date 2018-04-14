@@ -13,6 +13,10 @@ addons:
     sources:
       # FOR G++-7 BUILDS:
       #- ubuntu-toolchain-r-test
+
+      # FOR libstdc++ BUILDS:
+      #- ubuntu-toolchain-r-test # default libstdc++ in Ubuntu 14.04 is too old
+
     packages:
       # FOR ALL BUILDS:
       - libgoogle-glog-dev
@@ -50,10 +54,7 @@ matrix:
             # FOR ALL BUILDS:
             - libgoogle-glog-dev
             - libgflags-dev
-            #- libgtest-dev # we'll compile our own, because it doesn't come with binaries anyway
             - libeigen3-dev
-            #- autoconf # for compiling glog
-            #- libtool # for compiling glog
 
             # FOR G++-7 BUILDS:
             - g++-7
@@ -66,6 +67,19 @@ matrix:
         #- USE_LIBCXX=ON
         #- CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
         #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test # default libstdc++ in Ubuntu 14.04 is too old
+
+          packages:
+            # FOR ALL BUILDS:
+            - libgoogle-glog-dev
+            - libgflags-dev
+            - libeigen3-dev
+
+            - libstdc++-7-dev # default libstdc++ in Ubuntu 14.04 is too old
+
 
 
 
