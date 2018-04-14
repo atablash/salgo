@@ -131,7 +131,7 @@ install:
   - travis/install-gtest.sh             "$CMAKE_ARGS"
   # - travis/install-glog.sh              "${CMAKE_ARGS}"
   # - travis/install-gtest.sh             "${CMAKE_ARGS}"
-  # - travis/install-google-benchmark.sh  "${CMAKE_ARGS}"
+  - travis/install-google-benchmark.sh  "${CMAKE_ARGS}"
   # - travis/install-eigen.sh             "${CMAKE_ARGS}"
 
 
