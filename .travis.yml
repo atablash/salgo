@@ -158,6 +158,12 @@ install:
   - if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
   - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(pwd)/INSTALL_ROOT/usr/local/lib"
 
+  - echo $LD_LIBRARY_PATH
+  - echo I"$CMAKE_PREFIX_PATH"/include/c++/v1
+
+  - $CXX -nostdinc++ -I"$CMAKE_PREFIX_PATH"/include/c++/v1 std_regex.cpp -nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc_s -lgcc
+  - ./a.out
+
   # - travis/install-glog.sh              "${CMAKE_ARGS}"
   - travis/install-gtest.sh             "$CMAKE_ARGS"
   - travis/install-google-benchmark.sh  "$CMAKE_ARGS"
