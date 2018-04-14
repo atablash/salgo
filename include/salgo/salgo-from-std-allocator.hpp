@@ -1,7 +1,6 @@
 #pragma once
 
 #include "pointer-handle.hpp"
-#include "accessor-base.hpp"
 
 namespace salgo {
 
@@ -70,12 +69,17 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor : public Accessor_Base<C,Accessor> {
+	class Accessor {
 	public:
-		auto handle() const { return _handle; }
+		// get HANDLE
+		auto   handle() const { return _handle; }
+		operator auto() const { return handle(); }
 
+		// get VAL
 		auto& operator()()       { return _owner[_handle]; }
 		auto& operator()() const { return _owner[_handle]; }
+		operator auto&()       { return operator()(); }
+		operator auto&() const { return operator()(); }
 
 
 		void destruct() {

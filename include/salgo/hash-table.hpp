@@ -104,18 +104,25 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor : public Accessor_Base<C,Accessor>, public Iterator_Base<C,Accessor> {
+	class Accessor : public Iterator_Base<C,Accessor> {
 	public:
 		// get handle
 		auto     handle() const { return _handle; }
+		operator Handle() const { return handle(); }
 
 		// get val
 		auto& operator()()       { return (*_owner)[ _handle ]; }
 		auto& operator()() const { return (*_owner)[ _handle ]; }
+		operator auto&()       { return operator()(); }
+		operator auto&() const { return operator()(); }
 
 		// get key
 		auto& key()       { return _owner->key( _handle ); }
 		auto& key() const { return _owner->key( _handle ); }
+
+		// get val (explicit)
+		auto& val()       { return operator(); }
+		auto& val() const { return operator(); }
 
 
 		void erase() {

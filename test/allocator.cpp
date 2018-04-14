@@ -45,7 +45,7 @@ TEST(Allocator, simple) {
 
 	std::vector< Allocator<S>::Handle > handles;
 	for(int i=0; i<100; ++i) {
-		handles.emplace_back( alloc.construct().handle() );
+		handles.emplace_back( alloc.construct() );
 	}
 
 	for(auto& h : handles) {
@@ -72,7 +72,7 @@ TEST(Allocator, auto_destruct) {
 
 		std::vector< Alloc::Handle > handles;
 		for(int i=0; i<100; ++i) {
-			handles.emplace_back( alloc.construct().handle() );
+			handles.emplace_back( alloc.construct() );
 		}
 
 		// destruct some of the objects (but not all)
@@ -104,7 +104,7 @@ TEST(Allocator, no_auto_destruct) {
 
 		std::vector< Alloc::Handle > handles;
 		for(int i=0; i<100; ++i) {
-			handles.emplace_back( alloc.construct().handle() );
+			handles.emplace_back( alloc.construct() );
 		}
 
 		// destruct some of the objects (but not all)

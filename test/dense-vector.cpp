@@ -1,6 +1,3 @@
-#include "fast-rand.hpp"
-#include "clear-cache.hpp"
-
 #include <salgo/vector.hpp>
 
 #include <gtest/gtest.h>
@@ -144,10 +141,10 @@ TEST(Dense_vector, push_delete_compact_inplace_nontrivial) {
 
 
 static void run_vector(int N, int type) {
-	clear_cache();
+	
 
 	cout << "vector:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	vector<double> v;
@@ -157,7 +154,7 @@ static void run_vector(int N, int type) {
 	if(type == 0) {
 		// sequential
 		for(int i=0; i<N; ++i) {
-			v.emplace_back( fast_rand() );
+			v.emplace_back( rand() );
 		}
 
 		for(const auto& e : v) {
@@ -167,15 +164,15 @@ static void run_vector(int N, int type) {
 	else {
 		v.resize(N);
 
-		// fast_random access
+		// random access
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
-			v[ii] = fast_rand();
+			v[ii] = rand();
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
 			result += v[ii];
 		}
@@ -197,10 +194,10 @@ static void run_vector(int N, int type) {
 
 
 static void run_salgo_vector(int N, int type) {
-	clear_cache();
+	
 
 	cout << "salgo::Vector:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	Vector<double> v;
@@ -210,27 +207,27 @@ static void run_salgo_vector(int N, int type) {
 	if(type == 0) {
 		// sequential
 		for(int i=0; i<N; ++i) {
-			v.emplace_back( fast_rand() );
+			v.emplace_back( rand() );
 		}
 
 		for(const auto& e : v) {
-			result += e();
+			result += e;
 		}
 	}
 	else {
 		v.resize(N);
 
-		// fast_random access
+		// random access
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
-			v(ii)() = fast_rand();
+			v(ii)() = rand();
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
-			result += v(ii)();
+			result += v(ii);
 		}
 	}
 
@@ -243,10 +240,10 @@ static void run_salgo_vector(int N, int type) {
 
 
 static void run_salgo_vector_index(int N, int type) {
-	clear_cache();
+	
 
 	cout << "salgo::Vector index:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	Vector<double> v;
@@ -256,7 +253,7 @@ static void run_salgo_vector_index(int N, int type) {
 	if(type == 0) {
 		// sequential
 		for(int i=0; i<N; ++i) {
-			v.emplace_back( fast_rand() );
+			v.emplace_back( rand() );
 		}
 
 		for(int i=0; i<N; ++i) {
@@ -266,15 +263,15 @@ static void run_salgo_vector_index(int N, int type) {
 	else {
 		v.resize(N);
 
-		// fast_random access
+		// random access
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
-			v(ii)() = fast_rand();
+			v(ii)() = rand();
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
 			result += v(ii)();
 		}
@@ -287,10 +284,10 @@ static void run_salgo_vector_index(int N, int type) {
 
 
 static void run_salgo_vector_index_noacc(int N, int type) {
-	clear_cache();
+	
 
 	cout << "salgo::Vector index noacc:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	Vector<double> v;
@@ -300,7 +297,7 @@ static void run_salgo_vector_index_noacc(int N, int type) {
 	if(type == 0) {
 		// sequential
 		for(int i=0; i<N; ++i) {
-			v.emplace_back( fast_rand() );
+			v.emplace_back( rand() );
 		}
 
 		for(int i=0; i<N; ++i) {
@@ -310,15 +307,15 @@ static void run_salgo_vector_index_noacc(int N, int type) {
 	else {
 		v.resize(N);
 
-		// fast_random access
+		// random access
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
-			v[ii] = fast_rand();
+			v[ii] = rand();
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
 			result += v[ii];
 		}

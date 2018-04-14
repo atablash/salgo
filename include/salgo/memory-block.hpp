@@ -4,7 +4,6 @@
 #include "const-flag.hpp"
 #include "stack-storage.hpp"
 #include "iterator-base.hpp"
-#include "accessor-base.hpp"
 #include "int-handle.hpp"
 
 #include <cstring> // memcpy
@@ -89,19 +88,27 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor : public Accessor_Base<C,Accessor>, public Iterator_Base<C,Accessor> {
+	class Accessor : public Iterator_Base<C,Accessor> {
 	public:
-		auto     handle() const { return _handle; }
 
+		// get HANDLE
+		auto     handle() const { return _handle; }
+		operator auto()   const { return handle(); }
+
+
+		// get VAL
 		auto& operator()() {
 			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
 			return (*_owner)[ _handle ];
 		}
-
 		auto& operator()() const {
 			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
 			return (*_owner)[ _handle ];
 		}
+		operator auto&()       { return operator()(); }
+		operator auto&() const { return operator()(); }
+
+
 
 		auto index() const { return handle(); }
 
@@ -120,8 +127,6 @@ struct Context {
 		bool exists() const {
 			return _owner->exists( _handle );
 		}
-
-
 
 
 	// for ITERATOR_BASE:
@@ -144,6 +149,9 @@ struct Context {
 		auto _will_compare_with(const Accessor<CC>& o) const {
 			DCHECK_EQ(_owner, o._owner);
 		}
+
+
+	// conversion operator to HANDLE
 
 
 

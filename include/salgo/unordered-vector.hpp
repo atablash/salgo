@@ -1,7 +1,6 @@
 #pragma once
 
 #include "const-flag.hpp"
-#include "accessor-base.hpp"
 #include "iterator-base.hpp"
 #include "int-handle.hpp"
 #include "vector.hpp"
@@ -52,13 +51,16 @@ struct Context {
 	// accessor / iterator
 	//
 	template<Const_Flag C>
-	class Accessor : public Accessor_Base<C,Accessor>, public Iterator_Base<C,Accessor> {
+	class Accessor : public Iterator_Base<C,Accessor> {
 	public:
 		auto     handle() const { DCHECK(!_just_erased); return _handle; }
+		operator   auto() const { return handle(); }
 
 		// get val
 		auto& operator()()       { DCHECK(!_just_erased); return (*_owner)[ _handle ]; }
 		auto& operator()() const { DCHECK(!_just_erased); return (*_owner)[ _handle ]; }
+		operator       Val&()       { return operator()(); }
+		operator const Val&() const { return operator()(); }
 
 		int index() const { return handle(); }
 

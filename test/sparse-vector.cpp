@@ -1,6 +1,3 @@
-#include "fast-rand.hpp"
-#include "clear-cache.hpp"
-
 #include <salgo/vector.hpp>
 
 #include <gtest/gtest.h>
@@ -128,7 +125,7 @@ static void push_delete_compact_common(MB& m) {
 
 	{
 		int sum = 0;
-		for(const auto& e : m) sum += e();
+		for(auto e : m) sum += e();
 		EXPECT_EQ(6, sum);
 	}
 }
@@ -191,6 +188,7 @@ TEST(Sparse_vector, push_delete_compact_inplace_nontrivial) {
 
 	EXPECT_EQ(g_constructors, g_destructors);
 }
+
 
 
 
@@ -262,26 +260,25 @@ TEST(Sparse_vector, move_container_exists) {
 
 
 
-
 static void run_vector(int N, int type) {
-	clear_cache();
+	
 
 	cout << "vector:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	vector<double> v(N);
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = fast_rand() % N;
+		if(type == 1) ii = rand() % N;
 
-		v[ii] = fast_rand();
+		v[ii] = rand();
 	}
 
 	long long result = 0;
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = fast_rand() % N;
+		if(type == 1) ii = rand() % N;
 
 		result += v[ii];
 	}
@@ -293,10 +290,10 @@ static void run_vector(int N, int type) {
 
 
 static void run_vector_inplace(int N, int type) {
-	clear_cache();
+	
 
 	cout << "vector, in-place exists flag:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	struct Node {
@@ -307,18 +304,18 @@ static void run_vector_inplace(int N, int type) {
 	vector<Node> v(N);
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = fast_rand() % N;
+		if(type == 1) ii = rand() % N;
 
 		if(v[ii].exists) {
-			v[ii].val = fast_rand();
-			if(fast_rand()%2) v[ii].exists = false;
+			v[ii].val = rand();
+			if(rand()%2) v[ii].exists = false;
 		}
 	}
 
 	long long result = 0;
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = fast_rand() % N;
+		if(type == 1) ii = rand() % N;
 
 		if(v[ii].exists) result += v[ii].val;
 	}
@@ -329,28 +326,28 @@ static void run_vector_inplace(int N, int type) {
 
 
 static void run_vector_external(int N, int type) {
-	clear_cache();
+	
 	
 	cout << "vector, external exists array:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	vector<char> exists(N,true);
 	vector<double> v(N);
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = fast_rand() % N;
+		if(type == 1) ii = rand() % N;
 
 		if(exists[ii]) {
-			v[ii] = fast_rand();
-			if(fast_rand()%2) exists[ii] = false;
+			v[ii] = rand();
+			if(rand()%2) exists[ii] = false;
 		}
 	}
 
 	long long result = 0;
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = fast_rand() % N;
+		if(type == 1) ii = rand() % N;
 
 		if(exists[ii]) result += v[ii];
 	}
@@ -361,28 +358,28 @@ static void run_vector_external(int N, int type) {
 
 
 static void run_vector_external_bitset(int N, int type) {
-	clear_cache();
+	
 
 	cout << "vector, external exists bitset:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	vector<bool> exists(N,true);
 	vector<double> v(N);
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = fast_rand() % N;
+		if(type == 1) ii = rand() % N;
 
 		if(exists[ii]) {
-			v[ii] = fast_rand();
-			if(fast_rand()%2) exists[ii] = false;
+			v[ii] = rand();
+			if(rand()%2) exists[ii] = false;
 		}
 	}
 
 	long long result = 0;
 	for(int i=0; i<N; ++i) {
 		int ii = i;
-		if(type == 1) ii = fast_rand() % N;
+		if(type == 1) ii = rand() % N;
 
 		if(exists[ii]) result += v[ii];
 	}
@@ -407,8 +404,8 @@ static void run_sparse_vector_common(VEC& v, int N, int type) {
 	if(type == 0) {
 		// sequential
 		for(auto e : v) {
-			e() = fast_rand();
-			if(fast_rand()%2) e.destruct();
+			e() = rand();
+			if(rand()%2) e.destruct();
 		}
 
 		for(const auto& e : v) {
@@ -416,18 +413,18 @@ static void run_sparse_vector_common(VEC& v, int N, int type) {
 		}
 	}
 	else {
-		// fast_random access
+		// random access
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
 			if(v(ii).exists()) {
-				v(ii)() = fast_rand();
-				if(fast_rand()%2) v(ii).destruct();
+				v(ii)() = rand();
+				if(rand()%2) v(ii).destruct();
 			}
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
 			if(v(ii).exists()) result += v(ii)();
 		}
@@ -442,10 +439,10 @@ static void run_sparse_vector_common(VEC& v, int N, int type) {
 
 
 static void run_sparse_vector(int N, int type) {
-	clear_cache();
+	
 
 	cout << "Sparse_Vector:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	Vector<double>::SPARSE::EXISTS_BITSET v(N);
@@ -460,10 +457,10 @@ static void run_sparse_vector(int N, int type) {
 
 
 static void run_sparse_vector_inplace(int N, int type) {
-	clear_cache();
+	
 
 	cout << "Sparse_Vector inplace:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	Vector<double>::SPARSE::EXISTS_INPLACE v(N);
@@ -481,10 +478,10 @@ static void run_sparse_vector_inplace(int N, int type) {
 
 
 static void run_sparse_vector_index(int N, int type) {
-	clear_cache();
+	
 
 	cout << "Sparse_Vector index:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	Vector<double>::SPARSE::EXISTS_BITSET v(N);
@@ -493,8 +490,8 @@ static void run_sparse_vector_index(int N, int type) {
 	if(type == 0) {
 		// sequential
 		for(int i=0; i<N; ++i) {
-			v(i)() = fast_rand();
-			if(fast_rand()%2) v(i).destruct();
+			v(i)() = rand();
+			if(rand()%2) v(i).destruct();
 		}
 
 		for(int i=0; i<N; ++i) {
@@ -502,18 +499,18 @@ static void run_sparse_vector_index(int N, int type) {
 		}
 	}
 	else {
-		// fast_random access
+		// random access
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
 			if(v(ii).exists()) {
-				v(ii)() = fast_rand();
-				if(fast_rand()%2) v(ii).destruct();
+				v(ii)() = rand();
+				if(rand()%2) v(ii).destruct();
 			}
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
 			if(v(ii).exists()) result += v(ii)();
 		}
@@ -527,10 +524,10 @@ static void run_sparse_vector_index(int N, int type) {
 
 
 static void run_sparse_vector_noacc(int N, int type) {
-	clear_cache();
+	
 
 	cout << "Sparse_Vector index, noacc:\t";
-	fast_srand(69);
+	srand(69);
 	auto t0 = steady_clock::now();
 
 	Vector<double>::SPARSE::EXISTS_BITSET v(N);
@@ -539,8 +536,8 @@ static void run_sparse_vector_noacc(int N, int type) {
 	if(type == 0) {
 		// sequential
 		for(int i=0; i<N; ++i) {
-			v[i] = fast_rand();
-			if(fast_rand()%2) v.destruct(i);
+			v[i] = rand();
+			if(rand()%2) v.destruct(i);
 		}
 
 		for(int i=0; i<N; ++i) {
@@ -548,18 +545,18 @@ static void run_sparse_vector_noacc(int N, int type) {
 		}
 	}
 	else {
-		// fast_random access
+		// random access
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
 			if(v.exists(ii)) {
-				v[ii] = fast_rand();
-				if(fast_rand()%2) v.destruct(ii);
+				v[ii] = rand();
+				if(rand()%2) v.destruct(ii);
 			}
 		}
 
 		for(int i=0; i<N; ++i) {
-			int ii = fast_rand() % N;
+			int ii = rand() % N;
 
 			if(v.exists(ii)) result += v[ii];
 		}
@@ -595,6 +592,7 @@ TEST(Sparse_vector, perf) {
 		run_sparse_vector_noacc(N,type);
 	}
 }
+
 
 
 

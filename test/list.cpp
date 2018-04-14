@@ -1,5 +1,3 @@
-#include "clear-cache.hpp"
-
 #include <salgo/list.hpp>
 #include <salgo/salgo-from-std-allocator.hpp>
 
