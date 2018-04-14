@@ -12,7 +12,7 @@ addons:
   apt:
     sources:
       # FOR G++-7 BUILDS:
-      - ubuntu-toolchain-r-test
+      #- ubuntu-toolchain-r-test
     packages:
       # FOR ALL BUILDS:
       - libgoogle-glog-dev
@@ -23,7 +23,7 @@ addons:
       #- libtool # for compiling glog
 
       # FOR G++-7 BUILDS:
-      - g++-7
+      #- g++-7
 
 env:
   global:
