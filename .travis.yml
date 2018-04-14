@@ -154,12 +154,11 @@ install:
 
 
 script:
-  - echo "CC:" ${CC}
-  - echo "CXX:" ${CXX}
-  - echo "USE_LIBCXX:" ${USE_LIBCXX}
-  - echo "CMAKE_ARGS:" ${CMAKE_ARGS}
-  - echo "CMAKE_PREFIX_PATH:" ${CMAKE_PREFIX_PATH}
   # build
+  - $CXX -std=c++17 std_regex.cpp
+  - ./a.out
+  - $CXX -std=c++17 -stdlib=libc++ std_regex.cpp
+  - ./a.out
   - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX .
   - make VERBOSE=1
   - /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+" # print libstdc++ and libc++ versions

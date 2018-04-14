@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 PWDD=$(pwd)
 DIR=install-glog-temp
 PREFIX=$PWDD/INSTALL_ROOT
