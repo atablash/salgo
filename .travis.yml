@@ -27,7 +27,7 @@ addons:
 
 env:
   global:
-    - CMAKE_PREFIX_PATH="$(pwd)/INSTALL_ROOT"
+    - CMAKE_PREFIX_PATH="$(pwd)/INSTALL_ROOT/usr/local"
 
 
 matrix:
