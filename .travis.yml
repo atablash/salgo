@@ -17,41 +17,29 @@ addons:
 # g++ 7  +  libstdc++
 matrix:
   include:
-    - compiler: g++-7
-      #addons:
-        #apt:
-          #sources:
-            #- ubuntu-toolchain-r-test
-          #packages:
-            #- g++-7
+    - addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
             #- libstdc++-7-dev # not required, installed by g++-7 anyway
             #- autoconf # for compiling glog
             #- libtool # for compiling glog
             # dependencies
             #- libgtest-dev
             #- libeigen3-dev
-      #env:
-        #- CC=gcc-7
-        #- CXX=g++-7
+      env:
+        - CC=gcc-7
+        - CXX=g++-7
         #- USE_LIBCXX=OFF
         #- CMAKE_ARGS=
         #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
 
     # clang++ 5.0  +  libc++
-    - compiler: clang++-5.0
-      #addons:
-        #apt:
-          #sources:
-            #- llvm-toolchain-trusty-5.0
-          #packages:
-            #- clang-5.0
-            #- libc++-dev
-            #- autoconf # for compiling glog
-            #- libtool # for compiling glog
-            # dependencies
-      #env:
-        #- CC=clang-5.0
-        #- CXX=clang++-5.0
+    - env:
+        - CC=clang-5.0
+        - CXX=clang++-5.0
         #- USE_LIBCXX=ON
         #- CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
         #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
