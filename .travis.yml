@@ -104,8 +104,8 @@ matrix:
       env:
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
         - USE_LIBCXX=ON
-        - CXX_FLAGS="-nostdinc++"
-        - LD_FLAGS="-nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc_s -lgcc"
+        - CXX_FLAGS="-nostdinc++ -I$CMAKE_INCLUDE_PATH"
+        - LD_FLAGS="-nodefaultlibs -L$CMAKE_LIBRARY_PATH -lc++ -lc++abi -lm -lc -lgcc_s -lgcc"
         - CMAKE_ARGS="-DCMAKE_CXX_FLAGS=\"$CXX_FLAGS\" -DCMAKE_EXE_LINKER_FLAGS=\"$LD_FLAGS\""
 
       addons:

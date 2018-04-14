@@ -16,7 +16,7 @@ echo "cmake . -DCMAKE_BUILD_TYPE=Release $1"
 
 
 ( cd googletest && \
-	eval cmake . -DCMAKE_BUILD_TYPE=Release $1 && make -j8 && make install DESTDIR=$PREFIX )
+	eval cmake . -DCMAKE_BUILD_TYPE=Release $1 && make -j8 VERBOSE=1 && make install DESTDIR=$PREFIX )
 
 
 
