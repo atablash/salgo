@@ -32,6 +32,7 @@ addons:
 env:
   global:
     - CMAKE_PREFIX_PATH="$(pwd)/INSTALL_ROOT/usr/local"
+    - USE_LIBCXX=OFF
 
 
 matrix:
@@ -41,10 +42,7 @@ matrix:
     - compiler: g++-7
       env:
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
-        #- USE_LIBCXX=OFF
-        #- CMAKE_ARGS=
-        #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
-      # addons copied from the global list
+
       addons:
         apt:
           sources:
@@ -66,7 +64,6 @@ matrix:
         #- COMPILER_OVERRIDE="export CC=clang-5.0 && export CXX=clang++-5.0"
         #- USE_LIBCXX=ON
         #- CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
-        #- CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
       addons:
         apt:
           sources:
@@ -79,6 +76,13 @@ matrix:
             - libeigen3-dev
 
             - libstdc++-7-dev # default libstdc++ in Ubuntu 14.04 is too old
+
+
+    # clang++-5.0  +  libc++
+    - compiler: clang++
+      env:
+        - USE_LIBCXX=ON
+        - CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
 
 
 
@@ -145,7 +149,7 @@ install:
   - travis/install-gtest.sh             "$CMAKE_ARGS"
   # - travis/install-glog.sh              "${CMAKE_ARGS}"
   # - travis/install-gtest.sh             "${CMAKE_ARGS}"
-  - travis/install-google-benchmark.sh  "${CMAKE_ARGS}"
+  - travis/install-google-benchmark.sh  "$CMAKE_ARGS"
   # - travis/install-eigen.sh             "${CMAKE_ARGS}"
 
 
@@ -156,7 +160,7 @@ script:
   - echo "CMAKE_ARGS:" ${CMAKE_ARGS}
   - echo "CMAKE_PREFIX_PATH:" ${CMAKE_PREFIX_PATH}
   # build
-  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=${USE_LIBCXX} .
+  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX .
   - make VERBOSE=1
   - /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+" # print libstdc++ and libc++ versions
   - ctest --verbose
