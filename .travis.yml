@@ -148,19 +148,19 @@ before_install:
 install:
   - if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
   - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/lib"
-  #- travis/install-gtest.sh             "$CMAKE_ARGS"
+  - $CXX -std=c++17 std_regex.cpp
+  - ./a.out
+  - $CXX -std=c++17 -stdlib=libc++ std_regex.cpp
+  - ./a.out
+  - travis/install-gtest.sh             "$CMAKE_ARGS"
   # - travis/install-glog.sh              "${CMAKE_ARGS}"
   # - travis/install-gtest.sh             "${CMAKE_ARGS}"
-  #- travis/install-google-benchmark.sh  "$CMAKE_ARGS"
+  - travis/install-google-benchmark.sh  "$CMAKE_ARGS"
   # - travis/install-eigen.sh             "${CMAKE_ARGS}"
 
 
 script:
   # build
-  - $CXX -std=c++17 std_regex.cpp
-  - ./a.out
-  - $CXX -std=c++17 -stdlib=libc++ std_regex.cpp
-  - ./a.out
   - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX .
   - make VERBOSE=1
   - /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+" # print libstdc++ and libc++ versions
