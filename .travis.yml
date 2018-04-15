@@ -165,10 +165,16 @@ before_install:
 
 #install:
 script:
-  - if [ $UPDATE_CMAKE == TRUE ]; then travis/install-cmake.sh; fi
+  #- if [ $UPDATE_CMAKE == TRUE ]; then travis/install-cmake.sh; fi
+  - mkdir -p /home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin
+  - touch /home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin/cmake
+  - chmod +x /home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin/cmake
   - PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" cmake --version
+  - PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" cmake --version
+  - PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" && cmake --version
+  - export PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" && cmake --version
 
-  - if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
+  #- if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
 
 
   # test
@@ -177,7 +183,7 @@ script:
 
   # - travis/install-glog.sh              "${CMAKE_ARGS}"
   #- travis/install-gtest.sh             "$CMAKE_ARGS"
-  - PATH=$WANT_PATH travis/install-google-benchmark.sh  "$CMAKE_ARGS" # override PATH for new cmake
+  #- PATH=$WANT_PATH travis/install-google-benchmark.sh  "$CMAKE_ARGS" # override PATH for new cmake
   # - travis/install-eigen.sh             "${CMAKE_ARGS}"
 
   # print libstdc++ and libc++ versions
