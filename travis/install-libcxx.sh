@@ -13,16 +13,16 @@ svn co http://llvm.org/svn/llvm-project/libcxx/trunk libcxx       >/dev/null
 svn co http://llvm.org/svn/llvm-project/libcxxabi/trunk libcxxabi >/dev/null
 
 # build libc++abi
-( cd libcxxabi && mkdir build && cd build && export CC=clang CXX=clang++ && \
-	cmake -DLIBCXXABI_LIBCXX_INCLUDES=../../libcxx/include \
+( cd libcxxabi && mkdir build && cd build &&  \
+	cmake -DLIBCXXABI_LIBCXX_INCLUDES=../../libcxx/include  \
 	.. && make -j8 && make install DESTDIR=$PREFIX )
 
 # build libc++
-( mkdir build && cd build && export CC=clang CXX=clang++ && \
-	cmake -DLLVM_PATH=../llvm \
-	-DLIBCXX_CXX_ABI=libcxxabi \
-	-DLIBCXX_CXX_ABI_INCLUDE_PATHS=../libcxxabi/include \
-	-DLIBCXX_CXX_ABI_LIBRARY_PATH=../libcxxabi/build/lib \
+( mkdir build && cd build &&  \
+	cmake -DLLVM_PATH=../llvm  \
+	-DLIBCXX_CXX_ABI=libcxxabi  \
+	-DLIBCXX_CXX_ABI_INCLUDE_PATHS=../libcxxabi/include  \
+	-DLIBCXX_CXX_ABI_LIBRARY_PATH=../libcxxabi/build/lib  \
 	../libcxx && make -j8 && make install DESTDIR=$PREFIX )
 
 
