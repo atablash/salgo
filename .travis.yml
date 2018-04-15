@@ -118,15 +118,15 @@ matrix:
         apt:
           sources:
             # FOR G++-7 BUILDS:
-            #- ubuntu-toolchain-r-test
+            - ubuntu-toolchain-r-test
           packages:
             # FOR ALL BUILDS:
-            #- libgoogle-glog-dev
-            #- libgflags-dev
-            #- libeigen3-dev
+            - libgoogle-glog-dev
+            - libgflags-dev
+            - libeigen3-dev
 
             # FOR G++-7 BUILDS:
-            #- g++-7
+            - g++-7
 
 
     # clang++ 5.0  +  libstdc++
