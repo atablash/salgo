@@ -173,6 +173,7 @@ script:
   - PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" cmake --version
   - PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" && cmake --version
   - export PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" && cmake --version
+  - PATH=dupa echo $PATH
 
   #- if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
 
