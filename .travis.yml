@@ -121,6 +121,7 @@ matrix:
 
             # FOR G++-7 BUILDS:
             - g++-7
+            - cmake
 
 
     # clang++ 5.0  +  libstdc++
@@ -159,6 +160,7 @@ before_install:
 
 #install:
 script:
+  - cmake --version
   - if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
   - export LD_LIBRARY_PATH="$CMAKE_PREFIX_PATH/lib"
 
