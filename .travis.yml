@@ -169,7 +169,7 @@ script:
   - mkdir -p "$CMAKE_PREFIX_PATH/bin"
   - touch "$CMAKE_PREFIX_PATH/bin/cmake"
   - chmod +x "$CMAKE_PREFIX_PATH/bin/cmake"
-  - export PATH="$PATH:$CMAKE_PREFIX_PATH/bin"
+  - export PATH="$CMAKE_PREFIX_PATH/bin:$PATH:$CMAKE_PREFIX_PATH/bin" && cmake --version
   - cmake --version
   - if [ $UPDATE_CMAKE == TRUE ]; then travis/install-cmake.sh; fi
   - cmake --version
