@@ -166,7 +166,7 @@ before_install:
 #install:
 script:
   - if [ $UPDATE_CMAKE == TRUE ]; then travis/install-cmake.sh; fi
-  - PATH=$WANT_PATH cmake --version
+  - PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" cmake --version
 
   - if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
 
