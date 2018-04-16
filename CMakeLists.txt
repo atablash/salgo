@@ -54,25 +54,24 @@ if (SALGO_USE_LIBCXX)
 
 	# CLANG
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-		list(APPEND CMAKE_CXX_FLAGS -stdlib=libc++)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 
 	# GCC (or Intel?)
 	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
 	        "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 
-		list(APPEND CMAKE_CXX_FLAGS -nostdinc++)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
 		message("libc++ header path must be manually specified using CMAKE_CXX_FLAGS")
 
 		# Adding -nodefaultlibs directly to CMAKE_<TYPE>_LINKER_FLAGS will break
 		# configuration checks such as 'find_package(Threads)'
 		#list(APPEND SALGO_CXX_LINKER_FLAGS -nodefaultlibs)
-		list(APPEND CMAKE_EXE_LINKER_FLAGS -nodefaultlibs)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs")
 
 		# -lc++ cannot be added directly to CMAKE_<TYPE>_LINKER_FLAGS because
 		# linker flags appear before all linker inputs and -lc++ must appear after.
 		#list(APPEND SALGO_CXX_LIBRARIES c++)
 		link_libraries(c++ c++abi m c gcc_s gcc)
-		#list(APPEND CMAKE_EXE_LINKER_FLAGS -lc++ -lc++abi -lm -lc -lgcc_s -lgcc)
 	else()
 		message(FATAL "-DSALGO_USE_LIBCXX:BOOL=ON is not supported for this compiler")
 	endif()
