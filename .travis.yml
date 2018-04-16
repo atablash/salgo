@@ -107,9 +107,9 @@ matrix:
       env:
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
         - USE_LIBCXX=ON
-        #- CXX_FLAGS="-nostdinc++ -I$CMAKE_INCLUDE_PATH"
+        - CXX_FLAGS="-I$CMAKE_INCLUDE_PATH"
         #- LD_FLAGS="-nodefaultlibs -L$CMAKE_LIBRARY_PATH -lc++ -lc++abi -lm -lc -lgcc_s -lgcc"
-        #- CMAKE_ARGS="-DCMAKE_CXX_FLAGS=\"CXX_FLAGS\""
+        - CMAKE_ARGS="-DCMAKE_CXX_FLAGS=\"CXX_FLAGS\""
 
       addons:
         apt:
@@ -164,8 +164,14 @@ before_install:
 script:
   - if [[ $USE_LIBCXX = ON ]]; then travis/install-libcxx.sh; fi
 
-  - travis/install-gtest.sh
-  - travis/install-google-benchmark.sh   $(if [[ $USE_LIBCXX = ON ]]; then echo -DBENCHMARK_USE_LIBCXX=ON; fi)
+  #- travis/install-gtest.sh
+
+  # google benchmark
+  - git clone https://github.com/google/benchmark.git inst-benchmark --depth 1    && cd inst-benchmark    && cmake . -DBENCHMARK_ENABLE_GTEST_TESTS=OFF -DCMAKE_BUILD_TYPE=RELEASE    $(if [[ $USE_LIBCXX = ON ]]; then echo -DBENCHMARK_USE_LIBCXX=ON; fi)  $CMAKE_ARGS  --debug-trycompile  && make -j2    && make install
+
+  - cd inst-benchmark/CMakeFiles/CMakeTmp && make VERBOSE=1
+
+  - travis/install-google-benchmark.sh   
 
   # print libstdc++ and libc++ versions
   #- /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+"
