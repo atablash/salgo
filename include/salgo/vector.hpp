@@ -66,7 +66,6 @@ struct Context {
 
 
 
-
 	//
 	// accessor
 	//
@@ -102,6 +101,10 @@ struct Context {
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
 			_owner->destruct( _handle );
+		}
+
+		void erase() {
+			destruct();
 		}
 
 		bool exists() const {
@@ -197,12 +200,23 @@ struct Context {
 			}
 		}
 
+		Vector(std::initializer_list<Val>&& l) {
+			reserve( l.size() );
+			for(auto&& e : l) {
+				emplace_back( std::move(e) );
+			}
+		}
+
 		~Vector() {
+			static_assert(!(Sparse && !Exists && !std::is_trivially_move_constructible_v<Val>),
+				"no way to know which destructors have to be called");
+
 			if constexpr(Dense) {
 				for(int i=0; i<_size; ++i) {
 					_mb.destruct(i);
 				}
 			}
+			// for sparse vectors, memory block takes care of destruction
 		}
 
 
@@ -399,7 +413,8 @@ struct Context {
 			static_assert(Iterable);
 			auto e = (*this)(0);
 			if(!e.exists()) ++e;
-			return e;
+			auto x = std::move(e);
+			return x;
 		}
 
 		inline auto begin() const {
@@ -433,11 +448,12 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(With_Builder, Vector);
 
 		template<int X>
-		using STACK_BUFFER =
-			typename Context< Val, Sparse, typename Memory_Block::template STACK_BUFFER<X> > :: With_Builder;
+		using INPLACE_BUFFER =
+			typename Context< Val, Sparse, typename Memory_Block::template INPLACE_BUFFER<X> > :: With_Builder;
 
-		using SPARSE =
-			typename Context< Val, true, Memory_Block > :: With_Builder;
+
+		using EXISTS =
+			typename Context< Val, Sparse, typename Memory_Block::EXISTS > :: With_Builder;
 
 		using EXISTS_INPLACE =
 			typename Context< Val, Sparse, typename Memory_Block::EXISTS_INPLACE > :: With_Builder;
@@ -445,13 +461,23 @@ struct Context {
 		using EXISTS_BITSET =
 			typename Context< Val, Sparse, typename Memory_Block::EXISTS_BITSET > :: With_Builder;
 
-		using EXISTS =
-			typename Context< Val, Sparse, typename Memory_Block::EXISTS > :: With_Builder;
+
+		// also enable EXISTS by default
+		using SPARSE =
+			typename Context< Val, true, Memory_Block > :: With_Builder :: EXISTS;
+
+
+		// just enable SPARSE, but no EXISTS
+		using SPARSE_NO_EXISTS =
+			typename Context< Val, true, Memory_Block > :: With_Builder;
+
+
 
 		using COUNT =
 			typename Context< Val, Sparse, typename Memory_Block::COUNT > :: With_Builder;
 
-		using FULL =
+
+		using FULL_BLOWN =
 			typename Context< Val, true, typename Memory_Block::FULL > :: With_Builder;
 	};
 

@@ -228,7 +228,7 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(With_Builder, Unordered_Vector);
 
 		template<int X>
-		using STACK_BUFFER = typename Context<Val, typename Vector :: template STACK_BUFFER<X>> :: With_Builder;
+		using INPLACE_BUFFER = typename Context<Val, typename Vector :: template INPLACE_BUFFER<X>> :: With_Builder;
 	};
 
 

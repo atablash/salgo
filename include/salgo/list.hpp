@@ -300,7 +300,7 @@ struct Context {
 			static_assert(std::is_trivially_destructible_v<Node>);
 			#endif
 
-			for(auto e : *this) {
+			for(auto& e : *this) {
 				_alloc()[ e.handle() ].val.destruct();
 				//_alloc().destruct( e.handle() );
 			}
@@ -480,7 +480,7 @@ template<
 >
 using List = typename internal::List::Context<
 	VAL,
-	typename Allocator<VAL> :: SINGLETON,
+	Allocator<VAL>, // ::SINGLETON,
 	false // COUNTABLE
 > :: With_Builder;
 

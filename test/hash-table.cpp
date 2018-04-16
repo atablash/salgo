@@ -14,7 +14,7 @@ TEST(Hash_Table, iterate) {
 	ht.emplace(300000);
 
 	int sum = 0;
-	for(auto e : ht) {
+	for(auto& e : ht) {
 		sum += e;
 	}
 	EXPECT_EQ(333333, sum);
@@ -23,7 +23,7 @@ TEST(Hash_Table, iterate) {
 TEST(Hash_Table, iterate_empty) {
 	Hash_Table<int> ht;
 	int sum = 0;
-	for(auto e : ht) sum += e;
+	for(auto& e : ht) sum += e;
 	EXPECT_EQ(0, sum);
 }
 
@@ -34,7 +34,7 @@ TEST(Hash_Table, iterate_empty_2) {
 	if(!ht(12).exists()) ht(123).erase();
 
 	int sum = 0;
-	for(auto e : ht) sum += e;
+	for(auto& e : ht) sum += e;
 	EXPECT_EQ(0, sum);
 }
 
@@ -52,7 +52,7 @@ TEST(Hash_Table, erase) {
 	ht(300000).erase();
 
 	int sum = 0;
-	for(auto e : ht) {
+	for(auto& e : ht) {
 		sum += e;
 	}
 

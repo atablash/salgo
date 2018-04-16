@@ -49,28 +49,28 @@ add_definitions(
 
 
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	message(STATUS "Detected clang")
-	if(SALGO_USE_LIBCXX)
-		SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -stdlib=libc++" )
-	endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	message(STATUS "Detected gcc")
-	if(SALGO_USE_LIBCXX)
-		SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -nostdinc++ -I/usr/local/include/c++/v1" )
-		SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc_s -lgcc")
-
-		# required by GTest
-		#set(THREADS_PREFER_PTHREAD_FLAG ON)
-		#find_package(Threads REQUIRED)
-	endif()
-else()
-	message(WARNING "COMPILER " ${} " IS UNSUPPORTED BY SALGO!")
-	if(SALGO_USE_LIBCXX)
-		SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -stdlib=libc++" )
-	endif()
-endif()
-
+#
+# as in GOOGLE BENCHMARK library
+#
+if (SALGO_USE_LIBCXX)
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    add_cxx_compiler_flag(-stdlib=libc++)
+  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+          "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    add_cxx_compiler_flag(-nostdinc++)
+    message("libc++ header path must be manually specified using CMAKE_CXX_FLAGS")
+    # Adding -nodefaultlibs directly to CMAKE_<TYPE>_LINKER_FLAGS will break
+    # configuration checks such as 'find_package(Threads)'
+    #list(APPEND SALGO_CXX_LINKER_FLAGS -nodefaultlibs)
+	SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs")
+    # -lc++ cannot be added directly to CMAKE_<TYPE>_LINKER_FLAGS because
+    # linker flags appear before all linker inputs and -lc++ must appear after.
+    #list(APPEND SALGO_CXX_LIBRARIES c++)
+    link_libraries(c++)
+  else()
+    message(FATAL "-DSALGO_USE_LIBCXX:BOOL=ON is not supported for this compiler")
+  endif()
+endif(SALGO_USE_LIBCXX)
 
 
 

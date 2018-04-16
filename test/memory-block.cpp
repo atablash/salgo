@@ -43,7 +43,7 @@ TEST(Memory_block, stack_optim_inplace_nontrivial) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::EXISTS_INPLACE::COUNT::STACK_BUFFER<2> m(1);
+		Memory_Block<S>::EXISTS_INPLACE::COUNT::INPLACE_BUFFER<2> m(1);
 		m(0).construct(1);
 		m.resize(2);
 		m(1).construct(2);
@@ -60,7 +60,7 @@ TEST(Memory_block, stack_optim_inplace_nontrivial) {
 		EXPECT_FALSE( m(1).exists() );
 
 		int sum = 0;
-		for(auto e : m) {
+		for(auto& e : m) {
 			sum += e();
 		}
 		EXPECT_EQ(4, sum);
@@ -147,7 +147,7 @@ TEST(Memory_block, dense_constructor) {
 	Memory_Block<int>::DENSE mb(10, 10);
 
 	int sum = 0;
-	for(auto e : mb) sum += e;
+	for(auto& e : mb) sum += e;
 	EXPECT_EQ(100, sum);
 }
 
@@ -212,7 +212,7 @@ TEST(Memory_block, move_container_exists) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::EXISTS::STACK_BUFFER<2> block(10);
+		Memory_Block<S>::EXISTS::INPLACE_BUFFER<2> block(10);
 		block.construct_all();
 
 		auto block2 = std::move(block);

@@ -63,7 +63,7 @@ TEST(Unordered_Vector, no_invalidation) {
 	{
 		int sum = 0;
 		int iters = 0;
-		for(auto e : m) {
+		for(auto& e : m) {
 			sum += e;
 			++iters;
 

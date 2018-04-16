@@ -34,6 +34,8 @@ env:
     - DESTDIR="$(pwd)/INSTALL_ROOT"
     - CMAKE_PREFIX_PATH="$DESTDIR/usr/local"
 
+    - USE_LIBCXX=OFF
+
     # for libc++
     - CMAKE_INCLUDE_PATH="$CMAKE_PREFIX_PATH/include/c++/v1"
     - CMAKE_LIBRARY_PATH="$CMAKE_PREFIX_PATH/lib"
@@ -54,60 +56,55 @@ matrix:
   include:
 
 
-    # # g++-7  +  libstdc++
-    # - compiler: g++-7
-    #   env:
-    #     - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
+    # g++-7  +  libstdc++
+    - compiler: g++-7
+      env:
+        - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
 
-    #   addons:
-    #     apt:
-    #       sources:
-    #         # FOR G++-7 BUILDS:
-    #         - ubuntu-toolchain-r-test
-    #       packages:
-    #         # FOR ALL BUILDS:
-    #         - libgoogle-glog-dev
-    #         - libgflags-dev
-    #         - libeigen3-dev
+      addons:
+        apt:
+          sources:
+            # FOR G++-7 BUILDS:
+            - ubuntu-toolchain-r-test
+          packages:
+            # FOR ALL BUILDS:
+            - libgoogle-glog-dev
+            - libgflags-dev
+            - libeigen3-dev
 
-    #         # FOR G++-7 BUILDS:
-    #         - g++-7
-
-
-
-
-    # # clang++-5.0  +  libstdc++
-    # - compiler: clang++
-    #   #env:
-    #     #- COMPILER_OVERRIDE="export CC=clang-5.0 && export CXX=clang++-5.0"
-    #     #- USE_LIBCXX=ON
-    #     #- CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
-    #   addons:
-    #     apt:
-    #       sources:
-    #         - ubuntu-toolchain-r-test # default libstdc++ in Ubuntu 14.04 is too old
-
-    #       packages:
-    #         # FOR ALL BUILDS:
-    #         - libgoogle-glog-dev
-    #         - libgflags-dev
-    #         - libeigen3-dev
-
-    #         - libstdc++-7-dev # default libstdc++ in Ubuntu 14.04 is too old
+            # FOR G++-7 BUILDS:
+            - g++-7
 
 
 
 
-    # # clang++-5.0  +  libc++
-    # - compiler: clang++
-    #   env:
-    #     - USE_LIBCXX=ON
-    #     - CMAKE_ARGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++"
+    # clang++-5.0  +  libstdc++
+    - compiler: clang++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test # default libstdc++ in Ubuntu 14.04 is too old
+
+          packages:
+            # FOR ALL BUILDS:
+            - libgoogle-glog-dev
+            - libgflags-dev
+            - libeigen3-dev
+
+            - libstdc++-7-dev # default libstdc++ in Ubuntu 14.04 is too old
 
 
 
 
-    # g++ 7  +  libc++
+    # clang++-5.0  +  libc++
+    - compiler: clang++
+      env:
+        - USE_LIBCXX=ON
+
+
+
+
+    # g++-7  +  libc++
     - compiler: g++-7
       env:
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
@@ -162,31 +159,28 @@ before_install:
   - eval $COMPILER_OVERRIDE
 
 
-#install:
-script:
+install:
   - if [[ $USE_LIBCXX = ON ]]; then travis/install-libcxx.sh; fi
 
-  #- travis/install-gtest.sh
+  # print libstdc++ and libc++ versions
+  - /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+"
 
   # google benchmark
-  - (git clone https://github.com/google/benchmark.git inst-benchmark --depth 1    && cd inst-benchmark    && cmake . -DBENCHMARK_ENABLE_TESTING=OFF -DCMAKE_BUILD_TYPE=RELEASE    $(if [[ $USE_LIBCXX = ON ]]; then echo -DBENCHMARK_USE_LIBCXX=ON; fi)  -DCMAKE_CXX_FLAGS=$CXX_FLAGS -DCMAKE_EXE_LINKER_FLAGS=$LD_FLAGS  --debug-trycompile  && make -j2    && make install)
+  - (git clone https://github.com/google/benchmark.git inst-benchmark --depth 1    && cd inst-benchmark    && cmake . -DBENCHMARK_ENABLE_TESTING=OFF -DCMAKE_BUILD_TYPE=RELEASE -DBENCHMARK_USE_LIBCXX=$USE_LIBCXX -DCMAKE_CXX_FLAGS=$CXX_FLAGS -DCMAKE_EXE_LINKER_FLAGS=$LD_FLAGS    && make -j2    && make install)
 
-  - (cd inst-benchmark/CMakeFiles/CMakeTmp && make VERBOSE=1)
+  # gtest (the version from ubuntu repos is not compiled, only source)
+  - (git clone https://github.com/google/googletest.git inst-gtest --depth 1    && cd inst-gtest    && cmake . -DCMAKE_BUILD_TYPE=Release    && make -j2    && make install)
 
-  # print libstdc++ and libc++ versions
-  #- /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+"
-
-
+script:
   # build
-  #- cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX .
-  #- make VERBOSE=1
+  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX -DCMAKE_CXX_FLAGS=$CXX_FLAGS -DCMAKE_EXE_LINKER_FLAGS=$LD_FLAGS .
+  - make VERBOSE=1
 
   # run tests
-  #- ctest --verbose
-  #- test/all-tests
+  - test/all-tests
 
   # run benchmarks
-  #- benchmark/hash-table
+  - benchmark/hash-table
 
 
 

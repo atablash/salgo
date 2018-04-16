@@ -542,10 +542,12 @@ struct Context {
 			else return NUM_EXISTING_BASE::num_existing;
 		}
 
+		/* ambiguous - what does it mean?
 		bool empty() const {
 			static_assert(Countable);
 			return size() == 0;
 		}
+		*/
 
 
 
@@ -554,14 +556,14 @@ struct Context {
 		auto begin() {
 			static_assert(Iterable);
 			auto e = Accessor<MUTAB>(this, 0);
-			if(!e.exists()) ++e;
+			if(_size && !e.exists()) ++e;
 			return e;
 		}
 
 		auto begin() const {
 			static_assert(Iterable);
 			auto e = Accessor<CONST>(this, 0);
-			if(!e.exists()) ++e;
+			if(_size && !e.exists()) ++e;
 			return e;
 		}
 
@@ -612,7 +614,7 @@ struct Context {
 			typename Context< Val, NEW_ALLOCATOR, Stack_Buffer, Dense, Exists_Inplace, Exists_Bitset, Count > :: With_Builder;
 
 		template<int NEW_STACK_BUFFER>
-		using STACK_BUFFER =
+		using INPLACE_BUFFER =
 			typename Context< Val, Allocator, NEW_STACK_BUFFER, Dense, Exists_Inplace, Exists_Bitset, Count > :: With_Builder;
 
 

@@ -26,7 +26,7 @@ TEST(List, simple) {
 
 	vector<int> vals;
 
-	for(auto e : m) vals.push_back( e );
+	for(auto& e : m) vals.push_back( e );
 
 	EXPECT_EQ(1, vals[0]);
 	EXPECT_EQ(2, vals[1]);
@@ -48,7 +48,7 @@ TEST(List, count) {
 	EXPECT_EQ(5, m.count());
 
 	vector<int> vals;
-	for(auto e : m) vals.push_back( e );
+	for(auto& e : m) vals.push_back( e );
 
 	EXPECT_EQ(1, vals[0]);
 	EXPECT_EQ(2, vals[1]);
@@ -81,7 +81,7 @@ TEST(List, count_nontrivial) {
 	EXPECT_EQ(5, m.count());
 
 	vector<int> vals;
-	for(auto e : m) vals.push_back( e() );
+	for(auto& e : m) vals.push_back( e() );
 
 	EXPECT_EQ(1, vals[0]);
 	EXPECT_EQ(2, vals[1]);
@@ -106,7 +106,7 @@ TEST(List, no_invalidation) {
 
 	{
 		int sum = 0;
-		for(auto e : m) {
+		for(auto& e : m) {
 			sum += e;
 			if(e >= 10) e.erase();
 		}
@@ -115,7 +115,7 @@ TEST(List, no_invalidation) {
 
 	{
 		int sum = 0;
-		for(auto e : m) sum += e;
+		for(auto& e : m) sum += e;
 		EXPECT_EQ(2, sum);
 	}
 }

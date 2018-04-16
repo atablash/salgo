@@ -15,6 +15,8 @@ DECLARE_int32(perf);
 
 
 
+
+
 TEST(Sparse_vector, not_iterable) {
 
 	Vector<int>::SPARSE m;
@@ -38,6 +40,11 @@ TEST(Sparse_vector, not_iterable) {
 	m(3).destruct();
 	m(4).destruct();
 }
+
+
+
+
+
 
 
 TEST(Sparse_vector, not_iterable_nontrivial) {
@@ -125,7 +132,7 @@ static void push_delete_compact_common(MB& m) {
 
 	{
 		int sum = 0;
-		for(auto e : m) sum += e();
+		for(auto& e : m) sum += e();
 		EXPECT_EQ(6, sum);
 	}
 }
@@ -229,7 +236,7 @@ TEST(Sparse_vector, move_container_exists) {
 	g_constructors = 0;
 
 	{
-		Vector<S>::SPARSE::EXISTS::STACK_BUFFER<2> block(10);
+		Vector<S>::SPARSE::EXISTS::INPLACE_BUFFER<2> block(10);
 		block.emplace_back();
 		block.emplace_back();
 		block.emplace_back();
@@ -403,7 +410,7 @@ static void run_sparse_vector_common(VEC& v, int N, int type) {
 
 	if(type == 0) {
 		// sequential
-		for(auto e : v) {
+		for(auto& e : v) {
 			e() = rand();
 			if(rand()%2) e.destruct();
 		}

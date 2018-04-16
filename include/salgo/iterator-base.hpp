@@ -18,6 +18,12 @@ GENERATE_HAS_MEMBER(_will_compare_with);
 template< Const_Flag C, template<Const_Flag> class CRTP >
 class Iterator_Base {
 
+public:
+	Iterator_Base() = default;
+	Iterator_Base(const Iterator_Base&) = delete;
+	Iterator_Base(Iterator_Base&&) = default;
+	Iterator_Base& operator=(const Iterator_Base&) = delete;
+	Iterator_Base& operator=(Iterator_Base&&) = delete;
 
 //
 // required to be std::iterator-like

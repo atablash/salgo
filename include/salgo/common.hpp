@@ -104,7 +104,9 @@ constexpr X operator ~ (X x)                                                    
 
 #define FORWARDING_CONSTRUCTOR(SELF,BASE) \
   template<class... ARGS> \
-  SELF(ARGS&&... args) : BASE( std::forward<ARGS>(args)... ) {}
+  SELF(ARGS&&... args) : BASE( std::forward<ARGS>(args)... ) {} \
+  \
+  template<class X> SELF(std::initializer_list<X>&& il) : BASE( std::move(il) ) {}\
 
 
 

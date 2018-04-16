@@ -70,7 +70,7 @@ struct Context {
 		typename Allocator::Small_Handle
 	>;
 
-	using List = typename salgo::Unordered_Vector<Node> :: template STACK_BUFFER<5>;
+	using List = typename salgo::Unordered_Vector<Node> :: template INPLACE_BUFFER<5>;
 	using Buckets = typename salgo::Memory_Block<List> :: DENSE;
 
 
@@ -307,7 +307,7 @@ struct Context {
 			auto i_bucket = Hash::operator()(k) % _buckets.size();
 			auto& bucket = _buckets[ i_bucket ];
 
-			for(auto e : bucket) {
+			for(auto& e : bucket) {
 				if(_kv(e()).key == k) {
 					return {i_bucket, e.handle()};
 				}
@@ -350,8 +350,8 @@ struct Context {
 		void rehash(int want_buckets) {
 			Buckets new_buckets(want_buckets);
 
-			for(auto bucket : _buckets) {
-				for(auto e : bucket()) {
+			for(auto& bucket : _buckets) {
+				for(auto& e : bucket()) {
 					int i_new_bucket = Hash::operator()( _kv(e()).key ) % want_buckets;
 					new_buckets[ i_new_bucket ].add( std::move(e()) );
 				}
@@ -363,7 +363,7 @@ struct Context {
 
 		auto max_bucket_size() const {
 			int r = 0;
-			for(auto bucket : _buckets) {
+			for(auto& bucket : _buckets) {
 				r = std::max(r, bucket().size());
 			}
 			return r;

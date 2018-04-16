@@ -38,6 +38,7 @@ struct Params {};
 template<class> struct Handle;
 template<class> struct Small_Handle;
 
+static const int div = 27;
 
 // big
 template<class>
@@ -52,8 +53,8 @@ struct Handle {
 	Handle(const Handle&) = default;
 
 	Handle(Handle_A aa, Handle_B bb) : a(aa), b(bb) {
-		DCHECK_GE(a, 0); DCHECK_LT(a, 1<<8);
-		DCHECK_GE(b, 0); DCHECK_LT(b, 1<<24);
+		DCHECK_GE(a, 0); DCHECK_LT(a, 1<<(32-div));
+		DCHECK_GE(b, 0); DCHECK_LT(b, 1<<div);
 	}
 
 	//operator Small_Handle() { return Small_Handle(*this); }
@@ -75,13 +76,18 @@ template<class X>
 struct Small_Handle : Int_Handle<Small_Handle<X>, unsigned int> {
 	using BASE = Int_Handle<Small_Handle<X>, unsigned int>;
 
+
 	Small_Handle() = default;
 	Small_Handle(unsigned int v) : BASE(v) {}
 
 	Small_Handle( const Handle<X>& h ) { *this = h; }
-	Small_Handle& operator=(const Handle<X>& h) { return *this = (h.a << 24) | h.b; }
+	Small_Handle& operator=(const Handle<X>& h) {
+		DCHECK_LT(h.a, 1<<(32-div));
+		DCHECK_LT(h.b, 1<<div);
+		return *this = (h.a << div) | h.b;
+	}
 
-	operator Handle<X>() const { return Handle<X>((*this)>>24, (*this)&0xffffff); }
+	operator Handle<X>() const { return Handle<X>((*this)>>div, (*this)&((1<<div)-1)); }
 };
 
 

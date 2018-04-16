@@ -60,7 +60,7 @@ static void REHASH_salgo(State& state) {
 			s.rehash( state.range(1) );
 			state.PauseTiming();
 
-			for(auto e : s) DoNotOptimize(e());
+			for(auto& e : s) DoNotOptimize(e());
 		}
 
 		state.ResumeTiming();
@@ -305,7 +305,7 @@ static void ITERATE__salgo(State& state) {
 
 	while( state.KeepRunningBatch(s.count()) ) {
 		long long result = 0;
-		for(auto e : s) result += e;
+		for(auto& e : s) result += e;
 		DoNotOptimize(result);
 	}
 }
