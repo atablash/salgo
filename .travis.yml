@@ -34,15 +34,11 @@ env:
     - DESTDIR="$(pwd)/INSTALL_ROOT"
     - CMAKE_PREFIX_PATH="$DESTDIR/usr/local"
 
-    - USE_LIBCXX=OFF
-
     - CMAKE_INCLUDE_PATH="$CMAKE_PREFIX_PATH/include/c++/v1"
     - CMAKE_LIBRARY_PATH="$CMAKE_PREFIX_PATH/lib"
 
     #- PATH="$PATH:$CMAKE_PREFIX_PATH/bin" # unfortunately, travis doesn't allow overriding PATH (at least in non-sudo mode)
-    - LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CMAKE_PREFIX_PATH/lib"
-
-    - CMAKE=cmake
+    #- LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CMAKE_PREFIX_PATH/lib"
 
 
 
@@ -111,10 +107,9 @@ matrix:
       env:
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
         - USE_LIBCXX=ON
-        - CXX_FLAGS="-nostdinc++ -I$CMAKE_INCLUDE_PATH"
-        - LD_FLAGS="-nodefaultlibs -L$CMAKE_LIBRARY_PATH -lc++ -lc++abi -lm -lc -lgcc_s -lgcc"
-        - CMAKE_ARGS="-DCMAKE_CXX_FLAGS=\"$CXX_FLAGS\" -DCMAKE_EXE_LINKER_FLAGS=\"$LD_FLAGS\""
-        - UPDATE_CMAKE=TRUE
+        #- CXX_FLAGS="-nostdinc++ -I$CMAKE_INCLUDE_PATH"
+        #- LD_FLAGS="-nodefaultlibs -L$CMAKE_LIBRARY_PATH -lc++ -lc++abi -lm -lc -lgcc_s -lgcc"
+        #- CMAKE_ARGS="-DCMAKE_CXX_FLAGS=\"CXX_FLAGS\""
 
       addons:
         apt:
@@ -167,20 +162,10 @@ before_install:
 
 #install:
 script:
-  - if [ $UPDATE_CMAKE == TRUE ]; then travis/install-cmake.sh; export CMAKE=$CMAKE_PREFIX_PATH/bin/cmake; fi
-  - echo $CMAKE --version
+  - if [[ $USE_LIBCXX = ON ]]; then travis/install-libcxx.sh; fi
 
-  - if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
-
-
-  # test
-  #- $CXX -nostdinc++ -I"$CMAKE_PREFIX_PATH"/include/c++/v1 std_regex.cpp -nodefaultlibs -L"$CMAKE_PREFIX_PATH"/lib -lc++ -lc++abi -lm -lc -lgcc_s -lgcc
-  #- ./a.out
-
-  # - travis/install-glog.sh              "${CMAKE_ARGS}"
-  #- travis/install-gtest.sh             "$CMAKE_ARGS"
-  - travis/install-google-benchmark.sh  "$CMAKE_ARGS"
-  # - travis/install-eigen.sh             "${CMAKE_ARGS}"
+  - travis/install-gtest.sh
+  - travis/install-google-benchmark.sh   $(if [[ $USE_LIBCXX = ON ]]; then echo -DBENCHMARK_USE_LIBCXX=ON; fi)
 
   # print libstdc++ and libc++ versions
   #- /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+"
