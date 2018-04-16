@@ -39,8 +39,10 @@ env:
     - CMAKE_INCLUDE_PATH="$CMAKE_PREFIX_PATH/include/c++/v1"
     - CMAKE_LIBRARY_PATH="$CMAKE_PREFIX_PATH/lib"
 
-    - WANT_PATH="$PATH:$CMAKE_PREFIX_PATH/bin" # can't be set directly, travis resets $PATH before every command
+    #- PATH="$PATH:$CMAKE_PREFIX_PATH/bin" # unfortunately, travis doesn't allow overriding PATH (at least in non-sudo mode)
     - LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CMAKE_PREFIX_PATH/lib"
+
+    - CMAKE=cmake
 
 
 
@@ -165,17 +167,10 @@ before_install:
 
 #install:
 script:
-  #- if [ $UPDATE_CMAKE == TRUE ]; then travis/install-cmake.sh; fi
-  - mkdir -p /home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin
-  - touch /home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin/cmake
-  - chmod +x /home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin/cmake
-  - PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" cmake --version
-  - PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" cmake --version
-  - PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" && cmake --version
-  - export PATH="$WANT_PATH:/home/travis/build/atablash/salgo/INSTALL_ROOT/usr/local/bin" && cmake --version
-  - PATH=dupa echo $PATH
+  - if [ $UPDATE_CMAKE == TRUE ]; then travis/install-cmake.sh; export CMAKE=$CMAKE_PREFIX_PATH/bin/cmake; fi
+  - echo $CMAKE --version
 
-  #- if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
+  - if [ $USE_LIBCXX == ON ]; then travis/install-libcxx.sh; fi
 
 
   # test
@@ -184,7 +179,7 @@ script:
 
   # - travis/install-glog.sh              "${CMAKE_ARGS}"
   #- travis/install-gtest.sh             "$CMAKE_ARGS"
-  #- PATH=$WANT_PATH travis/install-google-benchmark.sh  "$CMAKE_ARGS" # override PATH for new cmake
+  - travis/install-google-benchmark.sh  "$CMAKE_ARGS"
   # - travis/install-eigen.sh             "${CMAKE_ARGS}"
 
   # print libstdc++ and libc++ versions
