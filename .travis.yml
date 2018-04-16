@@ -34,11 +34,13 @@ env:
     - DESTDIR="$(pwd)/INSTALL_ROOT"
     - CMAKE_PREFIX_PATH="$DESTDIR/usr/local"
 
+    # for libc++
     - CMAKE_INCLUDE_PATH="$CMAKE_PREFIX_PATH/include/c++/v1"
     - CMAKE_LIBRARY_PATH="$CMAKE_PREFIX_PATH/lib"
 
-    #- PATH="$PATH:$CMAKE_PREFIX_PATH/bin" # unfortunately, travis doesn't allow overriding PATH (at least in non-sudo mode)
-    #- LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CMAKE_PREFIX_PATH/lib"
+    # for libc++
+    - CXX_FLAGS="-I$CMAKE_INCLUDE_PATH"
+    - LD_FLAGS="-L$CMAKE_LIBRARY_PATH"
 
 
 
@@ -107,9 +109,6 @@ matrix:
       env:
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
         - USE_LIBCXX=ON
-        - CXX_FLAGS="-I$CMAKE_INCLUDE_PATH"
-        #- LD_FLAGS="-nodefaultlibs -L$CMAKE_LIBRARY_PATH -lc++ -lc++abi -lm -lc -lgcc_s -lgcc"
-        #- CMAKE_ARGS="-DCMAKE_CXX_FLAGS=\"CXX_FLAGS\""
 
       addons:
         apt:
@@ -167,7 +166,7 @@ script:
   #- travis/install-gtest.sh
 
   # google benchmark
-  - (git clone https://github.com/google/benchmark.git inst-benchmark --depth 1    && cd inst-benchmark    && cmake . -DBENCHMARK_ENABLE_GTEST_TESTS=OFF -DCMAKE_BUILD_TYPE=RELEASE    $(if [[ $USE_LIBCXX = ON ]]; then echo -DBENCHMARK_USE_LIBCXX=ON; fi)  -DCMAKE_CXX_FLAGS=$CXX_FLAGS  --debug-trycompile  && make -j2    && make install)
+  - (git clone https://github.com/google/benchmark.git inst-benchmark --depth 1    && cd inst-benchmark    && cmake . -DBENCHMARK_ENABLE_GTEST_TESTS=OFF -DCMAKE_BUILD_TYPE=RELEASE    $(if [[ $USE_LIBCXX = ON ]]; then echo -DBENCHMARK_USE_LIBCXX=ON; fi)  -DCMAKE_CXX_FLAGS=$CXX_FLAGS -DCMAKE_EXE_LINKER_FLAGS=$LD_FLAGS  --debug-trycompile  && make -j2    && make install)
 
   - (cd inst-benchmark/CMakeFiles/CMakeTmp && make VERBOSE=1)
 
