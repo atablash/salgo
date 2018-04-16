@@ -50,6 +50,10 @@ add_definitions(
 
 
 
+
+#===============================================================================
+# switch from default (libstdc++?) to libc++
+#===============================================================================
 if (SALGO_USE_LIBCXX)
 
 	# CLANG
@@ -63,15 +67,8 @@ if (SALGO_USE_LIBCXX)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
 		message("libc++ header path must be manually specified using CMAKE_CXX_FLAGS")
 
-		# Adding -nodefaultlibs directly to CMAKE_<TYPE>_LINKER_FLAGS will break
-		# configuration checks such as 'find_package(Threads)'
-		#list(APPEND SALGO_CXX_LINKER_FLAGS -nodefaultlibs)
-		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nodefaultlibs")
-
-		# -lc++ cannot be added directly to CMAKE_<TYPE>_LINKER_FLAGS because
-		# linker flags appear before all linker inputs and -lc++ must appear after.
-		#list(APPEND SALGO_CXX_LIBRARIES c++)
-		link_libraries(c++ c++abi m c gcc_s gcc)
+		# to be added to CMAKE_<TYPE>_LINKER_FLAGS as last entries
+		list(APPEND SALGO_CXX_LINKER_FLAGS -nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc -lgcc_s -lpthread)
 	else()
 		message(FATAL "-DSALGO_USE_LIBCXX:BOOL=ON is not supported for this compiler")
 	endif()
@@ -129,7 +126,6 @@ if(SALGO_BUILD_BENCHMARKS)
 	#enable_testing()
 	add_subdirectory(benchmark)
 endif(SALGO_BUILD_BENCHMARKS)
-
 
 
 

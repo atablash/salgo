@@ -23,7 +23,6 @@ endif()
 
 
 
-
 find_package(gflags REQUIRED)
 if (GFLAGS_FOUND)
     include_directories(${GFLAGS_INCLUDE_DIRS})
@@ -31,12 +30,20 @@ if (GFLAGS_FOUND)
 endif()
 
 
+
+
+link_libraries( ${SALGO_CXX_LINKER_FLAGS} )
+
+
+
+
+
 set(sources
 	main.cpp
 	stack-storage.cpp
 	memory-block.cpp
-	sparse-vector.cpp
-	dense-vector.cpp
+	vector.cpp
+	vector-sparse.cpp
 	allocator.cpp
 	list.cpp
 	unordered-vector.cpp
@@ -64,6 +71,7 @@ add_executable(	all-tests ${sources} )
 
 target_link_libraries( all-tests
 	${CMAKE_THREAD_LIBS_INIT} # required by GoogleTest
+	
 )
 
 # cotire(all-tests)
