@@ -95,20 +95,12 @@ matrix:
 
 
 
-
-    # clang++-5.0  +  libc++
-    - compiler: clang++
-      env:
-        - USE_LIBCXX=ON
-
-
-
-
     # g++-7  +  libc++
     - compiler: g++-7
       env:
-        - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
         - USE_LIBCXX=ON
+        - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
+        - LD_FLAGS_LIBCXX="$LD_FLAGS -nodefaultlibs -lc++ -lc++abi -lc -lm -lgcc_s -lgcc" # for projects not supporting libc++
 
       addons:
         apt:
@@ -123,6 +115,15 @@ matrix:
 
             # FOR G++-7 BUILDS:
             - g++-7
+
+
+
+
+    # clang++-5.0  +  libc++
+    - compiler: clang++
+      env:
+        - USE_LIBCXX=ON
+
 
 
 
@@ -145,7 +146,7 @@ install:
 
   # gtest (the version from ubuntu repos is not compiled, only source)
   # (links with std c++ lib)
-  - (git clone https://github.com/google/googletest.git inst-gtest --depth 1    && cd inst-gtest    && cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS"   && make -j2    && make install)
+  - (git clone https://github.com/google/googletest.git inst-gtest --depth 1    && cd inst-gtest    && cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS $LD_FLAGS_LIBCXX"   && make -j2    && make install)
 
 
 script:
