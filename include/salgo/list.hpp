@@ -459,7 +459,7 @@ struct Context {
 		using COUNTABLE =
 			typename Context<Val, Allocator, true> :: With_Builder;
 
-		using FULL =
+		using FULL_BLOWN =
 			typename Context<Val, Allocator, true> :: With_Builder;
 	};
 

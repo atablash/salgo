@@ -41,7 +41,7 @@ env:
     - CMAKE_LIBRARY_PATH="$CMAKE_PREFIX_PATH/lib"
 
     # for libc++
-    - CXX_FLAGS="-I$CMAKE_INCLUDE_PATH"
+    - CXX_FLAGS="-I$CMAKE_INCLUDE_PATH -nostdinc++"
     - LD_FLAGS="-L$CMAKE_LIBRARY_PATH"
 
     # for running programs using libc++
@@ -125,33 +125,7 @@ matrix:
             - g++-7
 
 
-    # clang++ 5.0  +  libstdc++
-    # - os: linux
-    #   addons:
-    #     apt:
-    #       sources:
-    #         - llvm-toolchain-trusty-5.0
-    #         - ubuntu-toolchain-r-test # libstdc++-7-dev
-    #       packages:
-    #         - clang-5.0
-    #         - libstdc++-7-dev
-    #         - autoconf # for compiling glog
-    #         - libtool # for compiling glog
-    #         # dependencies
-    #         #- libgoogle-glog-dev
-    #         #- libgtest-dev
-    #         - libgflags-dev
-    #         - libeigen3-dev
-    #   env:
-    #     - CC=clang-5.0
-    #     - CXX=clang++-5.0
-    #     - USE_LIBCXX=OFF
-    #     - CMAKE_ARGS=
-    #     - CMAKE_PREFIX_PATH=`pwd`/INSTALL_ROOT
 
-
-    #- os: linux
-      
 
 
 

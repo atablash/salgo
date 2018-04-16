@@ -54,10 +54,10 @@ add_definitions(
 #
 if (SALGO_USE_LIBCXX)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    add_cxx_compiler_flag(-stdlib=libc++)
+    SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
   elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
           "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-    add_cxx_compiler_flag(-nostdinc++)
+    SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
     message("libc++ header path must be manually specified using CMAKE_CXX_FLAGS")
     # Adding -nodefaultlibs directly to CMAKE_<TYPE>_LINKER_FLAGS will break
     # configuration checks such as 'find_package(Threads)'
