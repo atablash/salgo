@@ -42,6 +42,9 @@ env:
     - CXX_FLAGS="-I$CMAKE_INCLUDE_PATH"
     - LD_FLAGS="-L$CMAKE_LIBRARY_PATH"
 
+    # for running programs using libc++
+    - LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$CMAKE_LIBRARY_PATH"
+
 
 
 
