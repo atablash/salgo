@@ -144,7 +144,7 @@ static void ERASE_salgo_countable_stdalloc(State& state) {
 	srand(69);
 
 	const int N = state.iterations();
-	
+
 	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
 	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
 
@@ -227,6 +227,35 @@ static void ITERATE_salgo_countable(State& state) {
 
 }
 BENCHMARK( ITERATE_salgo_countable );
+
+
+
+
+
+
+static void ITERATE_salgo_countable_stdalloc(State& state) {
+	srand(69);
+
+	const int N = state.iterations();
+
+	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
+	salgo::List<int> :: COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch( li.count() ) ) {
+		for(auto& e : li) {
+			DoNotOptimize(e);
+		}
+	}
+
+
+
+}
+BENCHMARK( ITERATE_salgo_countable_stdalloc );
 
 
 

@@ -148,6 +148,7 @@ struct Context {
 	struct Node {
 		typename salgo::Stack_Storage<Val>::PERSISTENT val; // make sure it's not moved
 
+		// big/small - no big performance difference
 		Small_Handle next;
 		Small_Handle prev;
 
@@ -199,17 +200,17 @@ struct Context {
 		friend Iterator_Base<C,Accessor>;
 
 		inline void _increment() {
+			_prev = _handle;
 			_handle = _next;
-			//_handle = _owner->_alloc()[ _handle ].next;
 			DCHECK( _handle.valid() ) << "followed broken list link";
-			_update();
+			_update_next();
 		}
 
 		inline void _decrement() {
+			_next = _handle;
 			_handle = _prev;
-			//_handle = _owner->_alloc()[ _handle ].prev;
 			DCHECK( _handle.valid() ) << "followed broken list link";
-			_update();
+			_update_prev();
 		}
 
 		auto _get_comparable() const {  return _handle;  }
@@ -221,8 +222,11 @@ struct Context {
 
 
 	private:
-		void _update() {
+		void _update_prev() {
 			_prev = list_prev(_owner->_alloc(), _handle);
+		}
+
+		void _update_next() {
 			_next = list_next(_owner->_alloc(), _handle);
 		}
 
@@ -230,7 +234,7 @@ struct Context {
 
 	private:
 		Accessor(Const<List,C>* owner, Handle handle)
-			: _owner(owner), _handle(handle) { _update(); }
+			: _owner(owner), _handle(handle) { _update_prev(); _update_next(); }
 
 		friend List;
 
@@ -239,7 +243,8 @@ struct Context {
 		Const<List,C>* _owner;
 		Handle _handle;
 
-		Handle _prev, _next;
+		Handle _prev;
+		Handle _next;
 	};
 
 
