@@ -108,18 +108,36 @@ struct Context {
 
 
 	class Salgo_From_Std_Allocator : private Allocator {
+
+	#ifndef NDEBUG
+		int _num_allocations = 0;
+		public: ~Salgo_From_Std_Allocator() {
+			DCHECK_EQ(0, _num_allocations);
+		}
+	#endif
+
 	public:
 		using Handle = Context::Handle;
 		using Small_Handle = Handle;
 
 		template<class... ARGS>
 		auto construct(ARGS&&... args) {
+
+			#ifndef NDEBUG
+			++_num_allocations;
+			#endif
+
 			Pointer pointer = std::allocator_traits<Allocator>::allocate( _allocator(), 1 );
 			std::allocator_traits<Allocator>::construct( _allocator(), pointer, std::forward<ARGS>(args)... );
 			return Accessor<MUTAB>(*this, pointer);
 		}
 
 		void destruct(Handle handle) {
+
+			#ifndef NDEBUG
+			--_num_allocations;
+			#endif
+			
 			std::allocator_traits<Allocator>::destroy( _allocator(), (Pointer)handle );
 			std::allocator_traits<Allocator>::deallocate( _allocator(), handle, 1 );
 		}

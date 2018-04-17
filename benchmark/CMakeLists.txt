@@ -27,7 +27,7 @@ include_directories( # SYSTEM
 
 
 add_executable(	hash-table hash-table.cpp )
-#add_executable(	list       list.cpp )
+add_executable(	list       list.cpp )
 add_executable(	vector     vector.cpp )
 
 

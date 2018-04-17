@@ -43,7 +43,7 @@ namespace internal {
 		alloc[next].prev = prev;
 
 		me.val.destruct();
-		// alloc.destruct(handle); // still need links for 'no_invalidation'
+		alloc.destruct(handle);
 
 		return next;
 	}
@@ -199,13 +199,17 @@ struct Context {
 		friend Iterator_Base<C,Accessor>;
 
 		inline void _increment() {
-			_handle = _owner->_alloc()[ _handle ].next;
+			_handle = _next;
+			//_handle = _owner->_alloc()[ _handle ].next;
 			DCHECK( _handle.valid() ) << "followed broken list link";
+			_update();
 		}
 
 		inline void _decrement() {
-			_handle = _owner->_alloc()[ _handle ].prev;
+			_handle = _prev;
+			//_handle = _owner->_alloc()[ _handle ].prev;
 			DCHECK( _handle.valid() ) << "followed broken list link";
+			_update();
 		}
 
 		auto _get_comparable() const {  return _handle;  }
@@ -216,12 +220,17 @@ struct Context {
 		}
 
 
+	private:
+		void _update() {
+			_prev = list_prev(_owner->_alloc(), _handle);
+			_next = list_next(_owner->_alloc(), _handle);
+		}
 
 
 
 	private:
 		Accessor(Const<List,C>* owner, Handle handle)
-			: _owner(owner), _handle(handle) {}
+			: _owner(owner), _handle(handle) { _update(); }
 
 		friend List;
 
@@ -229,6 +238,8 @@ struct Context {
 	private:
 		Const<List,C>* _owner;
 		Handle _handle;
+
+		Handle _prev, _next;
 	};
 
 
@@ -296,17 +307,13 @@ struct Context {
 		}
 
 		~List() {
-			#ifdef NDEBUG
-			static_assert(std::is_trivially_destructible_v<Node>);
-			#endif
-
 			for(auto& e : *this) {
 				_alloc()[ e.handle() ].val.destruct();
-				//_alloc().destruct( e.handle() );
+				_alloc().destruct( e.handle() );
 			}
 
-			//_alloc().destruct( _front );
-			//_alloc().destruct( _back );
+			_alloc().destruct( _front );
+			_alloc().destruct( _back );
 		}
 
 		void clear() {
@@ -316,7 +323,7 @@ struct Context {
 
 			for(auto e : *this) {
 				_alloc()[ e.handle() ].val.destruct();
-				//_alloc().destruct( e.handle() );
+				_alloc().destruct( e.handle() );
 			}
 
 			_alloc()[_front].next = _back;
