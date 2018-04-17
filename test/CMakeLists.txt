@@ -17,24 +17,12 @@ if (GTEST_FOUND)
 	# required by GTest
 	set(THREADS_PREFER_PTHREAD_FLAG ON)
 	find_package(Threads REQUIRED)
+	link_libraries( ${CMAKE_THREAD_LIBS_INIT} ) # required by GoogleTest
 endif()
-
-
-
-
-
-find_package(gflags REQUIRED)
-if (GFLAGS_FOUND)
-    include_directories(${GFLAGS_INCLUDE_DIRS})
-    link_libraries(${GFLAGS_LIBRARIES})
-endif()
-
 
 
 
 link_libraries( ${SALGO_CXX_LINKER_FLAGS} )
-
-
 
 
 
@@ -62,20 +50,8 @@ include_directories( # SYSTEM
 	../include
 )
 
-include_directories( SYSTEM
-	../third-party
-)
-
 
 add_executable(	all-tests ${sources} )
-
-target_link_libraries( all-tests
-	${CMAKE_THREAD_LIBS_INIT} # required by GoogleTest
-	
-)
-
-# cotire(all-tests)
-
 add_test( all-tests all-tests )
 
 

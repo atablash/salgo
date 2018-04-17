@@ -11,8 +11,6 @@ using namespace std::chrono;
 
 
 
-DECLARE_int32(perf);
-
 
 
 
@@ -265,7 +263,7 @@ TEST(Sparse_vector, move_container_exists) {
 
 
 
-
+/*
 
 static void run_vector(int N, int type) {
 	
@@ -575,34 +573,5 @@ static void run_sparse_vector_noacc(int N, int type) {
 
 
 
-
-
-
-
-
-
-TEST(Sparse_vector, perf) {
-	const int N = FLAGS_perf;
-	if(N == 0) return;
-
-	for(int type=0; type<2; ++type) {
-
-		cout << endl << (type==0 ? "SEQUENTIAL" : "RANDOM ACCESS") << endl;
-
-		run_vector(N, type);
-		run_vector_inplace(N,type);
-		run_vector_external(N,type);
-		run_vector_external_bitset(N,type);
-		run_sparse_vector(N,type);
-		run_sparse_vector_inplace(N,type);
-		run_sparse_vector_index(N,type);
-		run_sparse_vector_noacc(N,type);
-	}
-}
-
-
-
-
-
-
+*/
 

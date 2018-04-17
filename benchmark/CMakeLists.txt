@@ -1,13 +1,4 @@
 
-#===============================================================================
-# Additional cmake modules
-#===============================================================================
-#set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-#message("CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH})
-
-
-
-
 
 find_package(Benchmark REQUIRED)
 if (Benchmark_FOUND)
@@ -25,27 +16,7 @@ endif()
 
 
 
-#find_package(GTest REQUIRED)
-#if (GTEST_FOUND)
-#	include_directories( ${GTEST_INCLUDE_DIRS} )
-#	link_libraries( ${GTEST_LIBRARIES} )
-#	# link_libraries( ${GTEST_MAIN_LIBRARIES} )
-#
-#	# required by GTest
-#	set(THREADS_PREFER_PTHREAD_FLAG ON)
-#	find_package(Threads REQUIRED)
-#endif()
-
-
-
-
-
-
-#find_package(gflags REQUIRED)
-#if (GFLAGS_FOUND)
-#    include_directories(${GFLAGS_INCLUDE_DIRS})
-#    link_libraries(${GFLAGS_LIBRARIES})
-#endif()
+link_libraries( ${SALGO_CXX_LINKER_FLAGS} )
 
 
 
@@ -54,18 +25,9 @@ include_directories( # SYSTEM
 	../include
 )
 
-#include_directories( SYSTEM
-#	../third-party
-#)
-
 
 add_executable(	hash-table hash-table.cpp )
 add_executable(	list       list.cpp )
 add_executable(	vector     vector.cpp )
-
-
-# cotire(all-tests)
-
-# add_test( hash-table hash-table )
 
 
