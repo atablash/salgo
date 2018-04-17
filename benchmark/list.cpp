@@ -192,9 +192,9 @@ static void ITERATE_std(State& state) {
 	}
 
 	while( state.KeepRunningBatch( li.size() ) ) {
-		for(auto& e : li) {
-			DoNotOptimize(e);
-		}
+		int sum = 0;
+		for(auto& e : li) sum += e;
+		DoNotOptimize(sum);
 	}
 
 
@@ -218,9 +218,9 @@ static void ITERATE_salgo_countable(State& state) {
 	}
 
 	while( state.KeepRunningBatch( li.count() ) ) {
-		for(auto& e : li) {
-			DoNotOptimize(e);
-		}
+		int sum = 0;
+		for(auto& e : li) sum += e;
+		DoNotOptimize(sum);
 	}
 
 
@@ -247,9 +247,9 @@ static void ITERATE_salgo_countable_stdalloc(State& state) {
 	}
 
 	while( state.KeepRunningBatch( li.count() ) ) {
-		for(auto& e : li) {
-			DoNotOptimize(e);
-		}
+		int sum = 0;
+		for(auto& e : li) sum += e;
+		DoNotOptimize(sum);
 	}
 
 
