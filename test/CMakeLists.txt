@@ -32,7 +32,7 @@ set(sources
 	memory-block.cpp
 	vector.cpp
 	vector-sparse.cpp
-	allocator.cpp
+	crude-allocator.cpp
 	list.cpp
 	unordered-vector.cpp
 	hash-table.cpp

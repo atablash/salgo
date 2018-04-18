@@ -1,4 +1,4 @@
-#include <salgo/allocator.hpp>
+#include <salgo/crude-allocator.hpp>
 
 #include <gtest/gtest.h>
 
@@ -34,16 +34,16 @@ struct S {
 
 
 
-TEST(Allocator, simple) {
+TEST(Crude_Allocator, simple) {
 
 	g_constructors = 0;
 	g_destructors = 0;
 
 	pointers.clear();
 
-	Allocator<S> alloc;
+	Crude_Allocator<S> alloc;
 
-	std::vector< Allocator<S>::Handle > handles;
+	std::vector< Crude_Allocator<S>::Handle > handles;
 	for(int i=0; i<100; ++i) {
 		handles.emplace_back( alloc.construct() );
 	}
@@ -58,14 +58,14 @@ TEST(Allocator, simple) {
 
 
 
-TEST(Allocator, auto_destruct) {
+TEST(Crude_Allocator, auto_destruct) {
 
 	g_constructors = 0;
 	g_destructors = 0;
 
 	pointers.clear();
 
-	using Alloc = Allocator<S> :: AUTO_DESTRUCT;
+	using Alloc = Crude_Allocator<S> :: AUTO_DESTRUCT;
 
 	{
 		Alloc alloc;
@@ -90,14 +90,14 @@ TEST(Allocator, auto_destruct) {
 
 
 
-TEST(Allocator, no_auto_destruct) {
+TEST(Crude_Allocator, no_auto_destruct) {
 
 	g_constructors = 0;
 	g_destructors = 0;
 
 	pointers.clear();
 
-	using Alloc = Allocator<S>;
+	using Alloc = Crude_Allocator<S>;
 
 	{
 		Alloc alloc;
