@@ -155,6 +155,7 @@ struct Context {
 
 
 	class Vector {
+		static_assert(!(Dense && Count), "no need for COUNT if vector is DENSE");
 
 	public:
 		using Val = Context::Val;

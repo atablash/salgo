@@ -2,7 +2,8 @@
 
 #include "memory-block.hpp"
 #include "unordered-vector.hpp"
-#include "allocator.hpp"
+#include "crude-allocator.hpp"
+#include "random-allocator.hpp"
 
 
 namespace salgo {
@@ -446,7 +447,7 @@ using Hash_Table = typename internal::hash_table::Context<
 	KEY,
 	VAL,
 	::std::hash<KEY>, // HASH
-	salgo::Allocator<int> :: SINGLETON, // ALLOCATOR (int will be rebound anyway)
+	salgo::Random_Allocator<int> :: SINGLETON, // ALLOCATOR (int will be rebound anyway), used only when not INPLACE
 	std::is_move_constructible_v<KEY> && (std::is_same_v<VAL,void> || std::is_move_constructible_v<VAL>) // INPLACE
 > :: With_Builder;
 

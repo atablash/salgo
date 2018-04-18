@@ -4,7 +4,8 @@
 #include "const-flag.hpp"
 #include "accessors.hpp"
 #include "stack-storage.hpp"
-#include "allocator.hpp"
+//#include "crude-allocator.hpp"
+#include "random-allocator.hpp"
 
 #ifndef NDEBUG
 #include <unordered_set>
@@ -117,6 +118,10 @@ template<> struct Add_num_existing<false> {};
 
 
 
+
+
+
+
 template<class _VAL, class _ALLOCATOR, bool _COUNTABLE>
 struct Context {
 
@@ -130,15 +135,23 @@ struct Context {
 	using Container = List;
 
 
+
+
 	//
 	// template arguments
 	//
 	using Val = _VAL;
-	using Allocator = typename _ALLOCATOR :: template VAL<Node>;
 	static constexpr bool Countable = _COUNTABLE;
 
+
+
+
+
+
+	using Allocator = typename _ALLOCATOR :: template VAL<Node>;
+
 	using       Handle = typename Allocator ::       Handle;
-	using Small_Handle = typename Allocator :: Small_Handle; // Small_Handle is faster than Handle for List
+	using Small_Handle = typename Allocator :: Small_Handle;
 
 
 
@@ -250,15 +263,19 @@ struct Context {
 
 
 
+
+
 	struct Node {
 		typename salgo::Stack_Storage<Val>::PERSISTENT val; // make sure it's not moved
 
-		// big/small - no big performance difference
-		Small_Handle next;
-		Small_Handle prev;
+		Handle next;
+		Handle prev;
 
 		static constexpr bool Countable = Context::Countable;
 	};
+
+
+
 
 
 
@@ -499,7 +516,7 @@ template<
 >
 using List = typename internal::List::Context<
 	VAL,
-	Allocator<VAL>, // ::SINGLETON,
+	Random_Allocator<VAL>, // ::SINGLETON,
 	false // COUNTABLE
 > :: With_Builder;
 

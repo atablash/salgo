@@ -16,7 +16,7 @@ namespace salgo {
 
 
 namespace internal {
-namespace allocator {
+namespace crude_allocator {
 
 
 template<
@@ -110,8 +110,8 @@ struct Context {
 
 
 
-	using       Handle = allocator::      Handle<P>;
-	using Small_Handle = allocator::Small_Handle<P>;
+	using       Handle = crude_allocator::      Handle<P>;
+	using Small_Handle = crude_allocator::Small_Handle<P>;
 
 
 
@@ -129,7 +129,7 @@ struct Context {
 
 
 	// forward
-	class Allocator;
+	class Crude_Allocator;
 
 
 
@@ -157,14 +157,14 @@ struct Context {
 
 
 	private:
-		Accessor(Const<Allocator,C>& owner, Handle handle)
+		Accessor(Const<Crude_Allocator,C>& owner, Handle handle)
 			: _owner(owner), _handle(handle) {}
 
-		friend Allocator;
+		friend Crude_Allocator;
 
 
 	private:
-		Const<Allocator,C>& _owner;
+		Const<Crude_Allocator,C>& _owner;
 		const Handle _handle;
 	};
 
@@ -173,7 +173,7 @@ struct Context {
 
 
 
-	class Allocator {
+	class Crude_Allocator {
 	private:
 		salgo::Vector< Memory_Block > v;
 		int current_filled = 0;
@@ -218,12 +218,12 @@ struct Context {
 
 
 	class Allocator_Proxy {
-		static auto& _get() { return global_instance<Allocator>(); }
+		static auto& _get() { return global_instance<Crude_Allocator>(); }
 
 	public:
-		using          Val = typename Allocator::Val;
-		using Small_Handle = typename Allocator::Small_Handle;
-		using       Handle = typename Allocator::Handle;
+		using          Val = typename Crude_Allocator::Val;
+		using Small_Handle = typename Crude_Allocator::Small_Handle;
+		using       Handle = typename Crude_Allocator::Handle;
 
 	public:
 		template<class... ARGS>
@@ -255,7 +255,7 @@ struct Context {
 	using My_Allocator = std::conditional_t<
 		Singleton,
 		Allocator_Proxy,
-		Allocator
+		Crude_Allocator
 	>;
 
 
@@ -288,7 +288,7 @@ struct Context {
 template<
 	class VAL
 >
-using Allocator = typename internal::allocator::Context<
+using Crude_Allocator = typename internal::crude_allocator::Context<
 	VAL,
 	false, // auto-destruct
 	false // singleton
@@ -311,8 +311,8 @@ using Allocator = typename internal::allocator::Context<
 
 
 template<class X>
-struct std::hash<salgo::internal::allocator::Small_Handle<X>> {
-	size_t operator()(const salgo::internal::allocator::Small_Handle<X>& h) const {
+struct std::hash<salgo::internal::crude_allocator::Small_Handle<X>> {
+	size_t operator()(const salgo::internal::crude_allocator::Small_Handle<X>& h) const {
 		return h;
 	}
 };

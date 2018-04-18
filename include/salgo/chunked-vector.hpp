@@ -25,9 +25,16 @@ namespace chunked_vector {
 
 
 
+template<bool> struct Add_num_existing { int num_existing = 0; };
+template<> struct Add_num_existing<false> {};
+
+
+
+
 template<
 	class VAL,
 	bool SPARSE,
+	bool COUNT,
 	class MEMORY_BLOCK
 >
 struct Params {};
@@ -53,10 +60,20 @@ template<class X>
 struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int>, int> { // for first number, char is enough
 	using BASE = Pair_Handle_Base<Handle<X>, Int_Handle<int>, int>;
 
+	Handle() = default;
+
 	template<class A, class B>
 	Handle(A aa, B bb) : BASE(aa,bb) {}
 
 	Handle(const Small_Handle<X>& small) {
+
+		#ifndef NDEBUG
+		if(small.a == 0) {
+			BASE::reset();
+			return;
+		}
+		#endif
+
 		auto bsr = bit_scan_reverse(small.a);
 		BASE::a = bsr;
 		BASE::b = (1u<<bsr) ^ small.a;
@@ -90,7 +107,8 @@ struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int>, int> { // for first
 template<class X>
 struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int, 0> {
 	using BASE = Int_Handle_Base<Small_Handle<X>, unsigned int, 0>;
-	//FORWARDING_CONSTRUCTOR(Small_Handle, BASE);
+
+	Small_Handle() = default;
 
 	Small_Handle(const Handle<X>& big) : BASE(1<<big.a ^ big.b) {
 		DCHECK_LT(big.a, 32);
@@ -113,10 +131,10 @@ struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int, 0> {
 
 
 
-template<class _VAL, bool _SPARSE, class _MEMORY_BLOCK>
+template<class _VAL, bool _SPARSE, bool _COUNT, class _MEMORY_BLOCK>
 struct Context {
 
-	using P = Params<_VAL, _SPARSE, _MEMORY_BLOCK>;
+	using P = Params<_VAL, _SPARSE, _COUNT, _MEMORY_BLOCK>;
 
 	//
 	// forward declarations
@@ -141,15 +159,13 @@ struct Context {
 	static constexpr bool Sparse         = _SPARSE;
 	static constexpr bool Dense          = !Sparse;
 
+	static constexpr bool Count          = _COUNT;
+
 	static constexpr bool Iterable = Dense || Exists;
 
 
 	using       Handle = chunked_vector::      Handle<P>;
 	using Small_Handle = chunked_vector::Small_Handle<P>;
-
-
-	static constexpr bool Has_Pop_Back_Result = std::is_move_constructible_v<Val>;
-	using Pop_Back_Result = std::conditional_t<Has_Pop_Back_Result, Val, void>;
 
 
 
@@ -235,12 +251,11 @@ struct Context {
 
 
 
-
-	class Chunked_Vector {
-
+	class Chunked_Vector : private Add_num_existing<Count> {
 	public:
 		using Val = Context::Val;
-		using Handle = Context::Handle;
+		using       Handle = Context::      Handle;
+		using Small_Handle = Context::Small_Handle;
 
 
 	private:
@@ -260,12 +275,14 @@ struct Context {
 		// construction
 		//
 	public:
-		Chunked_Vector() = default;
+		Chunked_Vector() {
+			static_assert(!(Dense && Count), "no need for COUNT if vector is DENSE");
+		}
 
-		Chunked_Vector(int new_size) { resize(new_size); }
+		Chunked_Vector(int new_size) : Chunked_Vector() { resize(new_size); }
 
 		template<class T>
-		Chunked_Vector(std::initializer_list<T>&& l) {
+		Chunked_Vector(std::initializer_list<T>&& l) : Chunked_Vector() {
 			static_assert(std::is_constructible_v<Val, const T&&>, "wrong initializer_list element type");
 
 			reserve( l.size() );
@@ -327,11 +344,13 @@ struct Context {
 		void construct(Handle handle, ARGS&&... args) {  static_assert(Sparse);
 			_check_bounds(handle);
 			_blocks[handle.a].construct( handle.b, std::forward<ARGS>(args)... );
+			if constexpr(Count) Add_num_existing<Count>::num_existing++;
 		}
 
 		void destruct(Handle handle) {  static_assert(Sparse);
 			_check_bounds(handle);
 			_blocks[handle.a].destruct( handle.b );
+			if constexpr(Count) Add_num_existing<Count>::num_existing--;
 		}
 
 		bool exists(Handle handle) const {
@@ -366,10 +385,24 @@ struct Context {
 			auto idx = _size - _blocks.back()().size();
 			_blocks.back()().construct( idx, std::forward<ARGS>(args)... );
 
+			if constexpr(Count) Add_num_existing<Count>::num_existing++;
+
 			return Accessor<MUTAB>( this, Handle(_blocks.size()-1, idx) );
 		}
 
-		Pop_Back_Result pop_back() {
+
+
+
+	public:
+		// proxy to template _pop_back<> to avoid Val template instantiation
+		auto pop_back() {
+			if constexpr(std::is_move_constructible_v<Val>) return _pop_back<>();
+			else _pop_back<>();
+		}
+
+	private:
+		template<class V = Val>
+		std::conditional_t<std::is_move_constructible_v<V>, V, void> _pop_back() {
 			static_assert(Dense || Exists, "can't pop_back() if last element is unknown");
 
 			DCHECK_GT(_size, 0) << "pop_back() on empty Vector";
@@ -390,9 +423,10 @@ struct Context {
 			}
 			DCHECK( exists(_size-1) );
 
-			if constexpr(Has_Pop_Back_Result) {
+			if constexpr(std::is_move_constructible_v<V>) {
 				Val result = std::move( _blocks.back()()[idx] );
 				_blocks.back()().destruct(idx);
+				if constexpr(Count) Add_num_existing<Count>::num_existing--;
 				if(idx == 0) {
 					_blocks.pop_back();
 				}
@@ -402,6 +436,7 @@ struct Context {
 			}
 			else {
 				_blocks.back()().destruct(idx);
+				if constexpr(Count) Add_num_existing<Count>::num_existing--;
 				if(idx == 0) {
 					_blocks.pop_back();
 				}
@@ -410,9 +445,21 @@ struct Context {
 		}
 
 
+	public:
 		int size() const {
 			static_assert(Dense, "size() for sparse vector is a bit ambiguous. Use count() or domain() instead");
 			return _size;
+		}
+
+		int domain() const {
+			return _size;
+		}
+
+		int count() const {
+			static_assert(Dense || Count, "unable to count(). well, at least in constant time");
+
+			if constexpr(Dense) return _size;
+			else if constexpr(Count) return Add_num_existing<Count>::num_existing;
 		}
 
 		template<class... ARGS>
@@ -420,13 +467,17 @@ struct Context {
 			if(new_size == 0) {
 				_blocks.clear();
 				_size = 0;
+				if constexpr(Count) Add_num_existing<Count>::num_existing = 0;
 				return;
 			}
 
 			// destruct elements
 			for(int i=new_size; i<_size; ++i ) {
 				auto h = Handle(i);
-				if( exists(h) ) _blocks[h.a].destruct(h.b);
+				if( exists(h) ) {
+					_blocks[h.a].destruct(h.b);
+					if constexpr(Count) Add_num_existing<Count>::num_existing--;
+				}
 			}
 
 			int new_num_blocks = bit_scan_reverse(new_size) + 1;
@@ -450,6 +501,7 @@ struct Context {
 			for(int i=_size; i<new_size; ++i) {
 				auto h = Handle(i);
 				_blocks[h.a].construct(h.b, args...);
+				if constexpr(Count) Add_num_existing<Count>::num_existing++;
 			}
 
 			_size = new_size;
@@ -458,9 +510,11 @@ struct Context {
 		void clear() { resize(0); }
 
 		int capacity() const {
-			if(_blocks.empty()) return 0;
+			DCHECK_EQ((_blocks.empty() ? 0 : _blocks.back()().size()*2-1), ((1<<_blocks.size())-1));
+			return (1 << _blocks.size()) - 1;
 
-			return _blocks.back()().size()*2 - 1;
+			//if(_blocks.empty()) return 0;
+			//return _blocks.back()().size()*2 - 1;
 		}
 
 		// currently reserves only space for _blocks
@@ -510,26 +564,28 @@ struct Context {
 
 
 		using EXISTS =
-			typename Context< Val, Sparse, typename Memory_Block::EXISTS > :: With_Builder;
+			typename Context< Val, Sparse, Count, typename Memory_Block::EXISTS > :: With_Builder;
 
 		using EXISTS_INPLACE =
-			typename Context< Val, Sparse, typename Memory_Block::EXISTS_INPLACE > :: With_Builder;
+			typename Context< Val, Sparse, Count, typename Memory_Block::EXISTS_INPLACE > :: With_Builder;
 
 		using EXISTS_CHUNK_BITSET =
-			typename Context< Val, Sparse, typename Memory_Block::EXISTS_BITSET > :: With_Builder;
+			typename Context< Val, Sparse, Count, typename Memory_Block::EXISTS_BITSET > :: With_Builder;
 
 
 
 		// also enable EXISTS by default
 		using SPARSE =
-			typename Context< Val, true, Memory_Block > :: With_Builder :: EXISTS;
+			typename Context< Val, true, Count, Memory_Block > :: With_Builder :: EXISTS;
 
 
 		// just enable SPARSE, but no EXISTS
 		using SPARSE_NO_EXISTS =
-			typename Context< Val, true, Memory_Block > :: With_Builder;
+			typename Context< Val, true, Count, Memory_Block > :: With_Builder;
 
-		// TODO: COUNT
+
+		using COUNT =
+			typename Context< Val, Sparse, true, Memory_Block > :: With_Builder :: EXISTS;
 	};
 
 
@@ -548,6 +604,7 @@ template< class T >
 using Chunked_Vector = typename internal::chunked_vector::Context<
 	T,
 	false, // SPARSE
+	false, // COUNT
 	Memory_Block<T>
 > :: With_Builder;
 

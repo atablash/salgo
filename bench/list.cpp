@@ -2,6 +2,8 @@
 
 #include <salgo/list.hpp>
 #include <salgo/salgo-from-std-allocator.hpp>
+#include <salgo/crude-allocator.hpp>
+#include <salgo/random-allocator.hpp>
 
 #include <list>
 
@@ -44,20 +46,6 @@ BENCHMARK( INSERT_salgo );
 
 
 
-static void INSERT_salgo_countable(State& state) {
-	srand(69);
-
-	salgo::List<int> :: COUNTABLE li;
-
-	for(auto _ : state) {
-		li.emplace_back( rand() );
-		li.emplace_front( rand() );
-	}
-}
-BENCHMARK( INSERT_salgo_countable );
-
-
-
 
 static void INSERT_salgo_countable_stdalloc(State& state) {
 	srand(69);
@@ -71,6 +59,42 @@ static void INSERT_salgo_countable_stdalloc(State& state) {
 	}
 }
 BENCHMARK( INSERT_salgo_countable_stdalloc );
+
+
+
+static void INSERT_salgo_countable_crudealloc(State& state) {
+	srand(69);
+
+	using Alloc = salgo::Crude_Allocator<int>;
+	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(auto _ : state) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+}
+BENCHMARK( INSERT_salgo_countable_crudealloc );
+
+
+
+static void INSERT_salgo_countable_randalloc(State& state) {
+	srand(69);
+
+	using Alloc = salgo::Random_Allocator<int>;
+	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(auto _ : state) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+}
+BENCHMARK( INSERT_salgo_countable_randalloc );
+
+
+
+
+
+
 
 
 
@@ -113,33 +137,6 @@ BENCHMARK( ERASE_std );
 
 
 
-static void ERASE_salgo_countable(State& state) {
-	srand(69);
-
-	const int N = state.iterations();
-	salgo::List<int> ::COUNTABLE li;
-
-	for(int i=0; i<N; ++i) {
-		li.emplace_back( rand() );
-		li.emplace_front( rand() );
-	}
-
-	while( state.KeepRunningBatch(li.count()) ) {
-		int ith = 0;
-		for(auto& e : li) {
-			if(ith%2) {
-				e.erase();
-			}
-
-			++ith;
-		}
-	}
-}
-BENCHMARK( ERASE_salgo_countable );
-
-
-
-
 static void ERASE_salgo_countable_stdalloc(State& state) {
 	srand(69);
 
@@ -165,6 +162,64 @@ static void ERASE_salgo_countable_stdalloc(State& state) {
 	}
 }
 BENCHMARK( ERASE_salgo_countable_stdalloc );
+
+
+
+
+static void ERASE_salgo_countable_crudealloc(State& state) {
+	srand(69);
+
+	const int N = state.iterations();
+
+	using Alloc = salgo::Crude_Allocator<int>;
+	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch(li.count()) ) {
+		int ith = 0;
+		for(auto& e : li) {
+			if(ith%2) {
+				e.erase();
+			}
+
+			++ith;
+		}
+	}
+}
+BENCHMARK( ERASE_salgo_countable_crudealloc );
+
+
+
+
+static void ERASE_salgo_countable_randalloc(State& state) {
+	srand(69);
+
+	const int N = state.iterations();
+
+	using Alloc = salgo::Random_Allocator<int>;
+	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch(li.count()) ) {
+		int ith = 0;
+		for(auto& e : li) {
+			if(ith%2) {
+				e.erase();
+			}
+
+			++ith;
+		}
+	}
+}
+BENCHMARK( ERASE_salgo_countable_randalloc );
 
 
 
@@ -206,32 +261,6 @@ BENCHMARK( ITERATE_std );
 
 
 
-static void ITERATE_salgo_countable(State& state) {
-	srand(69);
-
-	const int N = state.iterations();
-	salgo::List<int> :: COUNTABLE li;
-
-	for(int i=0; i<N; ++i) {
-		li.emplace_back( rand() );
-		li.emplace_front( rand() );
-	}
-
-	while( state.KeepRunningBatch( li.count() ) ) {
-		int sum = 0;
-		for(auto& e : li) sum += e;
-		DoNotOptimize(sum);
-	}
-
-
-
-}
-BENCHMARK( ITERATE_salgo_countable );
-
-
-
-
-
 
 static void ITERATE_salgo_countable_stdalloc(State& state) {
 	srand(69);
@@ -256,6 +285,62 @@ static void ITERATE_salgo_countable_stdalloc(State& state) {
 
 }
 BENCHMARK( ITERATE_salgo_countable_stdalloc );
+
+
+
+
+
+static void ITERATE_salgo_countable_crudealloc(State& state) {
+	srand(69);
+
+	const int N = state.iterations();
+
+	using Alloc = salgo::Crude_Allocator<int>;
+	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch( li.count() ) ) {
+		int sum = 0;
+		for(auto& e : li) sum += e;
+		DoNotOptimize(sum);
+	}
+
+
+
+}
+BENCHMARK( ITERATE_salgo_countable_crudealloc );
+
+
+
+
+
+static void ITERATE_salgo_countable_randalloc(State& state) {
+	srand(69);
+
+	const int N = state.iterations();
+
+	using Alloc = salgo::Random_Allocator<int>;
+	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch( li.count() ) ) {
+		int sum = 0;
+		for(auto& e : li) sum += e;
+		DoNotOptimize(sum);
+	}
+
+
+
+}
+BENCHMARK( ITERATE_salgo_countable_randalloc );
 
 
 

@@ -188,6 +188,8 @@ struct Context {
 		friend Accessor<CONST>;
 
 
+		static_assert(!(Dense && Count), "no need for COUNT if vector is DENSE");
+
 	private:
 		// avoid instantiating Node if not needed
 		static constexpr int _stack_buffer_sizeof() {
