@@ -34,6 +34,8 @@ env:
     - DESTDIR="$(pwd)/INSTALL_ROOT"
     - CMAKE_PREFIX_PATH="$DESTDIR/usr/local"
 
+    - BUILD_TYPE=Release
+
     - USE_LIBCXX=OFF
 
     # for libc++
@@ -127,6 +129,26 @@ matrix:
 
 
 
+    # clang++-5.0  +  libstdc++    DEBUG
+    - compiler: clang++
+      env:
+        - BUILD_TYPE=Debug
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test # default libstdc++ in Ubuntu 14.04 is too old
+
+          packages:
+            # FOR ALL BUILDS:
+            - libgoogle-glog-dev
+            - libgflags-dev
+            - libeigen3-dev
+
+            - libstdc++-7-dev # default libstdc++ in Ubuntu 14.04 is too old
+
+
+
+
 
 
 
@@ -151,16 +173,14 @@ install:
 
 script:
   # build
-  - cmake -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" .
+  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" .
   - make VERBOSE=1
 
   # run tests
   - test/all-tests
 
   # run benchmarks
-  - bench/list
-  - bench/hash-table
-
+  - if [[ $BUILD_TYPE = Release ]]; then    bench/list &&    bench/hash-table; fi
 
 
 notifications:
