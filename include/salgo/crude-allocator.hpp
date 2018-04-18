@@ -201,6 +201,12 @@ struct Context {
 			return Accessor<MUTAB>( *this, handle );
 		}
 
+		template<class... ARGS>
+		auto construct_near(Handle, ARGS&&... args) {
+			// TODO
+			return construct(std::forward<ARGS>(args)...);
+		}
+
 
 		void destruct(       Handle h )  { v[h.a].destruct( h.b ); }
 

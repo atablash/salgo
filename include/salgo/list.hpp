@@ -71,7 +71,7 @@ namespace internal {
 	inline auto list_emplace(ALLOC& alloc, HANDLE where, ARGS&&... args) {
 		DCHECK( where.valid() ) << "handle invalid";
 
-		auto h = alloc.construct().handle();
+		auto h = alloc.construct_near(where).handle();
 		alloc[h].val.construct( std::forward<ARGS>(args)... );
 
 		DCHECK( alloc[where].prev.valid() ) << "where->prev link invalid";
@@ -163,8 +163,8 @@ struct Context {
 
 
 	struct Extra_Context {
-		Handle _prev;
-		Handle _next;
+		Small_Handle _prev;
+		Small_Handle _next;
 	};
 
 
@@ -268,8 +268,8 @@ struct Context {
 	struct Node {
 		typename salgo::Stack_Storage<Val>::PERSISTENT val; // make sure it's not moved
 
-		Handle next;
-		Handle prev;
+		Small_Handle next;
+		Small_Handle prev;
 
 		static constexpr bool Countable = Context::Countable;
 	};

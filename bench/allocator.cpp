@@ -1,3 +1,4 @@
+#include "common.hpp"
 #include <benchmark/benchmark.h>
 
 #include <salgo/memory-block.hpp>
@@ -16,7 +17,7 @@ using namespace salgo;
 
 
 static void SEQUENTIAL_std(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
 	Alloc alloc;
@@ -38,7 +39,7 @@ BENCHMARK( SEQUENTIAL_std );
 
 
 static void SEQUENTIAL_salgo_crude(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	using Alloc = salgo::Crude_Allocator<int>;
 	Alloc alloc;
@@ -59,7 +60,7 @@ BENCHMARK( SEQUENTIAL_salgo_crude );
 
 
 static void SEQUENTIAL_salgo_random(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	using Alloc = salgo::Random_Allocator<int>;
 	Alloc alloc;
@@ -93,7 +94,7 @@ BENCHMARK( SEQUENTIAL_salgo_random );
 
 
 static void QUEUE_std(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
 	Alloc alloc;
@@ -132,7 +133,7 @@ BENCHMARK( QUEUE_std );
 
 
 static void QUEUE_salgo_crude(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	using Alloc = salgo::Crude_Allocator<int>;
 	Alloc alloc;
@@ -171,7 +172,7 @@ BENCHMARK( QUEUE_salgo_crude );
 
 
 static void QUEUE_salgo_random(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	using Alloc = salgo::Random_Allocator<int>;
 	Alloc alloc;
@@ -221,7 +222,7 @@ BENCHMARK( QUEUE_salgo_random );
 
 
 static void RANDOM_std(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
 	Alloc alloc;
@@ -252,7 +253,7 @@ BENCHMARK( RANDOM_std );
 
 
 static void RANDOM_salgo_crude(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	using Alloc = salgo::Crude_Allocator<int>;
 	Alloc alloc;
@@ -283,7 +284,7 @@ BENCHMARK( RANDOM_salgo_crude );
 
 
 static void RANDOM_salgo_random(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	using Alloc = salgo::Random_Allocator<int>;
 	Alloc alloc;

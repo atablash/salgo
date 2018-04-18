@@ -1,3 +1,4 @@
+#include "common.hpp"
 #include <benchmark/benchmark.h>
 
 #include <salgo/hash-table.hpp>
@@ -13,9 +14,9 @@ using namespace salgo;
 
 
 static void REHASH_std(State& state) {
-	const int size = state.range(0);
+	srand(69); clear_cache();
 
-	srand(0);
+	const int size = state.range(0);
 
 	for(auto _ : state) {
 		state.PauseTiming();
@@ -42,9 +43,9 @@ BENCHMARK( REHASH_std )->Args({1'056'323, 1'142'821})->Unit(benchmark::kMillisec
 
 
 static void REHASH_salgo(State& state) {
+	srand(69); clear_cache();
+	
 	const int size = state.range(0);
-
-	srand(0);
 
 	for(auto _ : state) {
 		state.PauseTiming();
@@ -84,7 +85,7 @@ BENCHMARK( REHASH_salgo )->Args({1'056'323, 1'142'821})->Unit(benchmark::kMillis
 
 
 static void INSERT__std(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	std::unordered_multiset<int> s;
 
@@ -99,7 +100,7 @@ BENCHMARK( INSERT__std );
 
 
 static void INSERT__salgo(State& state) {
-	srand(69);
+	srand(69); clear_cache();
 
 	Hash_Table<int> s;
 
@@ -124,9 +125,9 @@ BENCHMARK( INSERT__salgo );
 
 
 static void RESERVED_INSERT__std(State& state) {
-	const int N = state.iterations();
+	srand(69); clear_cache();
 
-	srand(69);
+	const int N = state.iterations();
 
 	std::unordered_multiset<int> s;
 	s.rehash( N + 10 );
@@ -142,9 +143,9 @@ BENCHMARK( RESERVED_INSERT__std );
 
 
 static void RESERVED_INSERT__salgo(State& state) {
-	const int N = state.iterations();
+	srand(69); clear_cache();
 
-	srand(69);
+	const int N = state.iterations();
 
 	Hash_Table<int> s;
 	s.rehash( N + 10 );
@@ -165,9 +166,9 @@ BENCHMARK( RESERVED_INSERT__salgo );
 
 
 static void FIND__std(State& state) {
-	const int N = state.iterations();
+	srand(69); clear_cache();
 
-	srand(69);
+	const int N = state.iterations();
 
 	std::unordered_multiset<int> s;
 	s.rehash( N + 10 );
@@ -188,9 +189,9 @@ BENCHMARK( FIND__std );
 
 
 static void FIND__salgo(State& state) {
-	const int N = state.iterations();
+	srand(69); clear_cache();
 
-	srand(69);
+	const int N = state.iterations();
 
 	salgo::Hash_Table<int> s;
 	s.rehash( N + 10 );
@@ -216,9 +217,9 @@ BENCHMARK( FIND__salgo );
 
 
 static void FIND_ERASE__std(State& state) {
-	const int N = state.iterations();
+	srand(69); clear_cache();
 
-	srand(69);
+	const int N = state.iterations();
 
 	std::unordered_multiset<int> s;
 	s.rehash( N + 10 );
@@ -239,9 +240,9 @@ BENCHMARK( FIND_ERASE__std );
 
 
 static void FIND_ERASE__salgo(State& state) {
-	const int N = state.iterations();
+	srand(69); clear_cache();
 
-	srand(69);
+	const int N = state.iterations();
 
 	salgo::Hash_Table<int> s;
 	s.rehash( N + 10 );
@@ -270,9 +271,9 @@ BENCHMARK( FIND_ERASE__salgo );
 
 
 static void ITERATE__std(State& state) {
-	const int N = state.iterations();
+	srand(69); clear_cache();
 
-	srand(69);
+	const int N = state.iterations();
 
 	std::unordered_multiset<int> s;
 	s.rehash( N + 10 );
@@ -292,9 +293,9 @@ BENCHMARK( ITERATE__std );
 
 
 static void ITERATE__salgo(State& state) {
-	const int N = state.iterations();
+	srand(69); clear_cache();
 
-	srand(69);
+	const int N = state.iterations();
 
 	salgo::Hash_Table<int> s;
 	s.rehash( N + 10 );

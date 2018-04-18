@@ -180,7 +180,7 @@ script:
   - test/all-tests
 
   # run benchmarks
-  - if [[ $BUILD_TYPE = Release ]]; then    bench/list &&    bench/hash-table; fi
+  - if [[ $BUILD_TYPE = Release ]]; then    bench/allocator &&    bench/vector &&    bench/list &&    bench/hash-table; fi
 
 
 notifications:

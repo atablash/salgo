@@ -213,6 +213,12 @@ struct Context {
 			}
 		}
 
+		template<class... ARGS>
+		auto construct_near(Handle, ARGS&&... args) {
+			// TODO
+			return construct(std::forward<ARGS>(args)...);
+		}
+
 
 		void destruct(Handle h ) { v.destruct(h); }
 

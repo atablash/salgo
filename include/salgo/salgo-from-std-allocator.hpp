@@ -132,6 +132,20 @@ struct Context {
 			return Accessor<MUTAB>(*this, pointer);
 		}
 
+
+		template<class... ARGS>
+		auto construct_near(Handle h, ARGS&&... args) {
+
+			#ifndef NDEBUG
+			++_num_allocations;
+			#endif
+
+			Pointer pointer = std::allocator_traits<Allocator>::allocate( _allocator(), 1, h );
+			std::allocator_traits<Allocator>::construct( _allocator(), pointer, std::forward<ARGS>(args)... );
+			return Accessor<MUTAB>(*this, pointer);
+		}
+
+
 		void destruct(Handle handle) {
 
 			#ifndef NDEBUG

@@ -74,9 +74,8 @@ struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int>, int> { // for first
 		}
 		#endif
 
-		auto bsr = bit_scan_reverse(small.a);
-		BASE::a = bsr;
-		BASE::b = (1u<<bsr) ^ small.a;
+		BASE::a = bit_scan_reverse(small.a);
+		BASE::b = (1<<BASE::a) ^ small.a;
 	}
 
 	// convert from/to array index
@@ -110,7 +109,7 @@ struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int, 0> {
 
 	Small_Handle() = default;
 
-	Small_Handle(const Handle<X>& big) : BASE(1<<big.a ^ big.b) {
+	Small_Handle(const Handle<X>& big) : BASE((1<<big.a) | big.b) {
 		DCHECK_LT(big.a, 32);
 		DCHECK_LT(big.b, 1<<big.a);
 	}
