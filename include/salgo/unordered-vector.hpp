@@ -1,7 +1,7 @@
 #pragma once
 
 #include "const-flag.hpp"
-#include "iterator-base.hpp"
+#include "accessors.hpp"
 #include "int-handle.hpp"
 #include "vector.hpp"
 
@@ -28,9 +28,9 @@ struct Context {
 	using Val = _VAL;
 	using Vector = _VECTOR;
 
-	struct Handle : Int_Handle<Handle,int> {
-		using BASE = Int_Handle<Handle,int>;
-		FORWARDING_CONSTRUCTOR(Handle, BASE);
+	struct Handle : Int_Handle_Base<Handle,int> {
+		using BASE = Int_Handle_Base<Handle,int>;
+		FORWARDING_CONSTRUCTOR(Handle, BASE) {}
 	};
 
 
@@ -40,43 +40,61 @@ struct Context {
 	// forward declarations
 	//
 	template<Const_Flag C> class Accessor;
+	template<Const_Flag C> class Iterator;
 	class Unordered_Vector;
+	using Container = Unordered_Vector;
 
 
 
 
+	struct Extra_Context {
+		bool _just_erased = false;
+	};
 
 
 	//
-	// accessor / iterator
+	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor : public Iterator_Base<C,Accessor> {
+	class Accessor : public Accessor_Base<C,Context> {
+	private:
+		using BASE = Accessor_Base<C,Context>;
+		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
+		friend Unordered_Vector;
+
+		using BASE::_container;
+		using BASE::_handle;
+		using BASE::_just_erased;
+
 	public:
-		auto     handle() const { DCHECK(!_just_erased); return _handle; }
-		operator   auto() const { return handle(); }
-
-		// get val
-		auto& operator()()       { DCHECK(!_just_erased); return (*_owner)[ _handle ]; }
-		auto& operator()() const { DCHECK(!_just_erased); return (*_owner)[ _handle ]; }
-		operator       Val&()       { return operator()(); }
-		operator const Val&() const { return operator()(); }
-
-		int index() const { return handle(); }
+		int index() const { return BASE::handle(); }
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
 			DCHECK(!_just_erased);
-			(*_owner)[_handle].~Val();
-			new(&(*_owner)[_handle]) Val( std::move( (*_owner).front()() ) );
-			(*_owner).pop_front();
+			(*_container)[_handle].~Val();
+			new(&(*_container)[_handle]) Val( std::move( (*_container).front()() ) );
+			(*_container).pop_front();
 			_just_erased = true;
 		}
+	};
 
-
-		// for ITERATOR_BASE:
+	//
+	// iterator
+	//
+	template<Const_Flag C>
+	class Iterator : public Iterator_Base<C,Context> {
 	private:
-		friend Iterator_Base<C,Accessor>;
+		using BASE = Iterator_Base<C,Context>;
+		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
+		friend Unordered_Vector;
+
+		using BASE::_container;
+		using BASE::_handle;
+		using BASE::_just_erased;
+
+	private:
+		friend Iterator_Base<C,Context>;
 
 		inline void _increment() {
 			--_handle;
@@ -90,23 +108,9 @@ struct Context {
 		auto _get_comparable() const { return _handle; }
 
 		template<Const_Flag CC>
-		auto _will_compare_with(const Accessor<CC>& o) const {
-			DCHECK_EQ(_owner, o._owner);
+		auto _will_compare_with(const Iterator<CC>& o) const {
+			DCHECK_EQ(_container, o._container);
 		}
-
-
-	private:
-		Accessor(Const<Unordered_Vector,C>* owner, Handle handle)
-			: _owner(owner), _handle(handle) {}
-
-		friend Unordered_Vector;
-
-
-	private:
-		Const<Unordered_Vector,C>* _owner;
-		Handle _handle;
-
-		bool _just_erased = false;
 	};
 
 
@@ -196,11 +200,11 @@ struct Context {
 
 
 	public:
-		auto begin()       { return _accessor( v.size()-1 ); }
-		auto begin() const { return _accessor( v.size()-1 ); }
+		auto begin()       { return _accessor( v.size()-1 ).iterator(); }
+		auto begin() const { return _accessor( v.size()-1 ).iterator(); }
 
-		auto end()       { return _accessor( -1 ); }
-		auto end() const { return _accessor( -1 ); }
+		auto end()       { return _accessor( -1 ).iterator(); }
+		auto end() const { return _accessor( -1 ).iterator(); }
 
 
 	private:
@@ -225,7 +229,8 @@ struct Context {
 
 
 	struct With_Builder : Unordered_Vector {
-		FORWARDING_CONSTRUCTOR(With_Builder, Unordered_Vector);
+		FORWARDING_CONSTRUCTOR(With_Builder, Unordered_Vector) {}
+		FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(With_Builder, Unordered_Vector) {}
 
 		template<int X>
 		using INPLACE_BUFFER = typename Context<Val, typename Vector :: template INPLACE_BUFFER<X>> :: With_Builder;

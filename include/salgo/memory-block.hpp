@@ -3,7 +3,7 @@
 #include "common.hpp"
 #include "const-flag.hpp"
 #include "stack-storage.hpp"
-#include "iterator-base.hpp"
+#include "accessors.hpp"
 #include "int-handle.hpp"
 
 #include <cstring> // memcpy
@@ -45,6 +45,7 @@ struct Context {
 	struct Node;
 	template<Const_Flag C> class Accessor;
 	class Memory_Block;
+	using Container = Memory_Block;
 
 
 
@@ -70,9 +71,9 @@ struct Context {
 
 
 
-	struct Handle : Int_Handle<Handle,int> {
-		using BASE = Int_Handle<Handle,int>;
-		FORWARDING_CONSTRUCTOR( Handle, BASE );
+	struct Handle : Int_Handle_Base<Handle,int> {
+		using BASE = Int_Handle_Base<Handle,int>;
+		FORWARDING_CONSTRUCTOR( Handle, BASE ) {}
 	};
 
 
@@ -88,84 +89,68 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor : public Iterator_Base<C,Accessor> {
+	class Accessor : public Accessor_Base<C,Context> {
+		using BASE = Accessor_Base<C,Context>;
+		using BASE::_container;
+		using BASE::_handle;
+
 	public:
+		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 
-		// get HANDLE
-		auto     handle() const { return _handle; }
-		operator auto()   const { return handle(); }
-
-
-		// get VAL
-		auto& operator()() {
-			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
-			return (*_owner)[ _handle ];
-		}
-		auto& operator()() const {
-			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
-			return (*_owner)[ _handle ];
-		}
-		operator auto&()       { return operator()(); }
-		operator auto&() const { return operator()(); }
-
-
-
-		auto index() const { return handle(); }
+	public:
+		auto index() const { return BASE::handle(); }
 
 
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_owner->construct( _handle, std::forward<ARGS>(args)... );
+			_container->construct( _handle, std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_owner->destruct( _handle );
+			_container->destruct( _handle );
 		}
 
 		bool exists() const {
-			return _owner->exists( _handle );
+			return _container->exists( _handle );
 		}
+	};
 
 
-	// for ITERATOR_BASE:
+	//
+	// iterator
+	//
+	template<Const_Flag C>
+	class Iterator : public Iterator_Base<C,Context> {
+		using BASE = Iterator_Base<C,Context>;
+		using BASE::_container;
+		using BASE::_handle;
+
+	public:
+		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
+
+
+
 	private:
-		friend Iterator_Base<C,Accessor>;
+		friend BASE;
 
 		void _increment() {
 			if constexpr(Dense) ++_handle;
-			else do ++_handle; while( (int)_handle != _owner->size() && !_owner->exists( _handle ) );
+			else do ++_handle; while( (int)_handle != _container->size() && !_container->exists( _handle ) );
 		}
 
 		void _decrement() {
 			if constexpr(Dense) --_handle;
-			else do --_handle; while( !_owner->exists( _handle ) );
+			else do --_handle; while( !_container->exists( _handle ) );
 		}
 
 		auto _get_comparable() const {  return _handle;  }
 
 		template<Const_Flag CC>
-		auto _will_compare_with(const Accessor<CC>& o) const {
-			DCHECK_EQ(_owner, o._owner);
+		auto _will_compare_with(const Iterator<CC>& o) const {
+			DCHECK_EQ(_container, o._container);
 		}
-
-
-	// conversion operator to HANDLE
-
-
-
-
-	private:
-		Accessor(Const<Memory_Block,C>* owner, Handle key)
-			: _owner(owner), _handle(key) {}
-
-		friend Memory_Block;
-
-
-	private:
-		Const<Memory_Block,C>* _owner;
-		Handle _handle;
 	};
 
 
@@ -555,27 +540,27 @@ struct Context {
 	public:
 		auto begin() {
 			static_assert(Iterable);
-			auto e = Accessor<MUTAB>(this, 0);
-			if(_size && !e.exists()) ++e;
+			auto e = Iterator<MUTAB>(this, 0);
+			if(_size && !e.accessor().exists()) ++e;
 			return e;
 		}
 
 		auto begin() const {
 			static_assert(Iterable);
-			auto e = Accessor<CONST>(this, 0);
-			if(_size && !e.exists()) ++e;
+			auto e = Iterator<CONST>(this, 0);
+			if(_size && !e.accessor().exists()) ++e;
 			return e;
 		}
 
 
 		auto end() {
 			static_assert(Iterable);
-			return Accessor<MUTAB>(this, _size);
+			return Iterator<MUTAB>(this, _size);
 		}
 
 		auto end() const {
 			static_assert(Iterable);
-			return Accessor<CONST>(this, _size);
+			return Iterator<CONST>(this, _size);
 		}
 
 
@@ -607,7 +592,7 @@ struct Context {
 
 
 	struct With_Builder : Memory_Block {
-		FORWARDING_CONSTRUCTOR(With_Builder, Memory_Block);
+		FORWARDING_CONSTRUCTOR(With_Builder, Memory_Block) {}
 
 		template<class NEW_ALLOCATOR>
 		using ALLOCATOR =
@@ -636,7 +621,7 @@ struct Context {
 		using COUNT =
 			typename Context< Val, Allocator, Stack_Buffer, Dense, Exists_Inplace, Exists_Bitset, true > :: With_Builder;
 
-		using FULL =
+		using FULL_BLOWN =
 			typename Context< Val, Allocator, Stack_Buffer, Dense, false, true, true > :: With_Builder; // by default bitset-exists
 	};
 

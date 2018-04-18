@@ -158,8 +158,8 @@ script:
   - test/all-tests
 
   # run benchmarks
-  - benchmark/list
-  - benchmark/hash-table
+  - bench/list
+  - bench/hash-table
 
 
 

@@ -2,7 +2,7 @@
 
 #include "common.hpp"
 #include "const-flag.hpp"
-#include "iterator-base.hpp"
+#include "accessors.hpp"
 #include "stack-storage.hpp"
 #include "allocator.hpp"
 
@@ -124,8 +124,10 @@ struct Context {
 	// forward declarations
 	//
 	struct Node;
-	template<Const_Flag C> class Accessor;
+	template<Const_Flag C> struct Accessor;
+	template<Const_Flag C> struct Iterator;
 	class List;
+	using Container = List;
 
 
 	//
@@ -137,6 +139,109 @@ struct Context {
 
 	using       Handle = typename Allocator ::       Handle;
 	using Small_Handle = typename Allocator :: Small_Handle; // Small_Handle is faster than Handle for List
+
+
+
+
+
+
+
+
+
+
+	struct Extra_Context {
+		Handle _prev;
+		Handle _next;
+	};
+
+
+	//
+	// accessor
+	//
+	template<Const_Flag C>
+	struct Accessor : Accessor_Base<C,Context> {
+		using BASE = Accessor_Base<C,Context>;
+		FORWARDING_CONSTRUCTOR(Accessor,BASE) { BASE::iterator()._init(); }
+
+		using BASE::_container;
+		using BASE::_handle;
+		using BASE::_next;
+		using BASE::_prev;
+
+		void erase() {
+			static_assert(C == MUTAB, "called erase() on CONST accessor");
+			_container->erase( _handle );
+		}
+
+		auto next()       { return (*_container)( _next ); }
+		auto next() const { return (*_container)( _next ); }
+
+		auto prev()       { return (*_container)( _prev ); }
+		auto prev() const { return (*_container)( _prev ); }
+	};
+
+
+
+
+	//
+	// accessor
+	//
+	template<Const_Flag C>
+	struct Iterator : Iterator_Base<C,Context> {
+		using BASE = Iterator_Base<C,Context>;
+		FORWARDING_CONSTRUCTOR(Iterator, BASE) { _init(); }
+
+		using BASE::_container;
+		using BASE::_handle;
+		using BASE::_next;
+		using BASE::_prev;
+
+
+	private:
+		friend BASE;
+
+		inline void _increment() {
+			_prev = _handle;
+			_handle = _next;
+			DCHECK( _handle.valid() ) << "followed broken list link";
+			_update_next();
+		}
+
+		inline void _decrement() {
+			_next = _handle;
+			_handle = _prev;
+			DCHECK( _handle.valid() ) << "followed broken list link";
+			_update_prev();
+		}
+
+		auto _get_comparable() const {  return _handle;  }
+
+		template<Const_Flag CC>
+		auto _will_compare_with(const Iterator<CC>& o) const {
+			DCHECK_EQ(_container, o._container);
+		}
+
+
+	private:
+		void _update_prev() {
+			_prev = list_prev(_container->_alloc(), _handle);
+		}
+
+		void _update_next() {
+			_next = list_next(_container->_alloc(), _handle);
+		}
+
+		void _init() {
+			_update_prev();
+			_update_next();
+		}
+		friend Accessor<C>;
+	};
+
+
+
+
+
 
 
 
@@ -159,107 +264,6 @@ struct Context {
 
 
 
-
-	//
-	// accessor
-	//
-	template<Const_Flag C>
-	class Accessor : public Iterator_Base<C,Accessor> {
-	public:
-		// get handle
-		auto     handle() const { return _handle; }
-		operator   auto() const { return handle(); }
-
-		// get val
-		auto& operator()()       { return (*_owner)[ _handle ]; }
-		auto& operator()() const { return (*_owner)[ _handle ]; }
-		operator auto&()       { return operator()(); }
-		operator auto&() const { return operator()(); }
-
-
-		void erase() {
-			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			_owner->erase( _handle );
-		}
-
-		auto next()       { return _owner->next( _handle ); }
-		auto next() const { return _owner->next( _handle ); }
-
-		auto prev()       { return _owner->prev( _handle ); }
-		auto prev() const { return _owner->prev( _handle ); }
-
-		//bool exists() const {
-		//	return _owner.exists( _handle );
-		//}
-
-
-
-
-	// member functions accessed by BASE:
-	private:
-		friend Iterator_Base<C,Accessor>;
-
-		inline void _increment() {
-			_prev = _handle;
-			_handle = _next;
-			DCHECK( _handle.valid() ) << "followed broken list link";
-			_update_next();
-		}
-
-		inline void _decrement() {
-			_next = _handle;
-			_handle = _prev;
-			DCHECK( _handle.valid() ) << "followed broken list link";
-			_update_prev();
-		}
-
-		auto _get_comparable() const {  return _handle;  }
-
-		template<Const_Flag CC>
-		auto _will_compare_with(const Accessor<CC>& o) const {
-			DCHECK_EQ(_owner, o._owner);
-		}
-
-
-	private:
-		void _update_prev() {
-			_prev = list_prev(_owner->_alloc(), _handle);
-		}
-
-		void _update_next() {
-			_next = list_next(_owner->_alloc(), _handle);
-		}
-
-
-
-	private:
-		Accessor(Const<List,C>* owner, Handle handle)
-			: _owner(owner), _handle(handle) { _update_prev(); _update_next(); }
-
-		friend List;
-
-
-	private:
-		Const<List,C>* _owner;
-		Handle _handle;
-
-		Handle _prev;
-		Handle _next;
-	};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	class List :
 			private Allocator,
 			private Add_num_existing<Countable> {
@@ -277,6 +281,8 @@ struct Context {
 	private:
 		friend Accessor<MUTAB>;
 		friend Accessor<CONST>;
+		friend Iterator<MUTAB>;
+		friend Iterator<CONST>;
 
 
 		//
@@ -437,20 +443,20 @@ struct Context {
 
 	public:
 		inline auto begin() {
-			return Accessor<MUTAB>(this, _alloc()[_front].next);
+			return Iterator<MUTAB>(this, _alloc()[_front].next);
 		}
 
 		inline auto begin() const {
-			return Accessor<CONST>(this, _alloc()[_front].next);
+			return Iterator<CONST>(this, _alloc()[_front].next);
 		}
 
 
 		inline auto end() {
-			return Accessor<MUTAB>(this, _back);
+			return Iterator<MUTAB>(this, _back);
 		}
 
 		inline auto end() const {
-			return Accessor<CONST>(this, _back);
+			return Iterator<CONST>(this, _back);
 		}
 
 	};
@@ -462,7 +468,8 @@ struct Context {
 
 
 	struct With_Builder : List {
-		FORWARDING_CONSTRUCTOR(With_Builder, List);
+		FORWARDING_CONSTRUCTOR(With_Builder, List) {}
+		FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(With_Builder, List) {}
 
 		template<class NEW_ALLOCATOR>
 		using ALLOCATOR =

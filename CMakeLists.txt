@@ -124,7 +124,7 @@ endif(SALGO_BUILD_TESTS)
 #===============================================================================
 if(SALGO_BUILD_BENCHMARKS)
 	#enable_testing()
-	add_subdirectory(benchmark)
+	add_subdirectory(bench)
 endif(SALGO_BUILD_BENCHMARKS)
 
 

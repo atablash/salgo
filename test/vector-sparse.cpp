@@ -240,7 +240,10 @@ TEST(Sparse_vector, move_container_exists) {
 		block.emplace_back();
 
 		auto block2 = std::move(block);
-		block2 = std::move(block);
+		EXPECT_EQ(13, block2.domain());
+
+		block = std::move(block2);
+		EXPECT_EQ(13, block.domain());
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);

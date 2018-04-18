@@ -41,40 +41,25 @@ template<class> struct Small_Handle;
 static const int div = 27;
 
 // big
-template<class>
-struct Handle {
-	using Handle_A = int;
-	using Handle_B = int;
-
-	Handle_A a = -1;
-	Handle_B b;
+template<class X>
+struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<>, int> {
+	using BASE = Pair_Handle_Base<Handle<X>, Int_Handle<>, int>;
 
 	Handle() = default;
-	Handle(const Handle&) = default;
 
-	Handle(Handle_A aa, Handle_B bb) : a(aa), b(bb) {
-		DCHECK_GE(a, 0); DCHECK_LT(a, 1<<(32-div));
-		DCHECK_GE(b, 0); DCHECK_LT(b, 1<<div);
+	template<class A, class B>
+	Handle(A aa, B bb) : BASE(aa,bb) {
+		DCHECK_GE(aa, 0); DCHECK_LT(aa, 1<<(32-div));
+		DCHECK_GE(bb, 0); DCHECK_LT(bb, 1<<div);
 	}
-
-	//operator Small_Handle() { return Small_Handle(*this); }
-
-	//Handle( Small_Handle h ) : a(h>>24), b(h&0xffffff) {}
-
-	bool valid() const { return a != -1; }
-
-	void reset() { a = -1; }
-
-	bool operator==(const Handle& o) const { return a==o.a && b==o.b; }
-	bool operator!=(const Handle& o) const { return !(*this == o); }
 };
 
 
 
 // small
 template<class X>
-struct Small_Handle : Int_Handle<Small_Handle<X>, unsigned int> {
-	using BASE = Int_Handle<Small_Handle<X>, unsigned int>;
+struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int> {
+	using BASE = Int_Handle_Base<Small_Handle<X>, unsigned int>;
 
 
 	Small_Handle() = default;
@@ -217,9 +202,7 @@ struct Context {
 		}
 
 
-		void destruct( Small_Handle h )  { destruct( Handle(h) ); }
-		void destruct(   Handle h )  { v[h.a].destruct( h.b ); }
-
+		void destruct(       Handle h )  { v[h.a].destruct( h.b ); }
 
 		auto& operator[]( Handle h )       { return v[h.a][h.b]; }
 		auto& operator[]( Handle h ) const { return v[h.a][h.b]; }

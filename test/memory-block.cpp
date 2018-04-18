@@ -91,6 +91,7 @@ TEST(Memory_block, destructors_called_exists) {
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
+
 }
 
 
@@ -216,7 +217,10 @@ TEST(Memory_block, move_container_exists) {
 		block.construct_all();
 
 		auto block2 = std::move(block);
-		block2 = std::move(block);
+		EXPECT_EQ(10, block2.size());
+
+		block = std::move(block2);
+		EXPECT_EQ(10, block.size());
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);

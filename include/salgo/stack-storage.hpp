@@ -257,7 +257,7 @@ struct Context {
 
 
 	struct With_Builder : Stack_Storage {
-		FORWARDING_CONSTRUCTOR(With_Builder, Stack_Storage);
+		FORWARDING_CONSTRUCTOR(With_Builder, Stack_Storage) {}
 
 		using TREAT_AS_POD =
 			typename Context<T, true, Treat_As_Void, Persistent> :: With_Builder;

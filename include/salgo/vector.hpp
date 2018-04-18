@@ -3,7 +3,7 @@
 #include "common.hpp"
 #include "const-flag.hpp"
 #include "stack-storage.hpp"
-#include "iterator-base.hpp"
+#include "accessors.hpp"
 #include "int-handle.hpp"
 
 #include "memory-block.hpp"
@@ -21,9 +21,9 @@ namespace internal {
 namespace Vector {
 
 
-struct Handle : Int_Handle<Handle,int> {
-	using BASE = Int_Handle<Handle,int>;
-	FORWARDING_CONSTRUCTOR(Handle, BASE);
+struct Handle : Int_Handle_Base<Handle,int> {
+	using BASE = Int_Handle_Base<Handle,int>;
+	FORWARDING_CONSTRUCTOR(Handle, BASE) {}
 };
 
 
@@ -34,9 +34,10 @@ struct Context {
 	// forward declarations
 	//
 	template<Const_Flag C> class Accessor;
+	template<Const_Flag C> class Iterator;
 	class Vector;
 
-
+	using Container = Vector;
 
 
 
@@ -66,41 +67,31 @@ struct Context {
 
 
 
+
 	//
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor : public Iterator_Base<C,Accessor> {
+	class Accessor : public Accessor_Base<C,Context> {
+		using BASE = Accessor_Base<C,Context>;
+		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
+		friend Vector;
+
+		using BASE::_container;
+		using BASE::_handle;
+
 	public:
-
-		// get handle
-		auto     handle() const { return _handle; }
-		operator Handle() const { return handle(); }
-
-
-		// get value
-		auto& operator()() {
-			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
-			return (*_owner)[ _handle ];
-		}
-		auto& operator()() const {
-			if constexpr(Exists) DCHECK( _owner->exists( _handle ) ) << "accessing erased element";
-			return (*_owner)[ _handle ];
-		}
-		operator       auto&()       { return operator()(); }
-		operator const auto&() const { return operator()(); }
-
-
+		using BASE::operator=;
 
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_owner->construct( _handle, std::forward<ARGS>(args)... );
+			_container->construct( _handle, std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_owner->destruct( _handle );
+			_container->destruct( _handle );
 		}
 
 		void erase() {
@@ -108,46 +99,47 @@ struct Context {
 		}
 
 		bool exists() const {
-			return _owner->exists( _handle );
+			return _container->exists( _handle );
 		}
+	};
 
 
 
 
-	// for ITERATOR_BASE:
+
+	//
+	// iterator
+	//
+	template<Const_Flag C>
+	class Iterator : public Iterator_Base<C,Context> {
+		using BASE = Iterator_Base<C,Context>;
+		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
+		friend Vector;
+
+		using BASE::_container;
+		using BASE::_handle;
+
 	private:
-		friend Iterator_Base<C,Accessor>;
+		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++_handle; while( (int)_handle != _owner->domain() && !_owner->exists( _handle ) );
+			do ++_handle; while( (int)_handle != _container->domain() && !_container->exists( _handle ) );
 		}
 
 		void _decrement() {
-			do --_handle; while( !_owner->exists( _handle ) );
+			do --_handle; while( !_container->exists( _handle ) );
 		}
 
 		auto _get_comparable() const {  return _handle;  }
 
 		template<Const_Flag CC>
-		auto _will_compare_with(const Accessor<CC>& o) const {
-			DCHECK_EQ(_owner, o._owner);
+		auto _will_compare_with(const Iterator<CC>& o) const {
+			DCHECK_EQ(_container, o._container);
 		}
-
-
-
-
-
-	private:
-		Accessor(Const<Vector,C>* owner, Handle key)
-			: _owner(owner), _handle(key) {}
-
-		friend Vector;
-
-
-	private:
-		Const<Vector,C>* _owner;
-		Handle _handle;
 	};
+
+
+
 
 
 
@@ -216,15 +208,24 @@ struct Context {
 					_mb.destruct(i);
 				}
 			}
+			DCHECK_LE(_size, _mb.size());
 			// for sparse vectors, memory block takes care of destruction
 		}
 
 
 		Vector(const Vector&) = default;
-		Vector(Vector&&) = default;
+		Vector(Vector&& o) {
+			_mb = std::move(o._mb);
+			_size = o._size;
+			o._size = 0;
+		}
 
 		Vector& operator=(const Vector&) = default;
-		Vector& operator=(Vector&&) = default;
+		Vector& operator=(Vector&& o) {
+			this->~Vector();
+			new(this) Vector( std::move(o) );
+			return *this;
+		}
 
 
 
@@ -245,9 +246,17 @@ struct Context {
 			_size = new_size;
 		}
 
+		void clear() { resize(0); }
+		bool empty() const { return _size == 0; }
+
 
 		void reserve(int capacity) {
-			_mb.resize( capacity );
+			if constexpr(Dense) {
+				_mb.resize( capacity, [this](int i){return i<_size;} );
+			}
+			else {
+				_mb.resize( capacity );
+			}
 		}
 
 
@@ -411,16 +420,15 @@ struct Context {
 	public:
 		inline auto begin() {
 			static_assert(Iterable);
-			auto e = (*this)(0);
-			if(!e.exists()) ++e;
-			auto x = std::move(e);
-			return x;
+			auto e = (*this)(0).iterator();
+			if(!e->exists()) ++e;
+			return e;
 		}
 
 		inline auto begin() const {
 			static_assert(Iterable);
-			auto e = (*this)(0);
-			if(!e.exists()) ++e;
+			auto e = (*this)(0).iterator();
+			if(!e->exists()) ++e;
 			return e;
 		}
 
@@ -428,12 +436,12 @@ struct Context {
 
 		inline auto end() {
 			static_assert(Iterable);
-			return Accessor<MUTAB>(this, _size);
+			return Iterator<MUTAB>(this, _size);
 		}
 
 		inline auto end() const {
 			static_assert(Iterable);
-			return Accessor<CONST>(this, _size);
+			return Iterator<CONST>(this, _size);
 		}
 
 	};
@@ -445,7 +453,8 @@ struct Context {
 
 
 	struct With_Builder : Vector {
-		FORWARDING_CONSTRUCTOR(With_Builder, Vector);
+		FORWARDING_CONSTRUCTOR(With_Builder, Vector) {}
+		FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(With_Builder, Vector) {}
 
 		template<int X>
 		using INPLACE_BUFFER =
@@ -478,7 +487,7 @@ struct Context {
 
 
 		using FULL_BLOWN =
-			typename Context< Val, true, typename Memory_Block::FULL > :: With_Builder;
+			typename Context< Val, true, typename Memory_Block::FULL_BLOWN > :: With_Builder;
 	};
 
 

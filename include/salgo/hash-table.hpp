@@ -97,6 +97,15 @@ struct Context {
 	// forward declarations
 	//
 	class Hash_Table;
+	using Container = Hash_Table;
+
+
+
+
+
+	struct Extra_Context {
+		bool _just_erased = false;
+	};
 
 
 
@@ -104,43 +113,54 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	class Accessor : public Iterator_Base<C,Accessor> {
+	class Accessor : public Accessor_Base<C,Context> {
+		using BASE = Accessor_Base<C,Context>;
+		FORWARDING_CONSTRUCTOR(Accessor,BASE) {}
+		friend Hash_Table;
+
+		using BASE::_container;
+		using BASE::_handle;
+		using BASE::_just_erased;
+
 	public:
-		// get handle
-		auto     handle() const { return _handle; }
-		operator Handle() const { return handle(); }
-
-		// get val
-		auto& operator()()       { return (*_owner)[ _handle ]; }
-		auto& operator()() const { return (*_owner)[ _handle ]; }
-		operator auto&()       { return operator()(); }
-		operator auto&() const { return operator()(); }
-
 		// get key
-		auto& key()       { return _owner->key( _handle ); }
-		auto& key() const { return _owner->key( _handle ); }
+		auto& key()       { return _container->key( _handle ); }
+		auto& key() const { return _container->key( _handle ); }
 
 		// get val (explicit)
-		auto& val()       { return operator(); }
-		auto& val() const { return operator(); }
+		auto& val()       { return BASE::operator(); }
+		auto& val() const { return BASE::operator(); }
 
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			_owner->erase( _handle );
+			_container->erase( _handle );
 			_just_erased = true;
 		}
 
 		bool exists() const {
 			return _handle.valid();
 		}
+	};
 
 
 
 
-	// for ITERATOR_BASE:
+	//
+	// iterator
+	//
+	template<Const_Flag C>
+	class Iterator : public Iterator_Base<C,Context> {
+		using BASE = Iterator_Base<C,Context>;
+		FORWARDING_CONSTRUCTOR(Iterator,BASE) {}
+		friend Hash_Table;
+
+		using BASE::_container;
+		using BASE::_handle;
+		using BASE::_just_erased;
+
 	private:
-		friend Iterator_Base<C,Accessor>;
+		friend Iterator_Base<C,Context>;
 
 		inline void _increment() {
 			if(_just_erased) {
@@ -148,7 +168,7 @@ struct Context {
 				return;
 			}
 			++_handle.b;
-			while(_handle.a < _owner->_buckets.size() && (int)_handle.b == _owner->_buckets[_handle.a].size()) {
+			while(_handle.a < _container->_buckets.size() && (int)_handle.b == _container->_buckets[_handle.a].size()) {
 				_handle.b = 0;
 				++_handle.a;
 			}
@@ -158,32 +178,11 @@ struct Context {
 			_just_erased = false;
 			if(_handle.b == 0) {
 				--_handle.a;
-				_handle.b = _owner->_buckets[_handle.a].size() - 1;
+				_handle.b = _container->_buckets[_handle.a].size() - 1;
 			}
 		}
 
 		auto _get_comparable() const { return std::make_pair(_handle.a, _handle.b); }
-
-		template<Const_Flag CC>
-		auto _will_compare_with(const Accessor<CC>& o) const {
-			DCHECK_EQ(_owner, o._owner);
-		}
-
-
-
-
-	private:
-		Accessor(Const<Hash_Table,C>* owner, Handle handle)
-			: _owner(owner), _handle(handle) {}
-
-		friend Hash_Table;
-
-
-	private:
-		Const<Hash_Table,C>* _owner;
-		Handle _handle;
-
-		bool _just_erased = false;
 	};
 
 
@@ -213,6 +212,8 @@ struct Context {
 	private:
 		friend Accessor<MUTAB>;
 		friend Accessor<CONST>;
+		friend Iterator<MUTAB>;
+		friend Iterator<CONST>;
 
 	public:
 		Hash_Table() = default;
@@ -334,12 +335,12 @@ struct Context {
 
 			if constexpr(Inplace) {
 				auto b = _buckets[i_bucket].add( k, std::forward<V>(v)... ).handle();
-				return Accessor<MUTAB>(this, {i_bucket, b});
+				return Accessor<MUTAB>(this, Handle{i_bucket, b});
 			}
 			else {
 				auto new_element = _alloc().construct( k, std::forward<V>(v)... );
 				auto b = _buckets[i_bucket].add( new_element ).handle();
-				return Accessor<MUTAB>(this, {i_bucket, b});
+				return Accessor<MUTAB>(this, Handle{i_bucket, b});
 			}
 		}
 
@@ -386,22 +387,22 @@ struct Context {
 		auto begin() {
 			Handle h = {0,0};
 			while(h.a < _buckets.size() && _buckets[h.a].empty()) ++h.a;
-			return Accessor<MUTAB>(this, h);
+			return Accessor<MUTAB>(this, h).iterator();
 		}
 
 		auto begin() const {
 			Handle h = {0,0};
 			while(h.a < _buckets.size() && _buckets[h.a].empty()) ++h.a;
-			return Accessor<CONST>(this, h);
+			return Accessor<CONST>(this, h).iterator();
 		}
 
 
 		auto end() {
-			return Accessor<MUTAB>(this, {_buckets.size(), 0});
+			return Accessor<MUTAB>(this, Handle{_buckets.size(), 0}).iterator();
 		}
 
 		auto end() const {
-			return Accessor<CONST>(this, {_buckets.size(), 0});
+			return Accessor<CONST>(this, Handle{_buckets.size(), 0}).iterator();
 		}
 
 	};
@@ -413,7 +414,8 @@ struct Context {
 
 
 	struct With_Builder : Hash_Table {
-		FORWARDING_CONSTRUCTOR(With_Builder, Hash_Table);
+		FORWARDING_CONSTRUCTOR(With_Builder, Hash_Table) {}
+		FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(With_Builder, Hash_Table) {}
 
 		template<class NEW_HASH>
 		using HASH = typename Context<Key, Val, NEW_HASH, Allocator, Inplace> :: With_Builder;

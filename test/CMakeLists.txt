@@ -36,6 +36,7 @@ set(sources
 	list.cpp
 	unordered-vector.cpp
 	hash-table.cpp
+	chunked-vector.cpp
 	#3d/compute-normals.cpp
 	#3d/collapse-edges.cpp
 	#3d/cap-holes.cpp

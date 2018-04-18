@@ -51,7 +51,7 @@ struct Context {
 
 	struct Handle : Pointer_Handle< Pointer, Handle> {
 		using BASE = Pointer_Handle< Pointer, Handle>;
-		FORWARDING_CONSTRUCTOR(Handle, BASE);
+		FORWARDING_CONSTRUCTOR(Handle, BASE) {}
 	};
 
 	//
