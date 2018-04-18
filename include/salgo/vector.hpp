@@ -420,15 +420,15 @@ struct Context {
 	public:
 		inline auto begin() {
 			static_assert(Iterable);
-			auto e = (*this)(0).iterator();
-			if(!e->exists()) ++e;
+			auto e = Iterator<MUTAB>(this, 0);
+			if(_size && !e->exists()) ++e;
 			return e;
 		}
 
 		inline auto begin() const {
 			static_assert(Iterable);
-			auto e = (*this)(0).iterator();
-			if(!e->exists()) ++e;
+			auto e = Iterator<CONST>(this, 0);
+			if(_size && !e->exists()) ++e;
 			return e;
 		}
 
