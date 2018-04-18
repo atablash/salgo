@@ -280,6 +280,19 @@ struct Context {
 		Chunked_Vector& operator=(const Chunked_Vector&) = default;
 		Chunked_Vector& operator=(Chunked_Vector&&) = default;
 
+		~Chunked_Vector() {
+			if constexpr(Dense) {
+				for(auto& block : _blocks) {
+					for(int i=0; i<block().size(); ++i) {
+						block().destruct(i);
+						--_size;
+						if(_size == 0) break;
+					}
+					if(_size == 0) break;
+				}
+			}
+		}
+
 		//
 		// element interface
 		//
