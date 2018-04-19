@@ -177,7 +177,22 @@ Of course, in this case it's easier to use the *scoped for*:
 Just like accessor, for simplicity, iterator is implicitly convertible to both underlying object reference and *Handle*. To get this explicit, use `operator()` and `handle()` (again, same as with accessor).
 
 
-### A Story Behind Accessors
+Allocators
+----------
+Salgo uses some custom allocators by default, designed for fixed-size objects.
+
+They are different from `std` Allocators:
+* They're only for fixed size objects, no arrays.
+* They return handles instead of pointers.
+* They don't separate allocation and destruction.
+
+> NOTE
+>
+> It wasn't possible to use standard Allocator concept, because in Salgo handles alone can't be used to retrieve objects - the allocator object is needed for this.
+
+
+A Story Behind Accessors
+------------------------
 
 Let's take a look at **pointers** in *C*.
 
@@ -453,6 +468,40 @@ Hash_Table
 ----------
 A replacement for `std::unordered_multiset`, `std::unordered_set`, `std::unordered_multimap`, `std::unordered_map`.
 
+To use as a set (only keys):
+
+```cpp
+	Hash_Table<int> s = {11, 22, 33, 44, 55};
+	cout << s(34).exists() << endl; // false
+	s(33).erase(); // now {11, 22, 44, 55}
+```
+
+To use as a map (keys + values):
+
+```cpp
+	Hash_Table<int, std::string> m = {{12,"twelve"}, {6,"six"}, {3,"three"}, {20,"twenty"}};
+	for(auto& e : m) {
+		cout << e.key() << " -> " e.val() << endl;
+	}
+	// prints (in undefined order):
+	// 6 -> six
+	// 20 -> twenty
+	// 3 -> three
+	// 12 -> twelve
+
+	m.emplace(2,"two"); // add one more
+```
+
+### `salgo::Hash`
+
+Hash_Table uses `salgo::Hash<Key>` by default to get hashes for objects.
+
+The `salgo::Hash<Key>` first checks the `Key` type for member `hash()` function, and uses it if available. Otherwise, it uses `std::hash<Key>`.
+
+If you want to provide a hashing function for your custom type, don't specialize `salgo::Hash`, but either:
+* Create a member `hash()` function, or
+* Specialize `std::hash<Key>` instead
+
 ### Type Builder
 
 #### ::COUNT
@@ -475,7 +524,7 @@ Check Travis builds for full benchmarks using gcc/clang and libstdc++/libc++.
 Comparing to `std::unordered_multiset` from `libstdc++`.
 
 |Benchmark         |    Salgo|   libstdc++|
-|------------------|---------:-----------:|
+|------------------|--------:|-----------:|
 |REHASH (~1M)      |51 ms    |51 ms       |
 |INSERT            |138 ns   |215 ns      |
 |REVERVED_INSERT   |72 ns    |149 ns      |
@@ -487,6 +536,7 @@ Comparing to `std::unordered_multiset` from `libstdc++`.
 ### TODO
 * Implement not-multi version, e.g. by `::UNIQUE` type parameter.
 * Expose parameter for bucket INPLACE_BUFFER
+* implement initializer lists, actually...
 
 
 

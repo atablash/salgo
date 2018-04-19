@@ -60,5 +60,25 @@ TEST(Hash_Table, erase) {
 }
 
 
+TEST(Hash_Table, initializer_list) {
+	Hash_Table<int> ht = {1, 10, 10000, 1000, 100};
+	int sum = 0;
+	for(auto& e : ht) sum += e;
+	EXPECT_EQ(11111, sum);
+}
 
+
+TEST(Hash_Table, key_val) {
+	Hash_Table<int, std::string> m = {{12,"twelve"}, {6,"six"}, {3,"three"}, {20,"twenty"}};
+	std::map<int,std::string> test;
+	for(auto& e : m) {
+		test.emplace(std::pair(e.key(), e.val()));
+	}
+	EXPECT_EQ(4, test.size());
+	EXPECT_EQ("twelve", test[12]);
+	EXPECT_EQ("six", test[6]);
+	EXPECT_EQ("three", test[3]);
+	EXPECT_EQ("twenty", test[20]);
+
+}
 

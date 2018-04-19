@@ -223,6 +223,10 @@ struct Context {
 		template<class H>
 		Hash_Table(H&& hash) : Hash( std::forward<H>(hash) ) {}
 
+		Hash_Table(std::initializer_list<Key_Val>&& il) {
+			for(auto&& e : il) emplace( std::move(e) );
+		}
+
 		~Hash_Table() {
 			if constexpr(!Inplace) {
 				for(auto e : *this) {
@@ -237,6 +241,7 @@ struct Context {
 
 		Hash_Table& operator=(const Hash_Table&) = delete; // todo
 		Hash_Table& operator=(Hash_Table&&) = default;
+
 
 
 		//
@@ -267,7 +272,7 @@ struct Context {
 
 
 		auto& key(Handle handle) {
-			return _alloc()[ _buckets[handle.a][handle.b] ].key;
+			return _kv( _buckets[handle.a][handle.b] ).key;
 		}
 
 
@@ -322,6 +327,23 @@ struct Context {
 
 
 	public:
+		auto emplace(      Key_Val&  kv) { return emplace_kv( kv ); }
+		auto emplace(const Key_Val&  kv) { return emplace_kv( kv ); }
+		auto emplace(      Key_Val&& kv) { return emplace_kv( std::move(kv) ); }
+		auto emplace(const Key_Val&& kv) { return emplace_kv( std::move(kv) ); }
+
+	private:
+		template<class KV>
+		auto emplace_kv(KV&& kv) {
+			if constexpr(Has_Val) {
+				return emplace( std::forward<KV>(kv).key, std::forward<KV>(kv).val );
+			}
+			else {
+				return emplace( std::forward<KV>(kv).key );
+			}
+		}
+
+	public:
 		template<class K, class... V>
 		auto emplace(K&& k, V&&... v) {
 
@@ -336,11 +358,11 @@ struct Context {
 			auto i_bucket = Hash::operator()(k) % _buckets.size();
 
 			if constexpr(Inplace) {
-				auto b = _buckets[i_bucket].add( k, std::forward<V>(v)... ).handle();
+				auto b = _buckets[i_bucket].add( std::forward<K>(k), std::forward<V>(v)... ).handle();
 				return Accessor<MUTAB>(this, Handle{i_bucket, b});
 			}
 			else {
-				auto new_element = _alloc().construct( k, std::forward<V>(v)... );
+				auto new_element = _alloc().construct( std::forward<K>(k), std::forward<V>(v)... );
 				auto b = _buckets[i_bucket].add( new_element ).handle();
 				return Accessor<MUTAB>(this, Handle{i_bucket, b});
 			}
@@ -417,7 +439,10 @@ struct Context {
 
 	struct With_Builder : Hash_Table {
 		FORWARDING_CONSTRUCTOR(With_Builder, Hash_Table) {}
-		FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(With_Builder, Hash_Table) {}
+
+		With_Builder(std::initializer_list<Key_Val>&& il) : Hash_Table( std::move(il) ) {}
+
+		//FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(With_Builder, Hash_Table) {}
 
 		template<class NEW_HASH>
 		using HASH = typename Context<Key, Val, NEW_HASH, Allocator, Inplace> :: With_Builder;
