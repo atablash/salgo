@@ -74,7 +74,7 @@ TEST(Hash_Table, key_val) {
 	for(auto& e : m) {
 		test.emplace(std::pair(e.key(), e.val()));
 	}
-	EXPECT_EQ(4, test.size());
+	EXPECT_EQ(4, (int)test.size());
 	EXPECT_EQ("twelve", test[12]);
 	EXPECT_EQ("six", test[6]);
 	EXPECT_EQ("three", test[3]);
