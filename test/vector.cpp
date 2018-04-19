@@ -11,7 +11,37 @@ using namespace std::chrono;
 
 
 
-DECLARE_int32(perf);
+
+
+
+
+
+TEST(Dense_Vector, accessor_operators) {
+	Vector<int> v = {1, 2, 3, 4, 5};
+	for(auto& e : v) {
+		++e;
+		e += 10;
+	}
+	EXPECT_EQ(1+10+1, v[0]);
+	EXPECT_EQ(1+10+5, v[4]);
+}
+
+
+TEST(Dense_Vector, iterator_operators) {
+	Vector<int> v = {1, 1, 2, 100, 100, 100, 1, 1};
+	int sum = 0;
+	for(auto& e : v) {
+		sum += e;
+		if(e == 2) {
+			// skip 1+2 elements after '2'
+			e.iterator()++;
+			e.iterator() += 2;
+		}
+	}
+	EXPECT_EQ(1+1+2+1+1, sum);
+}
+
+
 
 
 
@@ -71,7 +101,7 @@ static void push_pop_resize_common(MB& m) {
 
 
 
-TEST(Dense_vector, push_pop_resize) {
+TEST(Dense_Vector, push_pop_resize) {
 
 	Vector<int> m;
 	push_pop_resize_common(m);
@@ -87,7 +117,7 @@ namespace {
 	int g_constructors = 0;
 }
 
-TEST(Dense_vector, push_delete_compact_inplace_nontrivial) {
+TEST(Dense_Vector, push_delete_compact_inplace_nontrivial) {
 
 	struct S {
 		int val;

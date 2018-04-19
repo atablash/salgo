@@ -4,6 +4,7 @@
 #include "unordered-vector.hpp"
 #include "crude-allocator.hpp"
 #include "random-allocator.hpp"
+#include "hash.hpp"
 
 
 namespace salgo {
@@ -129,8 +130,8 @@ struct Context {
 		auto& key() const { return _container->key( _handle ); }
 
 		// get val (explicit)
-		auto& val()       { return BASE::operator(); }
-		auto& val() const { return BASE::operator(); }
+		auto& val()       { return BASE::operator()(); }
+		auto& val() const { return BASE::operator()(); }
 
 
 		void erase() {
@@ -284,8 +285,8 @@ struct Context {
 			DCHECK_GT( _count, 0 );
 			DCHECK_GT( _buckets.size(), 0 );
 
-			if constexpr(Has_Val) return _alloc()[ _buckets[handle.a][handle.b] ].val;
-			else return _alloc()[ _buckets[handle.a][handle.b] ].key;
+			if constexpr(Has_Val) return _kv( _buckets[handle.a][handle.b] ).val;
+			else return _kv( _buckets[handle.a][handle.b] ).key;
 		}
 
 
@@ -446,7 +447,7 @@ template<
 using Hash_Table = typename internal::hash_table::Context<
 	KEY,
 	VAL,
-	::std::hash<KEY>, // HASH
+	Hash<KEY>, // HASH
 	salgo::Random_Allocator<int> :: SINGLETON, // ALLOCATOR (int will be rebound anyway), used only when not INPLACE
 	std::is_move_constructible_v<KEY> && (std::is_same_v<VAL,void> || std::is_move_constructible_v<VAL>) // INPLACE
 > :: With_Builder;

@@ -52,8 +52,8 @@ namespace xoroshiro128x {
 		s[1] = s1;
 	}
 	*/
-}
-}
+} // namespace xoroshiro128x
+} // namespace
 
 
 inline uint32_t rand_32() {

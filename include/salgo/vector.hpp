@@ -285,12 +285,12 @@ struct Context {
 
 		Val& operator[](Handle key) {
 			_check_bounds(key);
-			return _mb[ (int)key ];
+			return _mb[ key.a ];
 		}
 
 		const Val& operator[](Handle key) const {
 			_check_bounds(key);
-			return _mb[ (int)key ];
+			return _mb[ key.a ];
 		}
 
 

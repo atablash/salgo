@@ -58,7 +58,7 @@ Accessors, or views (or proxy objects), are objects that provide a simple interf
 > However, you can use `for(const auto& e : dm)` normally, to mark *const*-ness of the accessed element.
 
 
-As you can see in the above example, accessors are implicitly convertible to the raw type (`int` in this case).
+As you can see in the above example, accessors are implicitly convertible to the raw type reference (`int&` in this case).
 
 If you need to make this explicit, use `operator()`, i.e. call `e()` instead of `e`:
 
@@ -79,6 +79,102 @@ Salgo containers generally return raw element for `operator[]`, and accessor for
 	v[3] = 33;		// operator[] returns raw element
 	v(3).erase();	// operator() returns accessor
 ```
+
+Accessors forward most operators to the underlying object:
+
+```cpp
+	Vector<int> v = {10, 20, 30};
+	for(auto& e : v) ++e;
+	// now v == {11, 21, 31}
+```
+
+Accessors are also implicitly convertible to Handles - see below.
+
+
+
+Handles
+-------
+If you want to store a reference to an element, use a **handle**.
+
+	Vector<int> v = {11, 22, 33, 44, 55};
+	auto h = v(2).handle(); // get a handle
+
+	// ...
+
+	// get an accessor back from the handle:
+	v(h).erase(); // and e.g. erase the element
+
+As you can see, a handle doesn't store any context, and you need the owning object (the *Vector* in this case) to get back an accessor.
+
+Handles are meant for storage. Don't try storing accessors, they're usually big objects and they're meant to be optimized out.
+
+> NOTE
+>
+> In this case, the handle type is defined as `Vector<int>::Handle`.
+>
+> Often there's also a `Small_Handle` available, which is a compressed version, meant for storage.
+>
+> For node-based structures like `salgo::List`, a `Small_Handle` is currently 4 bytes, and `Handle` is 8 bytes.
+>
+> Use `Small_Handle` only for storage. It has some overhead to decode it back.
+>
+> There are conversions defined both ways (currently implicit).
+
+
+
+
+Iterators
+---------
+
+Salgo accessors and iterators are essentially the same thing, with a different interface. They're convertible both ways.
+
+Getting iterator interface from accessor:
+
+```cpp
+	Vector<int> v = {1, 1, 2, 100, 100, 100, 1};
+	int sum = 0;
+	for(auto& e : v) {
+		sum += e;
+		if(e == 2) e.iterator() += 3; // skip next 3 elements
+	}
+	// sum is 1 + 1 + 2 + 1 (skipped 3x 100)
+```
+
+Getting accessor interface from iterator:
+
+```cpp
+	List<int> v = {1, 2, 3, 4, 5};
+	for(auto it = v.begin(); it != v.end(); ++it) {
+		if(it.accessor() == 3) it.accessor().erase();
+	}
+	// now v == {1, 2, 4, 5}
+```
+
+The same thing can be accomplished using `operator*` and `operator->`:
+
+```cpp
+	List<int> v = {1, 2, 3, 4, 5};
+	for(auto it = v.begin(); it != v.end(); ++it) {
+		if(*it == 3) it->erase();
+	}
+	// now v == {1, 2, 4, 5}
+```
+
+Of course, in this case it's easier to use the *scoped for*:
+
+```cpp
+	List<int> v = {1, 2, 3, 4, 5};
+	for(auto& e : v) {
+		if(e == 3) e.erase();
+	}
+	// now v == {1, 2, 4, 5}
+```
+
+> NOTE
+>
+> As you can see in the above example with `List`, it's safe to erase elements inside the loop in most Salgo containers.
+
+Just like accessor, for simplicity, iterator is implicitly convertible to both underlying object reference and *Handle*. To get this explicit, use `operator()` and `handle()` (again, same as with accessor).
 
 
 ### A Story Behind Accessors
@@ -159,36 +255,6 @@ Of course, you can declare a new type, and parametrize it more later:
 
 
 
-Handles
--------
-If you want to store a reference to an element, use a **handle**.
-
-	Vector<int> v = {11, 22, 33, 44, 55};
-	auto h = v(2).handle(); // get a handle
-
-	// ...
-
-	// get an accessor back from the handle:
-	v(h).erase(); // and e.g. erase the element
-
-As you can see, a handle doesn't store any context, and you need the owning object (the *Vector* in this case) to get back an accessor.
-
-Handles are meant for storage. Don't try doing this with accessors, they're usually big objects and they're meant to be optimized out.
-
-> NOTE
->
-> In this case, the handle type is defined as `Vector<int>::Handle`.
->
-> Often there's also a `Small_Handle` available, which is a compressed version, meant for storage.
->
-> For node-based structures like `salgo::List`, a `Small_Handle` is currently 4 bytes, and `Handle` is 8 bytes.
->
-> Use `Small_Handle` only for storage. It has some overhead to decode it back.
->
-> There are conversions defined both ways (currently implicit).
-
-
-
 Reference
 =========
 Apart from the following sections, you can also use the code in `test` directory as a reference.
@@ -254,6 +320,10 @@ Adds a counter, so makes the *Vector* aware of how many existing elements it has
 	v(2).erase();
 	cout << "have " << v.count() << " elements" << endl; // have 4 elements
 
+#### ::INPLACE_BUFFER<N>
+
+Adds inplace buffer to the object, of capacity N elements. When the Vector has at most N elements, they'll be stored inplace (as with `std::array`).
+
 
 ### Construction
 
@@ -274,15 +344,178 @@ Adds a counter, so makes the *Vector* aware of how many existing elements it has
 ### Foreach-erase loops
 
 	Vector<int> ::SPARSE v = {1, 2, 33, 4, 5};
-	for(auto& e : v) if(e > 10) e.erase(); // completely legit!
+	for(auto& e : v) if(e > 10) e.erase(); // safe!
 
 ### Accessors and handles invalidation
 
 Both accessors and handles never invalidate.
 
 
+### Performance (x86_64)
+
+Check Travis builds for full benchmarks using gcc/clang and libstdc++/libc++.
+
+Comparing to `std::vector` from `libstdc++`.
+
+Grow factor is `1.5` for Salgo.
+
+|Benchmark         |    Salgo|   libstdc++|
+|------------------|---------:-----------:|
+|PUSH_BACK         |10 ns    |10 ns       |
+|RANDOM_ACCESS     |28 ns    |29 ns       |
+|SEQUENTIAL_ACCESS |350 us   |117 us      |
+|FOREACH_ACCESS    |351 us   |329 us      |
+
+
 ### TODO
 * Auto-shrink option
+
+
+Memory_Block
+------------
+
+It's the type used for underlying `Vector` implementation. It has the same functionality, except:
+
+* It's by default SPARSE (can be made DENSE using `::DENSE` type builder selector)
+* Its elements are first deleted and you have to construct them.
+* It doesn't allow automatic resizing on push_back - keeping to vector terminology, it only has capacity, and no size.
+
+The type builder exposes following parameters: `::DENSE`, `::STACK_BUFFER<N>`, `::EXISTS`, `::EXISTS_INPLACE`, `::EXISTS_BITSET`, `::COUNT` (see the `Vector` for some explaination).
+
+
+Chunked_Vector
+--------------
+
+It's similar to `Vector`, but doesn't reallocate. Instead, it creates new memory blocks for the new elements, so it's not contiguous.
+
+You can use it when you have non-movable elements (same as with `std::deque`).
+
+It's used internally in `Random_Allocator`.
+
+
+Crude_Allocator
+---------------
+
+It's the first Salgo custom allocator implementation. As the name suggests, it's not the best. Actually it doesn't reuse memory.
+
+### TODO
+* Implement using `Chunked_Vector` instead of custom memory blocks implementation. And compare performance of course.
+
+
+Random_Allocator
+----------------
+It's currently the default Salgo allocator.
+
+### Performance (x86_64)
+
+`std::allocator` simply proxies requests to the system allocator (Ubuntu 16.04).
+
+|Benchmark         | Random_Allocator | Crude_Allocator | std::allocator|
+|------------------|-----------------:|----------------:|--------------:|
+|SEQUENTIAL        |10 ns             |4 ns             |34 ns          |
+|QUEUE             |21 ns             |17 ns            |33 ns          |
+|RANDOM            |47 ns             |23 ns            |67 ns          |
+
+
+> NOTE
+>
+> Crude_Allocator is unable to reuse memory - it keeps all the memory allocated, until Crude_Allocator is destructed.
+>
+> Use it only if you know what you're doing.
+
+
+
+Salgo_From_Std_Allocator
+------------------------
+Wraps an allocator concept of the standard library. It uses regular pointers as handles.
+
+To use the default `new` and `delete` (i.e. system allocator directly), use:
+
+```cpp
+	template<class T>
+	using Alloc = Salgo_From_Std_Allocator< std::allocator<T> >;
+
+	// e.g. List:
+	List<int> ::ALLOCATOR<Alloc<T>> my_list;
+```
+
+> NOTE
+>
+> `Salgo_From_Std_Allocator` doesn't use provided allocator directly, but using `std::allocator_traits` instead.
+
+
+Unordered_Vector
+----------------
+It's a small wrapper around `Vector`. When erasing an element, the last element in the vector is moved to fill the hole.
+
+
+Hash_Table
+----------
+A replacement for `std::unordered_multiset`, `std::unordered_set`, `std::unordered_multimap`, `std::unordered_map`.
+
+### Type Builder
+
+#### ::COUNT
+
+Add a counter so total of number elements can be checked using `count()`.
+
+#### ::EXTERNAL
+
+By default, elements are stored inplace. Use `::EXTERNAL` to store handles to elements allocated using Allocator instead.
+
+#### ::ALLOCATOR<Alloc>
+
+Allocator used to construct elements. Used only if `::EXTERNAL`.
+
+
+### Performance (x86_64)
+
+Check Travis builds for full benchmarks using gcc/clang and libstdc++/libc++.
+
+Comparing to `std::unordered_multiset` from `libstdc++`.
+
+|Benchmark         |    Salgo|   libstdc++|
+|------------------|---------:-----------:|
+|REHASH (~1M)      |51 ms    |51 ms       |
+|INSERT            |138 ns   |215 ns      |
+|REVERVED_INSERT   |72 ns    |149 ns      |
+|FIND              |51 ns    |83 ns       |
+|FIND_ERASE        |64 ns    |134 ns      |
+|ITERATE           |7 ns     |30 ns       |
+
+
+### TODO
+* Implement not-multi version, e.g. by `::UNIQUE` type parameter.
+* Expose parameter for bucket INPLACE_BUFFER
+
+
+
+List
+----
+Similar to `std::list`.
+
+
+
+### Performance (x86_64)
+
+Check Travis builds for full benchmarks using gcc/clang and libstdc++/libc++.
+
+Comparing `salgo::List<int> ::COUNT` to `std::list<int>` from `libstdc++`.
+
+|Benchmark         |    Salgo| Salgo + Crude_Allocator| Salgo + std::allocator|   libstdc++|
+|------------------|--------:|-----------------------:|----------------------:|-----------:|
+|ITERATE           |12 ns    |9 ns                    |13 ns                  |12 ns       |
+|INSERT            |53 ns    |39 ns                   |81 ns                  |95 ns       |
+|ERASE             |12 ns    |10 ns                   |17 ns                  |14 ns       |
+
+
+> NOTE
+>
+> Crude_Allocator is unable to reuse memory - it keeps all the memory allocated, until Crude_Allocator is destructed.
+>
+> Use it only if you know what you're doing.
+
+
 
 
 

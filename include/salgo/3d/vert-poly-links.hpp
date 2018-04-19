@@ -11,10 +11,12 @@
 
 template<class MESH>
 bool has_valid_vert_poly_links(MESH& mesh) {
-	std::unordered_set< typename MESH::H_Poly_Vert > checked;
+	using H_Poly_Vert = typename MESH::H_Poly_Vert;
+	std::unordered_set< H_Poly_Vert, salgo::Hash<H_Poly_Vert> > checked;
 
 	for(auto v : mesh.verts()) {
-		for(auto pv : v.poly_verts()) {
+		for(auto vp : v.vert_polys()) {
+			auto pv = vp.poly_vert();
 
 			if(v != pv.vert()) return false;
 

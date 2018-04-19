@@ -51,6 +51,10 @@ include_directories( # SYSTEM
 	../include
 )
 
+include_directories( # SYSTEM
+	../third-party
+)
+
 
 add_executable(	all-tests ${sources} )
 add_test( all-tests all-tests )

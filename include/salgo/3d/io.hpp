@@ -163,11 +163,11 @@ MESH load_ply(FILE_NAME&& file_name) {
 	for(int i=0; i<(int)verts_count; ++i){
 		auto v = mesh.verts_add(verts[i*3 + 0], verts[i*3 + 1], verts[i*3 + 2]);
 
-		if constexpr(has_member_normal<typename MESH::Vert_Props>::value) if(v_normals_count) {
+		if constexpr(has_member__normal<typename MESH::Vert_Props>) if(v_normals_count) {
 			v.props().normal = { v_normals[i*3 + 0], v_normals[i*3 + 1], v_normals[i*3 + 2] };
 		}
 
-		if constexpr(has_member_color<typename MESH::Vert_Props>::value) if(v_colors_count) {
+		if constexpr(has_member__color<typename MESH::Vert_Props>) if(v_colors_count) {
 			v.props().color = { v_colors[i*4 + 0], v_colors[i*4 + 1], v_colors[i*4 + 2], v_colors[i*4 + 3] };
 		}
 	}
@@ -176,7 +176,7 @@ MESH load_ply(FILE_NAME&& file_name) {
 	for(int i=0; i<(int)polys_count; ++i){
 		auto p = mesh.polys_add(polys[i*3 + 0], polys[i*3 + 1], polys[i*3 + 2]);
 
-		if constexpr(has_member_texcoords<typename MESH::Poly_Vert_Props>::value) if(p_texcoords_count) {
+		if constexpr(has_member__texcoords<typename MESH::Poly_Vert_Props>) if(p_texcoords_count) {
 			p.poly_vert(0).props().texcoords = { p_texcoords[i*6 + 0], p_texcoords[i*6 + 1] };
 			p.poly_vert(1).props().texcoords = { p_texcoords[i*6 + 2], p_texcoords[i*6 + 3] };
 			p.poly_vert(2).props().texcoords = { p_texcoords[i*6 + 4], p_texcoords[i*6 + 5] };

@@ -10,6 +10,12 @@
 #include <map>
 
 
+namespace salgo {
+
+
+
+
+
 struct Cap_Hole_Result {
 	int num_polys_created = 0;
 };
@@ -30,7 +36,8 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 	// iterators to perimeter, ordered by score
 	std::multimap<double, typename decltype(perimeter)::iterator> cands;
 
-	std::unordered_map<H_Poly_Edge, typename decltype(cands)::iterator> where_cands;
+	//std::unordered_map<H_Poly_Edge, typename decltype(cands)::iterator> where_cands;
+	salgo::Hash_Table<H_Poly_Edge, typename decltype(cands)::iterator> where_cands;
 
 
 	auto get_score = [](auto e0, auto e1){
@@ -66,7 +73,7 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 		DCHECK( m(*it).next_vert() == m(*next).prev_vert()) << "edges not adjacent";
 
 		auto cands_it = cands.insert({get_score(m(*it), m(*next)), it});
-		where_cands.insert({*it, cands_it});
+		where_cands.emplace(*it, cands_it);
 
 		//LOG(INFO) << "where_cands.insert(" << (*it) << ")";
 	};
@@ -74,12 +81,12 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 
 	auto del_cand = [&](const auto& e) {
 
-		auto it = where_cands.find(e);
+		auto it = where_cands(e);
 
-		DCHECK(it != where_cands.end()) << "edge not found in where_cands";
-		DCHECK(it->second != cands.end()) << "edge not found in cands";
+		DCHECK(it.exists()) << "edge not found in where_cands";
+		DCHECK(it.val() != cands.end()) << "edge not found in cands";
 
-		cands.erase(it->second);
+		cands.erase( it.val() );
 		where_cands.erase(it);
 	};
 
@@ -152,7 +159,7 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 		add_cand(new_edge);
 
 		DCHECK_EQ(perimeter.size(), cands.size());
-		DCHECK_EQ(where_cands.size(), cands.size());
+		DCHECK_EQ(where_cands.count(), cands.size());
 	}
 
 	// add last edge-link
@@ -193,5 +200,12 @@ Cap_Holes_Result cap_holes(MESH& mesh) {
 
 	return r;
 }
+
+
+
+
+
+
+} // namespace salgo
 
 

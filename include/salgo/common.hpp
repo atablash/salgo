@@ -19,7 +19,7 @@
 #define GENERATE_HAS_MEMBER(member)                                                \
                                                                                    \
 template < class T >                                                               \
-class HasMember_##member                                                           \
+class _Class_Has_Member__##member                                                           \
 {                                                                                  \
     struct Fallback { int member; };                                               \
     struct Derived : T, Fallback { };                                              \
@@ -32,19 +32,14 @@ class HasMember_##member                                                        
     template<typename U> static ArrayOfOne & func(Check<int Fallback::*, &U::member> *); \
     template<typename U> static ArrayOfTwo & func(...);                            \
   public:                                                                          \
-    typedef HasMember_##member type;                                               \
     enum { value = sizeof(func<Derived>(0)) == 2 };                                \
 };                                                                                 \
                                                                                    \
-template < class T >                                                               \
-struct has_member_##member                                                         \
-: public std::integral_constant<bool, HasMember_##member<T>::value>                \
-{                                                                                  \
-};                                                                                 \
-                                                                                   \
-template<>                                                                         \
-struct has_member_##member<void>                                                   \
-: public std::integral_constant<bool, false> {};
+template<class T> \
+using _Has_Member__##member = std::conditional_t< std::is_class_v<T>, _Class_Has_Member__##member<T>, std::false_type>; \
+\
+template<class X> \
+static constexpr bool has_member__##member = _Has_Member__##member<X>::value; \
 
 
 
