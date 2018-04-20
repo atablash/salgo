@@ -363,6 +363,23 @@ It's safe to use either `Vector::Accessor::erase()` or `Vector::erase(handle)` w
 	Vector<int> ::SPARSE v = {1, 2, 33, 4, 5};
 	for(auto& e : v) if(e > 10) e.erase(); // safe!
 
+### Loops and changing size
+
+Range-based-for caches `end()` iterator, and erasing or pushing back elements changes the end() iterator position. Still, it works fine with Salgo with no performance overhead - check the source code for details.
+
+```cpp
+	Vector<int> v = {1, 2, 3};
+	for(auto& e : v) {
+		if(e < 10) v.emplace_back(e+10);
+	}
+	// 1, 2, 3, 11, 12, 13
+```
+
+> NOTE
+>
+> One thing to keep in mind is that there's a special End_Iterator type that `end()` returns. It's identical to the normal iterator, except it acts as a "reference" to `end()` when used on right-hand-side of `!=` (and only then).
+
+
 ### Accessors and handles invalidation
 
 Both accessors/iterators and handles never invalidate (except when the Vector object is moved). TODO: maybe allocate
@@ -370,7 +387,6 @@ Both accessors/iterators and handles never invalidate (except when the Vector ob
 Handles and accessors/iterators to erased elements are still valid.
 
 Pointers to elements can invalidate, as elements can be moved when growing the Vector (TODO: option to reallocation also on shrink). Contrary to accessors and handles, pointers don't invalidate when moving the `Vector` object.
-
 
 ### Performance (x86_64)
 
@@ -493,6 +509,17 @@ Erasing during forward iteration is safe only through Accessor, but not though t
 		}
 	}
 ```
+
+Range-based-for caches `end()` iterator, and erasing or pushing back elements changes the end() iterator position. Even though it works fine with Salgo with no performance overhead - check the source code for details.
+
+> NOTE
+>
+> One thing to keep in mind is that there's a special End_Iterator type that `end()` returns. It's identical to the normal iterator, except it acts as a "reference" to `end()` when used on right-hand-side of `!=` (and only then).
+
+
+### Performance
+
+Even though forward iteration requires a check if element was just deleted or not (as opposed to backward iteration), there's no overhead as measured in benchmarks, and both forward and backward iteration have the same performance. Backward iteration through salgo::Reversed adapter also has no overhead.
 
 
 Hash_Table
