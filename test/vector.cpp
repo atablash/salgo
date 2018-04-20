@@ -43,6 +43,19 @@ TEST(Dense_Vector, iterator_operators) {
 
 
 
+TEST(Dense_Vector, push_while_iterating) {
+	Vector<int> v = {1,2,3};
+	int sum = 0;
+	for(auto& e : v) {
+		sum += e;
+		if(e < 10) v.emplace_back(e+10);
+	}
+	// 1,2,3,11,12,13
+	EXPECT_EQ(42, sum);
+}
+
+
+
 
 
 

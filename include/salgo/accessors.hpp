@@ -146,23 +146,15 @@ public:
 
 	
 public:
-	auto& operator++() {
-		_self()._increment();
-		return _self(); }
+	auto&  operator++()&  { _self()._increment(); return            _self()  ; }
+	auto&& operator++()&& { _self()._increment(); return std::move( _self() ); }
 
-	auto operator++(int) {
-		auto old = _self();
-		_self()._increment();
-		return old; }
+	auto&  operator--()&  { _self()._decrement(); return            _self()  ; }
+	auto&& operator--()&& { _self()._decrement(); return std::move( _self() ); }
 
-	auto& operator--() {
-		_self()._decrement();
-		return _self(); }
 
-	auto operator--(int) {
-		auto old = _self();
-		_self()._decrement();
-		return old; }
+	auto operator++(int) { auto old = _self(); _self()._increment(); return old; }
+	auto operator--(int) { auto old = _self(); _self()._decrement(); return old; }
 
 public:
 	Iterator<C>& operator+=(int n) {

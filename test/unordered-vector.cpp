@@ -1,4 +1,5 @@
 #include <salgo/unordered-vector.hpp>
+#include <salgo/reversed.hpp>
 
 #include <gtest/gtest.h>
 
@@ -82,6 +83,46 @@ TEST(Unordered_Vector, no_invalidation) {
 
 
 
+TEST(Unordered_Vector, backward_iteration) {
+	Unordered_Vector<int> v = {1, 2, 3, 4, 5};
+	set<int> s;
+	for(auto& e : Reversed(v)) {
+		s.insert(e);
+		if(e == 3) {
+			v(e.handle()).erase();
+		}
+	}
+	EXPECT_EQ(5, (int)s.size());
+	EXPECT_EQ(4, v.size());
+}
+
+
+TEST(Unordered_Vector, forward_iteration_good) {
+	Unordered_Vector<int> v = {1, 2, 3, 4, 5};
+	set<int> s;
+	for(auto& e : v) {
+		s.insert(e);
+		if(e == 3) {
+			e.erase();
+		}
+	}
+	EXPECT_EQ(5, (int)s.size());
+	EXPECT_EQ(4, v.size());
+}
+
+
+TEST(Unordered_Vector, forward_iteration_bad) {
+	Unordered_Vector<int> v = {1, 2, 3, 4, 5};
+	set<int> s;
+	for(auto& e : v) {
+		s.insert(e);
+		if(e == 3) {
+			v(e.handle()).erase(); // we loose `5`
+		}
+	}
+	EXPECT_EQ(4, (int)s.size());
+	EXPECT_EQ(4, v.size());
+}
 
 
 

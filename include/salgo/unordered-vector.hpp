@@ -47,6 +47,19 @@ struct Context {
 
 
 
+
+	//
+	// HACK for supporting backward range-based-for iteration with erasing elements
+	//
+	template<Const_Flag C>
+	struct End_Iterator : Iterator<C> { FORWARDING_CONSTRUCTOR(End_Iterator, Iterator<C>) {} };
+
+
+
+
+
+
+
 	struct Extra_Context {
 		bool _just_erased = false;
 	};
@@ -57,7 +70,6 @@ struct Context {
 	//
 	template<Const_Flag C>
 	class Accessor : public Accessor_Base<C,Context> {
-	private:
 		using BASE = Accessor_Base<C,Context>;
 		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 		friend Unordered_Vector;
@@ -65,6 +77,9 @@ struct Context {
 		using BASE::_container;
 		using BASE::_handle;
 		using BASE::_just_erased;
+
+	public:
+		using BASE::operator=;
 
 	public:
 		int index() const { return BASE::handle(); }
@@ -84,10 +99,10 @@ struct Context {
 	//
 	template<Const_Flag C>
 	class Iterator : public Iterator_Base<C,Context> {
-	private:
 		using BASE = Iterator_Base<C,Context>;
 		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 		friend Unordered_Vector;
+		friend End_Iterator<C>;
 
 		using BASE::_container;
 		using BASE::_handle;
@@ -97,11 +112,11 @@ struct Context {
 		friend Iterator_Base<C,Context>;
 
 		inline void _increment() {
-			--_handle;
+			if(!_just_erased) ++_handle;
 			_just_erased = false;
 		}
 		inline void _decrement() {
-			if(!_just_erased) ++_handle;
+			--_handle;
 			_just_erased = false;
 		}
 
@@ -111,6 +126,14 @@ struct Context {
 		auto _will_compare_with(const Iterator<CC>& o) const {
 			DCHECK_EQ(_container, o._container);
 		}
+
+		//
+		// compare with End_Iterator
+		//
+	public:
+		template<Const_Flag CC>
+		bool operator!=(const End_Iterator<CC>&) { return BASE::operator!=( _container->end() ); }
+		using BASE::operator!=; // still use normal version too
 	};
 
 
@@ -130,6 +153,9 @@ struct Context {
 		using Val = Context::Val;
 		using Handle = Context::Handle;
 
+		template<Const_Flag C> using Accessor = Accessor<C>;
+		template<Const_Flag C> using Iterator = Iterator<C>;
+
 		//
 		// data
 		//
@@ -143,6 +169,9 @@ struct Context {
 	public:
 		Unordered_Vector() = default;
 		Unordered_Vector(int size) : v(size) {}
+
+		template<class T>
+		Unordered_Vector(std::initializer_list<T>&& il) : v(std::move(il)) {}
 
 
 		Unordered_Vector(const Unordered_Vector&) = default;
@@ -200,11 +229,14 @@ struct Context {
 
 
 	public:
-		auto begin()       { return _accessor( v.size()-1 ).iterator(); }
-		auto begin() const { return _accessor( v.size()-1 ).iterator(); }
+		auto before_begin()       { return _accessor( -1 ).iterator(); }
+		auto before_begin() const { return _accessor( -1 ).iterator(); }
 
-		auto end()       { return _accessor( -1 ).iterator(); }
-		auto end() const { return _accessor( -1 ).iterator(); }
+		auto begin()       { return _accessor( 0 ).iterator(); }
+		auto begin() const { return _accessor( 0 ).iterator(); }
+
+		auto end()       { return End_Iterator<MUTAB>( this, v.size() ); }
+		auto end() const { return End_Iterator<CONST>( this, v.size() ); }
 
 
 	private:

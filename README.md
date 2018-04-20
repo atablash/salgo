@@ -76,8 +76,8 @@ Salgo containers generally return raw element for `operator[]`, and accessor for
 
 ```cpp
 	Vector<int> ::SPARSE v = {0, 11, 22, 69, 44, 55};
-	v[3] = 33;		// operator[] returns raw element
-	v(3).erase();	// operator() returns accessor
+	v[3] = 33;      // operator[] returns raw element
+	v(3).erase();   // operator() returns accessor
 ```
 
 Accessors forward most operators to the underlying object:
@@ -314,7 +314,7 @@ This allows resizing (move construction on reallocation), iteration and destruct
 	for(auto& e : v) if(e > 10) e.erase();
 	// now {1, 2, _, 4, 5}
 
-	for(const auto& e : v) cout << e << ', '; // 1, 2, 4, 5
+	for(const auto& e : v) cout << e << ', '; // 1, 2, 4, 5, 
 
 > NOTE
 >
@@ -356,14 +356,20 @@ Adds inplace buffer to the object, of capacity N elements. When the Vector has a
 
 
 
-### Foreach-erase loops
+### Loops and erasing elements
+
+It's safe to use either `Vector::Accessor::erase()` or `Vector::erase(handle)` within loops.
 
 	Vector<int> ::SPARSE v = {1, 2, 33, 4, 5};
 	for(auto& e : v) if(e > 10) e.erase(); // safe!
 
 ### Accessors and handles invalidation
 
-Both accessors and handles never invalidate.
+Both accessors/iterators and handles never invalidate (except when the Vector object is moved). TODO: maybe allocate
+
+Handles and accessors/iterators to erased elements are still valid.
+
+Pointers to elements can invalidate, as elements can be moved when growing the Vector (TODO: option to reallocation also on shrink). Contrary to accessors and handles, pointers don't invalidate when moving the `Vector` object.
 
 
 ### Performance (x86_64)
@@ -375,7 +381,7 @@ Comparing to `std::vector` from `libstdc++`.
 Grow factor is `1.5` for Salgo.
 
 |Benchmark         |    Salgo|   libstdc++|
-|------------------|---------:-----------:|
+|------------------|--------:|-----------:|
 |PUSH_BACK         |10 ns    |10 ns       |
 |RANDOM_ACCESS     |28 ns    |29 ns       |
 |SEQUENTIAL_ACCESS |350 us   |117 us      |
@@ -388,7 +394,6 @@ Grow factor is `1.5` for Salgo.
 
 Memory_Block
 ------------
-
 It's the type used for underlying `Vector` implementation. It has the same functionality, except:
 
 * It's by default SPARSE (can be made DENSE using `::DENSE` type builder selector)
@@ -400,17 +405,27 @@ The type builder exposes following parameters: `::DENSE`, `::STACK_BUFFER<N>`, `
 
 Chunked_Vector
 --------------
-
 It's similar to `Vector`, but doesn't reallocate. Instead, it creates new memory blocks for the new elements, so it's not contiguous.
 
 You can use it when you have non-movable elements (same as with `std::deque`).
 
 It's used internally in `Random_Allocator`.
 
+### Loops and erasing elements
+
+Safe through both the Accessor object or Chunked_Vector object, same as with `salgo::Vector`.
+
+
+### Accessors and handles invalidation
+
+Similarly to `salgo::Vector`, accessors/iterators and handles never invalidate, except when the `Chunked_Vector` object is moved.
+
+Pointers to elements never invalidate, because objects are never moved.
+
+
 
 Crude_Allocator
 ---------------
-
 It's the first Salgo custom allocator implementation. As the name suggests, it's not the best. Actually it doesn't reuse memory.
 
 ### TODO
@@ -462,6 +477,22 @@ To use the default `new` and `delete` (i.e. system allocator directly), use:
 Unordered_Vector
 ----------------
 It's a small wrapper around `Vector`. When erasing an element, the last element in the vector is moved to fill the hole.
+
+### Loops and erasing elements
+
+Erasing during backward iteration is always safe.
+
+Erasing during forward iteration is safe only through Accessor, but not though the `Unordered_Vector` object, i.e.:
+
+```cpp
+	Unordered_Vector v = {1, 2, 3, 4, 5};
+	for(auto& e : v) {
+		if(e == 3) {
+			e.erase(); // good
+			// v.erase(e) // bad! iteration will skip one element (`5` moved to `3`)
+		}
+	}
+```
 
 
 Hash_Table

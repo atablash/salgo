@@ -108,6 +108,15 @@ struct Context {
 
 
 	//
+	// store a `reference` to end()
+	//
+	template<Const_Flag C>
+	struct End_Iterator : Iterator<C> { FORWARDING_CONSTRUCTOR(End_Iterator, Iterator<C>) {} };
+
+
+
+
+	//
 	// iterator
 	//
 	template<Const_Flag C>
@@ -115,6 +124,7 @@ struct Context {
 		using BASE = Iterator_Base<C,Context>;
 		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 		friend Vector;
+		friend End_Iterator<C>;
 
 		using BASE::_container;
 		using BASE::_handle;
@@ -136,6 +146,9 @@ struct Context {
 		auto _will_compare_with(const Iterator<CC>& o) const {
 			DCHECK_EQ(_container, o._container);
 		}
+
+	public:
+		bool operator!=(const End_Iterator<C>&) { return BASE::operator!=( _container->end() ); }
 	};
 
 
@@ -437,12 +450,12 @@ struct Context {
 
 		inline auto end() {
 			static_assert(Iterable);
-			return Iterator<MUTAB>(this, _size);
+			return End_Iterator<MUTAB>(this, _size);
 		}
 
 		inline auto end() const {
 			static_assert(Iterable);
-			return Iterator<CONST>(this, _size);
+			return End_Iterator<CONST>(this, _size);
 		}
 
 	};

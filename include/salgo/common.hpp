@@ -119,3 +119,8 @@ constexpr X operator ~ (X x)                                                    
     auto& _self()       { return *static_cast<       CRTP_DERIVED* >(this); }\
     auto& _self() const { return *static_cast< const CRTP_DERIVED* >(this); }
 
+    // auto&& _rv_self()       { return std::move( _self() ); }
+    // auto&& _rv_self() const { return std::move( _self() ); }
+
+
+

@@ -3,6 +3,8 @@
 
 #include <salgo/vector.hpp>
 #include <salgo/chunked-vector.hpp>
+#include <salgo/unordered-vector.hpp>
+#include <salgo/reversed.hpp>
 
 #include <vector>
 
@@ -281,6 +283,21 @@ static void FOREACH_ACCESS_salgo(State& state) {
 BENCHMARK( FOREACH_ACCESS_salgo )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
 
 
+static void FOREACH_ACCESS_salgo_unordered(State& state) {
+	srand(69); clear_cache();
+
+	salgo::Unordered_Vector<int> v( state.range(0) );
+	for(auto& e : v) e = rand();
+
+	for(auto _ : state) {
+		int sum = 0;
+		for(auto& e : v) sum += e;
+		DoNotOptimize(sum);
+	}
+}
+BENCHMARK( FOREACH_ACCESS_salgo_unordered )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+
+
 static void FOREACH_ACCESS_salgo_chunked(State& state) {
 	srand(69); clear_cache();
 
@@ -294,6 +311,28 @@ static void FOREACH_ACCESS_salgo_chunked(State& state) {
 	}
 }
 BENCHMARK( FOREACH_ACCESS_salgo_chunked )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+
+
+
+
+
+
+
+
+
+static void FOREACH_ACCESS_REV_salgo_unordered(State& state) {
+	srand(69); clear_cache();
+
+	salgo::Unordered_Vector<int> v( state.range(0) );
+	for(auto& e : v) e = rand();
+
+	for(auto _ : state) {
+		int sum = 0;
+		for(auto& e : Reversed(v)) sum += e;
+		DoNotOptimize(sum);
+	}
+}
+BENCHMARK( FOREACH_ACCESS_REV_salgo_unordered )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
 
 
 
