@@ -19,20 +19,6 @@ namespace hash_table {
 
 
 
-template<class T> struct Add_val {
-	T val;
-
-	template<class TT>
-	Add_val(TT&& v) : val( std::forward<TT>(v) ) {}
-};
-template<> struct Add_val<void> {};
-
-
-
-
-
-
-
 
 
 
@@ -48,18 +34,6 @@ struct Context {
 	static constexpr bool Inplace = _INPLACE;
 
 	static constexpr bool Has_Val = !std::is_same_v<Val, void>;
-
-
-
-
-
-	struct Key_Val : Add_val<Val> {
-		const Key key;
-
-		// 1 or 2 arguments
-		template<class K, class... V>
-		Key_Val(K&& k, V&&... v) : Add_val<Val>( std::forward<V>(v)... ), key( std::forward<K>(k) ) {}
-	};
 
 
 

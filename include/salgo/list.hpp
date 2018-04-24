@@ -197,7 +197,7 @@ struct Context {
 
 
 	//
-	// accessor
+	// iterator
 	//
 	template<Const_Flag C>
 	struct Iterator : Iterator_Base<C,Context> {
@@ -213,25 +213,18 @@ struct Context {
 	private:
 		friend BASE;
 
-		inline void _increment() {
+		void _increment() {
 			_prev = _handle;
 			_handle = _next;
 			DCHECK( _handle.valid() ) << "followed broken list link";
 			_update_next();
 		}
 
-		inline void _decrement() {
+		void _decrement() {
 			_next = _handle;
 			_handle = _prev;
 			DCHECK( _handle.valid() ) << "followed broken list link";
 			_update_prev();
-		}
-
-		auto _get_comparable() const {  return _handle;  }
-
-		template<Const_Flag CC>
-		auto _will_compare_with(const Iterator<CC>& o) const {
-			DCHECK_EQ(_container, o._container);
 		}
 
 

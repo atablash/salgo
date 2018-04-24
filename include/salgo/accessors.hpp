@@ -100,6 +100,7 @@ public:
 
 
 
+GENERATE_HAS_MEMBER(_get_comparable);
 GENERATE_HAS_MEMBER(_will_compare_with);
 GENERATE_HAS_MEMBER(_increment_n);
 GENERATE_HAS_MEMBER(_decrement_n);
@@ -172,37 +173,37 @@ public:
 	template<Const_Flag CC>
 	bool operator==(const Iterator<CC>& o) const {
 		_will_compare_with_base(o);
-		return _self()._get_comparable() == o._get_comparable();
+		return _get_comparable_base() == o._get_comparable_base();
 	}
 
 	template<Const_Flag CC>
 	bool operator!=(const Iterator<CC>& o) const {
 		_will_compare_with_base(o);
-		return _self()._get_comparable() != o._get_comparable();
+		return _get_comparable_base() != o._get_comparable_base();
 	}
 
 	template<Const_Flag CC>
 	bool operator<(const Iterator<CC>& o) const {
 		_will_compare_with_base(o);
-		return _self()._get_comparable() < o._get_comparable();
+		return _get_comparable_base() < o._get_comparable_base();
 	}
 
 	template<Const_Flag CC>
 	bool operator>(const Iterator<CC>& o) const {
 		_will_compare_with_base(o);
-		return _self()._get_comparable() > o._get_comparable();
+		return _get_comparable_base() > o._get_comparable_base();
 	}
 
 	template<Const_Flag CC>
 	bool operator<=(const Iterator<CC>& o) const {
 		_will_compare_with_base(o);
-		return _self()._get_comparable() <= o._get_comparable();
+		return _get_comparable_base() <= o._get_comparable_base();
 	}
 
 	template<Const_Flag CC>
 	bool operator>=(const Iterator<CC>& o) const {
 		_will_compare_with_base(o);
-		return _self()._get_comparable() >= o._get_comparable();
+		return _get_comparable_base() >= o._get_comparable_base();
 	}
 
 
@@ -212,6 +213,15 @@ private:
 		DCHECK_EQ(BASE::_container, o._container) << "comparing iterators to different containers";
 		if constexpr(has_member___will_compare_with< Iterator<C> >) {
 			_self()._will_compare_with(o);
+		}
+	}
+
+	auto _get_comparable_base() const {
+		if constexpr(has_member___get_comparable< Iterator<C> >) {
+			return _self()._get_comparable();
+		}
+		else {
+			return BASE::_handle;
 		}
 	}
 
