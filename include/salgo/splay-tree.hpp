@@ -2,7 +2,6 @@
 
 
 #include "binary-tree.hpp"
-#include "bst.hpp"
 
 
 namespace salgo {
@@ -19,25 +18,31 @@ struct Context {
 	using Key = _KEY;
 	using Val = _VAL;
 
-	using Key_Val = salgo::Key_Val<Key,Val>;
-
-	using Tree = salgo::Binary_Tree<Key_Val> ::ALLOCATOR<_ALLOCATOR>;
+	using Tree = typename salgo::Binary_Tree<Key,Val> ::template ALLOCATOR<_ALLOCATOR>;
+	using Key_Val = typename Tree::Key_Val;
 
 	class Splay_Tree;
 	using Container = Splay_Tree;
 
 
 
-	using       Handle = Tree::      Handle;
-	using Small_Handle = Tree::Small_Handle;
+	using       Handle = typename Tree::      Handle;
+	using Small_Handle = typename Tree::Small_Handle;
 
 
 
 
 	template<Const_Flag C>
-	struct Extra_Context {
-		Handle _prev;
-		Handle _next;
+	struct Reference {
+		typename Tree::template Iterator<C> _iter;
+
+		template<class ITER>
+		Reference(ITER&& iter) : _iter( std::forward<ITER>(iter) ) {}
+
+	protected:
+		auto& _val()       { return _iter(); }
+		auto& _val() const { return _iter(); }
+		auto _handle() const { return _iter.handle(); }
 	};
 
 
@@ -45,13 +50,19 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor : public Accessor_Base<C,Context> {
 		using BASE = Accessor_Base<C,Context>;
-		using BASE::_container;
-		using BASE::_handle;
+		using BASE::_iter;
 
 		friend Splay_Tree;
 
 	public:
-		FORWARDING_CONSTRUCTOR(Accessor,BASE) { BASE::iterator()._init(); }
+		auto& key()       { return _iter->key(); }
+		auto& key() const { return _iter->key(); }
+
+		auto& val()       { return _iter->val(); }
+		auto& val() const { return _iter->val(); }
+
+	public:
+		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 	};
 
 
@@ -61,46 +72,16 @@ struct Context {
 	template<Const_Flag C>
 	class Iterator : public Iterator_Base<C,Context> {
 		using BASE = Iterator_Base<C,Context>;
-		using BASE::_container;
-		using BASE::_handle;
-		using BASE::_next;
-		using BASE::_prev;
+		using BASE::_iter;
 
 	public:
-		FORWARDING_CONSTRUCTOR(Iterator, BASE) { _init(); }
+		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 
 	private:
 		friend BASE;
-
-		void _increment() {
-			_prev = _handle;
-			_handle = _next;
-			DCHECK( _handle.valid() ) << "followed broken tree link";
-			_update_next();
-		}
-
-		void _decrement() {
-			_next = _handle;
-			_handle = _prev;
-			DCHECK( _handle.valid() ) << "followed broken tree link";
-			_update_prev();
-		}
-
-
-	private:
-		void _update_prev() {
-			_prev = bst_prev(_container->_tree, _handle);
-		}
-
-		void _update_next() {
-			_next = bst_next(_container->_tree, _handle);
-		}
-
-		void _init() {
-			_update_prev();
-			_update_next();
-		}
-		friend Accessor<C>;
+		void _increment() { ++_iter; }
+		void _decrement() { --_iter; }
+		auto& _get_comparable() const { return _iter; }
 	};
 
 
@@ -110,11 +91,34 @@ struct Context {
 
 	class Splay_Tree {
 	public:
+		Splay_Tree(std::initializer_list<Key_Val>&& il) {
+			for(auto&& e : il) emplace(e);
+		}
+
+	public:
 		template<class... KV>
-		auto emplace(KV&&... kv) { return Accessor<MUTAB>(this, _tree.bst_emplace( std::forward<KV>(kv)... )); }
+		auto emplace(KV&&... kv) { return Accessor<MUTAB>( _tree.bst_emplace( std::forward<KV>(kv)... ).iterator() ); }
+
+	public:
+		auto before_begin()       { return Iterator<MUTAB>( _tree.before_begin() ); }
+		auto before_begin() const { return Iterator<CONST>( _tree.before_begin() ); }
+
+		auto begin()       { return Iterator<MUTAB>( _tree.begin() ); }
+		auto begin() const { return Iterator<CONST>( _tree.begin() ); }
+
+		auto end()       { return Iterator<MUTAB>( _tree.end() ); }
+		auto end() const { return Iterator<CONST>( _tree.end() ); }
 
 	private:
 		Tree _tree;
+	};
+
+
+
+
+	struct With_Builder : Splay_Tree {
+		FORWARDING_CONSTRUCTOR(With_Builder, Splay_Tree) {}
+		With_Builder(std::initializer_list<Key_Val>&& il) : Splay_Tree( std::move(il) ) {}
 	};
 
 
@@ -128,6 +132,15 @@ struct Context {
 } // namespace internal
 
 
+
+
+
+template<class KEY, class VAL=void>
+using Splay_Tree = typename internal::splay_tree::Context<
+	KEY,
+	VAL,
+	Random_Allocator<int> // will be rebound anyway
+> :: With_Builder;
 
 
 

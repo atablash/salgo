@@ -4,6 +4,7 @@
 #include "const-flag.hpp"
 #include "accessors.hpp"
 #include "random-allocator.hpp"
+#include "key-val.hpp"
 
 
 namespace salgo {
@@ -29,28 +30,9 @@ namespace binary_tree {
 
 
 //
-// add VAL
-//
-template<bool, class T> struct Add_val {
-	typename salgo::Stack_Storage<T> ::PERSISTENT val;
-
-	template<class... Args>
-	void construct(Args&&... args) { val.construct( std::forward<Args>(args)... ); }
-
-	void destruct() { val.destruct(); }
-};
-template<class T> struct Add_val<false,T> {
-	void construct(...) {}
-	void destruct() {}
-};
-
-
-
-
-//
 // add AGGREG
 //
-template<bool, class T> struct Add_aggreg {
+template<class T> struct Add_aggreg {
 	typename salgo::Stack_Storage<T> ::PERSISTENT aggreg;
 
 	template<class... Args>
@@ -58,7 +40,7 @@ template<bool, class T> struct Add_aggreg {
 
 	void destruct() { aggreg.destruct(); }
 };
-template<class T> struct Add_aggreg<false,T> {
+template<> struct Add_aggreg<void> {
 	void construct(...) {}
 	void destruct() {}
 };
@@ -68,7 +50,7 @@ template<class T> struct Add_aggreg<false,T> {
 //
 // add PROPAG
 //
-template<bool, class T> struct Add_propag {
+template<class T> struct Add_propag {
 	typename salgo::Stack_Storage<T> ::PERSISTENT propag;
 
 	template<class... Args>
@@ -76,7 +58,7 @@ template<bool, class T> struct Add_propag {
 
 	void destruct() { propag.destruct(); }
 };
-template<class T> struct Add_propag<false,T> {
+template<> struct Add_propag<void> {
 	void construct(...) {}
 	void destruct() {}
 };
@@ -87,10 +69,20 @@ template<class T> struct Add_propag<false,T> {
 
 
 
-template<class _VAL, class _AGGREG, class _PROPAG, bool _PATH_PARENTS, class _PP_AGGREG, class _PP_PROPAG, class _ALLOCATOR>
+template<
+	class _KEY,	class _VAL,
+	class _AGGREG, class _PROPAG,
+	bool _PATH_PARENTS, class _PP_AGGREG, class _PP_PROPAG,
+	class _ALLOCATOR
+>
 struct Context {
+	using Key = _KEY;
+	static constexpr bool Has_Key = !std::is_same_v<Key, void>;
+
 	using Val = _VAL;
-	static constexpr bool Has_Val    = !std::is_same_v<Val,   void>;
+	static constexpr bool Has_Val = !std::is_same_v<Val, void>;
+
+	using Key_Val = salgo::Key_Val<Key,Val>;
 
 	using Aggreg = _AGGREG;
 	using Propag = _PROPAG;
@@ -118,22 +110,31 @@ struct Context {
 
 
 
-	struct Node :
-			Add_val<Has_Val, Val>,
-			Add_aggreg<Has_Aggreg, Aggreg>,
-			Add_propag<Has_Propag, Propag> {
 
+
+
+
+	struct Node : salgo::Stack_Storage<Key_Val>::PERSISTENT,
+			Add_aggreg<Aggreg>,
+			Add_propag<Propag> {
+
+	private:
+		using KEY_VAL_BASE = typename salgo::Stack_Storage<Key_Val>::PERSISTENT;
+		using AGGREG_BASE = Add_aggreg<Aggreg>;
+		using PROPAG_BASE = Add_propag<Propag>;
+
+	public:
 		template<class... Args>
 		void construct(Args&&... args) {
-			Add_val<Has_Val, Val>::construct( std::forward<Args>(args)... );
-			Add_aggreg<Has_Aggreg, Aggreg>::construct();
-			Add_propag<Has_Propag, Propag>::construct();
+			KEY_VAL_BASE::construct( std::forward<Args>(args)... );
+			AGGREG_BASE::construct();
+			PROPAG_BASE::construct();
 		}
 
 		void destruct() {
-			Add_val<Has_Val, Val>::destruct();
-			Add_aggreg<Has_Aggreg, Aggreg>::destruct();
-			Add_propag<Has_Propag, Propag>::destruct();
+			KEY_VAL_BASE::destruct();
+			AGGREG_BASE::destruct();
+			PROPAG_BASE::destruct();
 		}
 
 		Small_Handle parent;
@@ -172,16 +173,23 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Accessor,BASE) { BASE::iterator()._init(); }
 
 	public:
-		bool exists() { return _handle.valid() && _handle != _container->super_root; }
+		auto& key()       { return _container()[_handle()].key; }
+		auto& key() const { return _container()[_handle()].key; }
 
-		auto left()        { return Accessor<C    >(_container, _node().left); }
-		auto left()  const { return Accessor<CONST>(_container, _node().left); }
+		auto& val()       { return _container()[_handle()].val; }
+		auto& val() const { return _container()[_handle()].val; }
 
-		auto right()       { return Accessor<C    >(_container, _node().right); }
-		auto right() const { return Accessor<CONST>(_container, _node().right); }
+	public:
+		bool exists() { return _handle().valid() && _handle() != _container().super_root; }
 
-		auto parent()       { return Accessor<C    >(_container, _node().parent); }
-		auto parent() const { return Accessor<CONST>(_container, _node().parent); }
+		auto left()        { return Accessor<C    >( &_container(), _node().left ); }
+		auto left()  const { return Accessor<CONST>( &_container(), _node().left ); }
+
+		auto right()       { return Accessor<C    >( &_container(), _node().right ); }
+		auto right() const { return Accessor<CONST>( &_container(), _node().right ); }
+
+		auto parent()       { return Accessor<C    >( &_container(), _node().parent ); }
+		auto parent() const { return Accessor<CONST>( &_container(), _node().parent ); }
 
 		bool has_left()   const { return _node().left.valid(); }
 		bool has_right()  const { return _node().right.valid(); }
@@ -190,30 +198,30 @@ struct Context {
 		bool is_left() const {
 			auto parent = _node().parent;
 			DCHECK(parent.valid());
-			return _handle == _node(parent).left;
+			return _handle() == _node(parent).left;
 		}
 
 		bool is_right() const {
 			auto parent = _node().parent;
 			DCHECK(parent.valid());
-			return _handle == _node(parent).right;
+			return _handle() == _node(parent).right;
 		}
 
 		template<class... Args>
-		auto construct_left(Args&&... args) {
+		auto emplace_left(Args&&... args) {
 			static_assert(C == MUTAB, "called construct_right() on CONST accessor");
 			DCHECK( !left().exists() );
-			auto new_node = _container->_alloc().construct();
+			auto new_node = _container()._alloc().construct();
 			new_node().construct( std::forward<Args>(args)... );
 			link_left(new_node);
 			return left();
 		}
 
 		template<class... Args>
-		auto construct_right(Args&&... args) {
+		auto emplace_right(Args&&... args) {
 			static_assert(C == MUTAB, "called construct_right() on CONST accessor");
 			DCHECK( !right().exists() );
-			auto new_node = _container->_alloc().construct();
+			auto new_node = _container()._alloc().construct();
 			new_node().construct( std::forward<Args>(args)... );
 			link_right(new_node);
 			return right();
@@ -222,68 +230,66 @@ struct Context {
 		void link_left(Handle new_left) {
 			static_assert(C == MUTAB, "called link_left() on CONST accessor");
 			DCHECK( !left().exists() );
-			_container->_alloc()[_handle].left = new_left;
-			_container->_alloc()[new_left].parent = _handle;
+			_container()._alloc()[_handle()].left = new_left;
+			_container()._alloc()[new_left].parent = _handle();
 		}
 
 		void link_right(Handle new_right) {
 			static_assert(C == MUTAB, "called link_right() on CONST accessor");
 			DCHECK( !right().exists() );
-			_container->_alloc()[_handle].right = new_right;
-			_container->_alloc()[new_right].parent = _handle;
+			_container()._alloc()[_handle()].right = new_right;
+			_container()._alloc()[new_right].parent = _handle();
 		}
 
 		void unlink_left() {
 			static_assert(C == MUTAB, "called unlink_left() on CONST accessor");
-			auto& l = _container->_alloc()[_handle].left;
-			_container->_alloc()[l].parent.reset();
+			auto& l = _container()._alloc()[_handle()].left;
+			_container()._alloc()[l].parent.reset();
 			l.reset();
 		}
 
 		void unlink_right() {
 			static_assert(C == MUTAB, "called unlink_right() on CONST accessor");
-			auto& r = _container->_alloc()[_handle].right;
-			_container->_alloc()[r].parent.reset();
+			auto& r = _container()._alloc()[_handle()].right;
+			_container()._alloc()[r].parent.reset();
 			r.reset();
 		}
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			DCHECK_NE(_handle, _container->super_root) << "called erase() on super_root";
+			DCHECK_NE(_handle(), _container().super_root) << "called erase() on super_root";
 			DCHECK(exists());
 			DCHECK(!_node().parent.valid());
 			DCHECK(!_node().left.valid());
 			DCHECK(!_node().right.valid());
 
-			_container->_alloc()[_handle].destruct();
-			_container->_alloc().destruct( _handle );
+			_container()._alloc()[_handle()].destruct();
+			_container()._alloc().destruct( _handle() );
 		}
 
 		void unlink_and_erase() {
 			static_assert(C == MUTAB, "called unlink_and_erase() on CONST accessor");
-			DCHECK_NE(_handle, _container->super_root) << "called unlink_and_erase() on super_root";
+			DCHECK_NE(_handle(), _container().super_root) << "called unlink_and_erase() on super_root";
 			DCHECK(exists());
 
-			auto& node = _container->_alloc()[_handle];
+			auto& node = _container()._alloc()[_handle()];
 			if(node.parent.valid()) {
-				auto& par = _container->alloc()[node.parent];
-				DCHECK(par.left == _handle || par.right == _handle);
-				if(par.left  == _handle) par.left.reset();
-				if(par.right == _handle) par.right.reset();
+				auto& par = _container().alloc()[node.parent];
+				DCHECK(par.left == _handle() || par.right == _handle());
+				if(par.left  == _handle()) par.left.reset();
+				if(par.right == _handle()) par.right.reset();
 			}
 
-			if(node.left .valid()) _container->_alloc()[node.left ].parent.reset();
-			if(node.right.valid()) _container->_alloc()[node.right].parent.reset();
+			if(node.left .valid()) _container()._alloc()[node.left ].parent.reset();
+			if(node.right.valid()) _container()._alloc()[node.right].parent.reset();
 
 			erase();
 		}
 
-		//
-		//
-		//
+		// remove node and replace the hole with _next
 		void bst_erase() {
 			static_assert(C == MUTAB, "called bst_erase() on CONST accessor");
-			if( _cut_out(_handle, true) ) return;
+			if( _cut_out(_handle(), true) ) return;
 			
 			// replace with _next
 			bool r = _cut_out(_next, false);
@@ -294,8 +300,8 @@ struct Context {
 			if(is_left()) _node(_node().parent).left = _next;
 			else          _node(_node().parent).right = _next;
 
-			_container->_alloc()[_handle].destruct();
-			_container->_alloc().destruct( _handle );
+			_container()._alloc()[_handle()].destruct();
+			_container()._alloc().destruct( _handle() );
 		}
 
 	private:
@@ -322,8 +328,8 @@ struct Context {
 			}
 
 			if(destruct) {
-				_container->_alloc()[h].destruct();
-				_container->_alloc().destruct( h );
+				_node(h).destruct();
+				_container()._alloc().destruct( h );
 			}
 			return true;
 		}
@@ -335,8 +341,10 @@ struct Context {
 		//}
 
 	private:
-		auto& _node(Handle h = _handle)       { return _container->_alloc()[h]; }
-		auto& _node(Handle h = _handle) const { return _container->_alloc()[h]; }
+		auto& _node()       { return _container()._alloc()[_handle()]; }
+		auto& _node() const { return _container()._alloc()[_handle()]; }
+		auto& _node(Handle h)       { return _container()._alloc()[h]; }
+		auto& _node(Handle h) const { return _container()._alloc()[h]; }
 	};
 
 
@@ -361,27 +369,67 @@ struct Context {
 		friend BASE;
 
 		void _increment() {
-			_prev = _handle;
-			_handle = _next;
-			DCHECK( _handle.valid() ) << "followed broken tree link";
+			_prev = _handle();
+			_handle() = _next;
+			DCHECK( _handle().valid() ) << "followed broken tree link";
 			_update_next();
 		}
 
 		void _decrement() {
 			_next = _handle;
 			_handle = _prev;
-			DCHECK( _handle.valid() ) << "followed broken tree link";
+			DCHECK( _handle().valid() ) << "followed broken tree link";
 			_update_prev();
 		}
 
 
 	private:
 		void _update_prev() {
-			_prev = bst_prev(_container->_alloc(), _handle);
+			DCHECK(_handle().valid());
+
+			auto handle = _handle();
+			if(_node(handle).left.valid()) {
+				// go 1 left and n right
+				handle = _node(handle).left;
+				while(_node(handle).right.valid()) handle = _node(handle).right;
+				_prev = handle;
+			}
+			else {
+				// go n up-right and 1 up-left
+				for(;;) {
+					Handle parent = _node(handle).parent;
+					DCHECK(parent.valid());
+					if(_node(parent).right == handle) {
+						_prev = parent;
+						return;
+					}
+					handle = parent;
+				}
+			}
 		}
 
 		void _update_next() {
-			_next = bst_next(_container->_alloc(), _handle);
+			DCHECK(_handle().valid());
+
+			auto handle = _handle();
+			if(_node(handle).right.valid()) {
+				// go 1 right and n left
+				handle = _node(handle).right;
+				while(_node(handle).left.valid()) handle = _node(handle).left;
+				_next = handle;
+			}
+			else {
+				// go n up-left and 1 up-right
+				for(;;) {
+					Handle parent = _node(handle).parent;
+					DCHECK(parent.valid());
+					if(_node(parent).left == handle) {
+						_next = parent;
+						return;
+					}
+					handle = parent;
+				}
+			}
 		}
 
 		void _init() {
@@ -389,6 +437,12 @@ struct Context {
 			_update_next();
 		}
 		friend Accessor<C>;
+
+	private:
+		auto& _node()       { return _container()._alloc()[_handle()]; }
+		auto& _node() const { return _container()._alloc()[_handle()]; }
+		auto& _node(Handle h)       { return _container()._alloc()[h]; }
+		auto& _node(Handle h) const { return _container()._alloc()[h]; }
 	};
 
 
@@ -408,6 +462,18 @@ struct Context {
 		friend Iterator<MUTAB>;
 		friend Iterator<CONST>;
 
+	public:
+		using Key = Context::Key;
+		using Val = Context::Val;
+		using Key_Val = Context::Key_Val;
+
+		using       Handle = Context::      Handle;
+		using Small_Handle = Context::Small_Handle;
+
+		template<Const_Flag C> using Accessor = Context::Accessor<C>;
+		template<Const_Flag C> using Iterator = Context::Iterator<C>;
+
+
 	private:
 		auto& _alloc()       { return *static_cast<      Allocator*>(this); }
 		auto& _alloc() const { return *static_cast<const Allocator*>(this); }
@@ -419,8 +485,8 @@ struct Context {
 
 		~Binary_Tree() {
 			for(auto& e : *this) {
-				_alloc()[e._handle].destruct();
-				_alloc().destruct(e._handle);
+				_alloc()[e._handle()].destruct();
+				_alloc().destruct(e._handle());
 			}
 			_alloc().destruct(super_root);
 		}
@@ -435,13 +501,13 @@ struct Context {
 		auto root() const { DCHECK(!empty()); return Accessor<CONST>(this, _alloc()[super_root].right); }
 
 		template<class... Args>
-		auto construct_root(Args&&... args) {
+		auto emplace_root(Args&&... args) {
 			// remove old root
+			//if(sr.left.valid()) {
+			//	DCHECK_EQ(sr.left, sr.right);
+			//	_alloc()[sr.left].parent.reset();
+			//}
 			auto& sr = _alloc()[super_root];
-			if(sr.left.valid()) {
-				DCHECK_EQ(sr.left, sr.right);
-				_alloc()[sr.left].parent.reset();
-			}
 			auto new_node = _alloc().construct();
 			new_node().construct( std::forward<Args>(args)... );
 			sr.left = sr.right = new_node.handle();
@@ -449,9 +515,44 @@ struct Context {
 			return Accessor<MUTAB>(this, new_node);
 		}
 
+		auto bst_emplace(const Key_Val& kv) {
+			if constexpr(Has_Val) return bst_emplace( kv.key, kv.val );
+			else return bst_emplace( kv.key );
+		}
+
+		template<class K, class... V>
+		auto bst_emplace(K&& k, V&&... v) {
+			if(empty()) return emplace_root( std::forward<K>(k), std::forward<V>(v)... );
+
+			auto handle = _alloc()[super_root].left;
+			DCHECK( handle.valid() );
+			for(;;) {
+				if(_alloc()[handle].get().key < k) {
+					if(!_alloc()[handle].right.valid()) {
+						auto new_node = _alloc().construct();
+						new_node().construct( std::forward<K>(k), std::forward<V>(v)... );
+						_alloc()[handle].right = new_node.handle();
+						_alloc()[new_node].parent = handle;
+						return Accessor<MUTAB>(this, new_node);
+					}
+					handle = _alloc()[handle].right;
+				}
+				else {
+					if(!_alloc()[handle].left.valid()) {
+						auto new_node = _alloc().construct();
+						new_node().construct( std::forward<K>(k), std::forward<V>(v)... );
+						_alloc()[handle].left = new_node.handle();
+						_alloc()[new_node].parent = handle;
+						return Accessor<MUTAB>(this, new_node);
+					}
+					handle = _alloc()[handle].left;
+				}
+			}
+		}
+
 	public:
-		auto& operator[](Handle handle)       { return _alloc()[handle].val.get(); }
-		auto& operator[](Handle handle) const { return _alloc()[handle].val.get(); }
+		auto& operator[](Handle handle)       { return _alloc()[handle].get()(); }
+		auto& operator[](Handle handle) const { return _alloc()[handle].get()(); }
 
 		auto operator()(Handle handle)       { return Accessor<MUTAB>(this, handle); }
 		auto operator()(Handle handle) const { return Accessor<CONST>(this, handle); }
@@ -474,6 +575,10 @@ struct Context {
 
 	struct With_Builder : Binary_Tree {
 		FORWARDING_CONSTRUCTOR(With_Builder, Binary_Tree) {}
+
+		template<class NEW_ALLOCATOR>
+		using ALLOCATOR = typename Context<Key, Val, Aggreg, Propag,
+			Path_Parents, Pp_Aggreg, Pp_Propag, NEW_ALLOCATOR> ::With_Builder;
 	};
 
 
@@ -488,15 +593,16 @@ struct Context {
 
 
 
-template<class VAL>
+template<class KEY, class VAL>
 using Binary_Tree = typename internal::binary_tree::Context<
+	KEY,
 	VAL,
-	void,
-	void,
+	void, // aggreg
+	void, // propag
 	false, // path parents
 	void, // pp_aggreg
 	void, // pp_propag
-	Random_Allocator<char> // will be rebound anyway
+	Random_Allocator<int> // will be rebound anyway
 > :: With_Builder;
 
 

@@ -87,9 +87,9 @@ struct Context {
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
 			DCHECK(!_just_erased);
-			(*_container)[_handle].~Val();
-			new(&(*_container)[_handle]) Val( std::move( (*_container).front()() ) );
-			(*_container).pop_front();
+			_container()[_handle()].~Val();
+			new(&_container()[_handle()]) Val( std::move( _container().back()()) );
+			_container().pop_back();
 			_just_erased = true;
 		}
 	};
@@ -112,19 +112,12 @@ struct Context {
 		friend Iterator_Base<C,Context>;
 
 		inline void _increment() {
-			if(!_just_erased) ++_handle;
+			if(!_just_erased) ++_handle();
 			_just_erased = false;
 		}
 		inline void _decrement() {
-			--_handle;
+			--_handle();
 			_just_erased = false;
-		}
-
-		auto _get_comparable() const { return _handle; }
-
-		template<Const_Flag CC>
-		auto _will_compare_with(const Iterator<CC>& o) const {
-			DCHECK_EQ(_container, o._container);
 		}
 
 		//
@@ -132,7 +125,7 @@ struct Context {
 		//
 	public:
 		template<Const_Flag CC>
-		bool operator!=(const End_Iterator<CC>&) { return BASE::operator!=( _container->end() ); }
+		bool operator!=(const End_Iterator<CC>&) { return BASE::operator!=( _container().end() ); }
 		using BASE::operator!=; // still use normal version too
 	};
 
@@ -207,18 +200,17 @@ struct Context {
 			return _accessor( v.size()-1 );
 		}
 
-		auto pop_front() {
+		auto pop_back() {
 			Val val = std::move( v[ v.size()-1 ] );
 			v.pop_back();
 			return val;
 		}
 
+		auto front()       { return _accessor( 0 ); }
+		auto front() const { return _accessor( 0 ); }
 
-		auto front()       { return _accessor( v.size()-1 ); }
-		auto front() const { return _accessor( v.size()-1 ); }
-
-		auto back()       { return _accessor( 0 ); }
-		auto back() const { return _accessor( 0 ); }
+		auto back()       { return _accessor( v.size()-1 ); }
+		auto back() const { return _accessor( v.size()-1 ); }
 
 
 		int size() const { return v.size(); }

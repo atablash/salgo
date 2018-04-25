@@ -28,16 +28,17 @@ link_libraries( ${SALGO_CXX_LINKER_FLAGS} )
 
 set(sources
 	main.cpp
-	stack-storage.cpp
-	memory-block.cpp
-	vector.cpp
-	vector-sparse.cpp
-	crude-allocator.cpp
-	list.cpp
-	unordered-vector.cpp
+	#stack-storage.cpp
+	#memory-block.cpp
+	#vector.cpp
+	#vector-sparse.cpp
+	#crude-allocator.cpp
+	#list.cpp
+	#unordered-vector.cpp
 	hash-table.cpp
-	chunked-vector.cpp
+	#chunked-vector.cpp
 	binary-tree.cpp
+	splay-tree.cpp
 	#3d/compute-normals.cpp
 	#3d/collapse-edges.cpp
 	#3d/cap-holes.cpp

@@ -5,6 +5,7 @@
 #include "crude-allocator.hpp"
 #include "random-allocator.hpp"
 #include "hash.hpp"
+#include "key-val.hpp"
 
 
 namespace salgo {
@@ -35,7 +36,7 @@ struct Context {
 
 	static constexpr bool Has_Val = !std::is_same_v<Val, void>;
 
-
+	using Key_Val = salgo::Key_Val<Key,Val>;
 
 	using Allocator = typename _ALLOCATOR :: template VAL<Key_Val>;
 
@@ -100,8 +101,8 @@ struct Context {
 
 	public:
 		// get key
-		auto& key()       { return _container->key( _handle ); }
-		auto& key() const { return _container->key( _handle ); }
+		auto& key()       { return _container().key( _handle() ); }
+		auto& key() const { return _container().key( _handle() ); }
 
 		// get val (explicit)
 		auto& val()       { return BASE::operator()(); }
@@ -110,12 +111,12 @@ struct Context {
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			_container->erase( _handle );
+			_container().erase( _handle() );
 			_just_erased = true;
 		}
 
 		bool exists() const {
-			return _handle.valid();
+			return _handle().valid();
 		}
 	};
 
@@ -143,22 +144,22 @@ struct Context {
 				_just_erased = false;
 				return;
 			}
-			++_handle.b;
-			while(_handle.a < _container->_buckets.size() && (int)_handle.b == _container->_buckets[_handle.a].size()) {
-				_handle.b = 0;
-				++_handle.a;
+			++_handle().b;
+			while(_handle().a < _container()._buckets.size() && (int)_handle().b == _container()._buckets[_handle().a].size()) {
+				_handle().b = 0;
+				++_handle().a;
 			}
 		}
 
 		inline void _decrement() {
 			_just_erased = false;
-			if(_handle.b == 0) {
-				--_handle.a;
-				_handle.b = _container->_buckets[_handle.a].size() - 1;
+			if(_handle().b == 0) {
+				--_handle().a;
+				_handle().b = _container()._buckets[_handle().a].size() - 1;
 			}
 		}
 
-		auto _get_comparable() const { return std::make_pair(_handle.a, _handle.b); }
+		auto _get_comparable() const { return std::make_pair(_handle().a, _handle().b); }
 	};
 
 

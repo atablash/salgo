@@ -12,7 +12,6 @@ namespace salgo {
 namespace internal {
 
 
-template<Const_Flag C, class CONTEXT> class Reference;
 template<Const_Flag C, class CONTEXT> class Accessor_Base;
 template<Const_Flag C, class CONTEXT> class Iterator_Base;
 
@@ -20,24 +19,52 @@ template<Const_Flag C, class CONTEXT> class Iterator_Base;
 
 GENERATE_HAS_MEMBER(Extra_Context)
 
+GENERATE_HAS_MEMBER(Reference)
+
+
 template<bool, class> struct Extra_Context {};
 template<class CONTEXT> struct Extra_Context<true,CONTEXT> : CONTEXT::Extra_Context {};
 
 
-template<Const_Flag C, class CONTEXT>
-class Reference : protected Extra_Context<has_member__Extra_Context<CONTEXT>, CONTEXT> {
+template<bool, Const_Flag C, class CONTEXT>
+class _Reference : protected Extra_Context<has_member__Extra_Context<CONTEXT>, CONTEXT> {
 public:
 	using Container = typename CONTEXT::Container;
 	using Handle = typename CONTEXT::Handle;
 
 public:
-	Reference(Const<Container,C>* container, Handle handle) : _handle(handle), _container(container) {}
+	_Reference(Const<Container,C>* container, Handle handle) : __handle(handle), __container(container) {}
+
+private:
+	Handle __handle;
+	Const<Container,C>* __container;
 
 protected:
-	Handle _handle;
-	Const<Container,C>* _container;
+	auto& _handle()       { return __handle; }
+	auto& _handle() const { return __handle; }
+	auto& _container()       { return *__container; }
+	auto& _container() const { return *__container; }
+
+	auto& _val()       { return (*__container)[__handle]; }
+	auto& _val() const { return (*__container)[__handle]; }
+
+	void _will_compare_with(const _Reference& o) const {
+		DCHECK_EQ(__container, o.__container) << "comparing iterators to different containers";
+	}
 };
 
+
+
+template<Const_Flag C, class CONTEXT>
+class _Reference<true,C,CONTEXT> : public CONTEXT::template Reference<C> {
+public:
+	FORWARDING_CONSTRUCTOR(_Reference, CONTEXT::template Reference<C>) {}
+};
+
+
+
+template<Const_Flag C, class CONTEXT>
+using Reference = _Reference<has_member__Reference<CONTEXT>, C, CONTEXT>;
 
 
 
@@ -54,12 +81,12 @@ public:
 	FORWARDING_CONSTRUCTOR(Accessor_Base, BASE) {}
 
 	// get handle
-	auto     handle() const { return BASE::_handle; }
+	auto     handle() const { return BASE::_handle(); }
 	operator Handle() const { return handle(); }
 
 	// get value
-	auto& operator()()       { return (*BASE::_container)[ BASE::_handle ]; }
-	auto& operator()() const { return (*BASE::_container)[ BASE::_handle ]; }
+	auto& operator()()       { return BASE::_val(); }
+	auto& operator()() const { return BASE::_val(); }
 	operator       auto&()       { return operator()(); }
 	operator const auto&() const { return operator()(); }
 
@@ -136,12 +163,12 @@ public:
 
 public:
 	// get handle
-	auto     handle() const { return BASE::_handle; }
+	auto     handle() const { return BASE::handle(); }
 	operator Handle() const { return handle(); }
 
 	// get value
-	auto& operator()()       { return (*BASE::_container)[ BASE::_handle ]; }
-	auto& operator()() const { return (*BASE::_container)[ BASE::_handle ]; }
+	auto& operator()()       { return BASE::_val(); }
+	auto& operator()() const { return BASE::_val(); }
 	operator       auto&()       { return operator()(); }
 	operator const auto&() const { return operator()(); }
 
@@ -210,18 +237,20 @@ public:
 private:
 	template<Const_Flag CC>
 	void _will_compare_with_base(const Iterator<CC>& o) const {
-		DCHECK_EQ(BASE::_container, o._container) << "comparing iterators to different containers";
+		if constexpr(has_member___will_compare_with<BASE>) {
+			BASE::_will_compare_with(o);
+		}
 		if constexpr(has_member___will_compare_with< Iterator<C> >) {
 			_self()._will_compare_with(o);
 		}
 	}
 
-	auto _get_comparable_base() const {
+	decltype(auto) _get_comparable_base() const {
 		if constexpr(has_member___get_comparable< Iterator<C> >) {
 			return _self()._get_comparable();
 		}
 		else {
-			return BASE::_handle;
+			return BASE::_handle();
 		}
 	}
 

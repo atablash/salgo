@@ -171,18 +171,18 @@ struct Context {
 			new (&get()) T( std::forward<ARGS>(args)... );
 		}
 
-		void destruct() {}
+		void destruct() { static_assert(std::is_trivially_destructible_v<T>); }
 
 
-		inline operator auto&()       { return get(); }
-		inline operator auto&() const { return get(); }
+		operator auto&()       { return get(); }
+		operator auto&() const { return get(); }
 
 
-		inline T& get() {
+		T& get() {
 			return *reinterpret_cast<T*>( &data[0] );
 		}
 
-		inline const T& get() const {
+		const T& get() const {
 			return *reinterpret_cast<const T*>( &data[0] );
 		}
 	};
@@ -217,15 +217,15 @@ struct Context {
 		void destruct() {}
 
 
-		inline operator auto&()       { return get(); }
-		inline operator auto&() const { return get(); }
+		operator auto&()       { return get(); }
+		operator auto&() const { return get(); }
 
 
-		inline T& get() {
+		T& get() {
 			return *reinterpret_cast<T*>( &data[0] );
 		}
 
-		inline const T& get() const {
+		const T& get() const {
 			return *reinterpret_cast<const T*>( &data[0] );
 		}
 	};
@@ -242,7 +242,7 @@ struct Context {
 		Treat_As_Void,
 		Stack_Storage__noop,
 		std::conditional_t<
-			Persistent || Treat_As_Pod || std::is_trivially_move_constructible_v<T>,
+			Treat_As_Pod || std::is_trivially_move_constructible_v<T>,
 			Stack_Storage__t,
 			Stack_Storage__nt
 		>
