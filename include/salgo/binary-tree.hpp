@@ -593,7 +593,7 @@ struct Context {
 
 
 
-template<class KEY, class VAL>
+template<class KEY, class VAL = typename internal::binary_tree...?>
 using Binary_Tree = typename internal::binary_tree::Context<
 	KEY,
 	VAL,

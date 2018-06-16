@@ -119,6 +119,9 @@ struct Context {
 	struct With_Builder : Splay_Tree {
 		FORWARDING_CONSTRUCTOR(With_Builder, Splay_Tree) {}
 		With_Builder(std::initializer_list<Key_Val>&& il) : Splay_Tree( std::move(il) ) {}
+
+		template<class NEW_ALLOCATOR>
+		using ALLOCATOR = typename Context<Key, Val, NEW_ALLOCATOR> :: With_Builder;
 	};
 
 

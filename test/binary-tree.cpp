@@ -1,4 +1,5 @@
 #include <salgo/binary-tree.hpp>
+#include <salgo/crude-allocator.hpp>
 
 #include <gtest/gtest.h>
 
@@ -60,13 +61,13 @@ TEST(Binary_Tree, destructors) {
 	g_destructors = 0;
 
 	{
-		Binary_Tree<void,S> tree;
+		Binary_Tree<void,S> ::ALLOCATOR<Crude_Allocator<int>> tree;
 		sample_tree_1(tree);
 	}
 	EXPECT_EQ(g_constructors, g_destructors);
 
 	{
-		Binary_Tree<S,void> tree;
+		Binary_Tree<S,void> ::ALLOCATOR<Crude_Allocator<int>> tree;
 		sample_tree_1(tree);
 	}
 	EXPECT_EQ(g_constructors, g_destructors);

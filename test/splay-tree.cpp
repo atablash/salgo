@@ -1,4 +1,5 @@
 #include <salgo/splay-tree.hpp>
+#include <salgo/crude-allocator.hpp>
 
 #include <gtest/gtest.h>
 
@@ -41,12 +42,12 @@ TEST(Splay_Tree, destructors) {
 	g_destructors = 0;
 
 	{
-		Splay_Tree<S> tree = {1,2,3,4,5};
+		Splay_Tree<S> ::ALLOCATOR<Crude_Allocator<int>> tree = {1,2,3,4,5};
 	}
 	EXPECT_EQ(g_constructors, g_destructors);
 	
 	{
-		Splay_Tree<S,S> tree = {{1,1},{2,2}};
+		Splay_Tree<S,S> ::ALLOCATOR<Crude_Allocator<int>> tree = {{1,1},{2,2}};
 	}
 	EXPECT_EQ(g_constructors, g_destructors);
 }
