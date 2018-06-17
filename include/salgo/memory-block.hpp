@@ -102,9 +102,9 @@ struct Context {
 
 
 		template<class... ARGS>
-		void construct(ARGS&&... args) {
+		auto construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_container().construct( _handle(), std::forward<ARGS>(args)... );
+			return _container().construct( _handle(), std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
@@ -137,7 +137,7 @@ struct Context {
 
 		void _increment() {
 			if constexpr(Dense) ++_handle();
-			else do ++_handle(); while( (int)_handle() != _container->size() && !_container->exists( _handle() ) );
+			else do ++_handle(); while( (int)_handle() != _container().size() && !_container().exists( _handle() ) );
 		}
 
 		void _decrement() {
@@ -173,7 +173,8 @@ struct Context {
 		static constexpr bool Has_Exists = Context::Exists;
 		static constexpr bool Has_Count = Context::Count;
 
-		using Handle = Context::Handle;
+		using       Handle = Context::      Handle;
+		using Small_Handle = Handle;
 
 
 	private:
@@ -435,7 +436,7 @@ struct Context {
 		//
 	public:
 		template<class... ARGS>
-		void construct(Handle key, ARGS&&... args) {
+		auto construct(Handle key, ARGS&&... args) {
 			static_assert(!Dense, "construct() not supported for DENSE memory-blocks");
 
 			_check_bounds(key);
@@ -445,6 +446,8 @@ struct Context {
 			}
 			_get(key).construct( std::forward<ARGS>(args)... );
 			if constexpr(Count) ++NUM_EXISTING_BASE::num_existing;
+
+			return Accessor<MUTAB>(this, key);
 		}
 
 		void destruct(Handle key) {

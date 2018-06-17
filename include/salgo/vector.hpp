@@ -86,12 +86,12 @@ struct Context {
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_container->construct( _handle, std::forward<ARGS>(args)... );
+			_container().construct( _handle, std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_container->destruct( _handle );
+			_container().destruct( _handle );
 		}
 
 		void erase() {
@@ -99,7 +99,7 @@ struct Context {
 		}
 
 		bool exists() const {
-			return _container->exists( _handle );
+			return _container().exists( _handle() );
 		}
 	};
 
@@ -133,22 +133,15 @@ struct Context {
 		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++_handle; while( (int)_handle != _container->domain() && !_container->exists( _handle ) );
+			do ++_handle(); while( (int)_handle() != _container().domain() && !_container().exists( _handle() ) );
 		}
 
 		void _decrement() {
-			do --_handle; while( !_container->exists( _handle ) );
-		}
-
-		auto _get_comparable() const {  return _handle;  }
-
-		template<Const_Flag CC>
-		auto _will_compare_with(const Iterator<CC>& o) const {
-			DCHECK_EQ(_container, o._container);
+			do --_handle(); while( !_container()->exists( _handle() ) );
 		}
 
 	public:
-		bool operator!=(const End_Iterator<C>&) { return BASE::operator!=( _container->end() ); }
+		bool operator!=(const End_Iterator<C>&) { return BASE::operator!=( _container().end() ); }
 	};
 
 

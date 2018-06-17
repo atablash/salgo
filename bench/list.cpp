@@ -5,12 +5,184 @@
 #include <salgo/salgo-from-std-allocator.hpp>
 #include <salgo/crude-allocator.hpp>
 #include <salgo/random-allocator.hpp>
+#include <salgo/vector-allocator.hpp>
 
 #include <list>
 
 using namespace benchmark;
 
 using namespace salgo;
+
+
+
+
+
+
+
+
+
+
+
+
+
+static void INSERT_ERASE_std(State& state) {
+	srand(69); clear_cache();
+
+	const int N = state.iterations();
+	std::list<int> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch(li.size()) ) {
+		int ith = 0;
+		for(auto it = li.begin(); it != li.end(); ++it) {
+			auto ne = std::next(it);
+
+			if(ith%2) {
+				li.erase(it);
+				li.emplace_front( rand() );
+			}
+
+			it = ne;
+			++ith;
+		}
+	}
+}
+BENCHMARK( INSERT_ERASE_std );
+
+
+
+static void INSERT_ERASE_salgo_stdalloc(State& state) {
+	srand(69); clear_cache();
+
+	const int N = state.iterations();
+
+	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
+	salgo::List<int> :: COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch(li.count()) ) {
+		int ith = 0;
+		for(auto& e : li) {
+
+			if(ith%2) {
+				e.erase();
+				li.emplace_front( rand() );
+			}
+
+			++ith;
+		}
+	}
+}
+BENCHMARK( INSERT_ERASE_salgo_stdalloc );
+
+
+
+
+
+static void INSERT_ERASE_salgo_crudealloc(State& state) {
+	srand(69); clear_cache();
+
+	const int N = state.iterations();
+
+	using Alloc = salgo::Crude_Allocator<int>;
+	salgo::List<int> :: COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch(li.count()) ) {
+		int ith = 0;
+		for(auto& e : li) {
+
+			if(ith%2) {
+				e.erase();
+				li.emplace_front( rand() );
+			}
+
+			++ith;
+		}
+	}
+}
+BENCHMARK( INSERT_ERASE_salgo_crudealloc );
+
+
+
+
+
+static void INSERT_ERASE_salgo_randalloc(State& state) {
+	srand(69); clear_cache();
+
+	const int N = state.iterations();
+
+	using Alloc = salgo::Random_Allocator<int>;
+	salgo::List<int> :: COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch(li.count()) ) {
+		int ith = 0;
+		for(auto& e : li) {
+
+			if(ith%2) {
+				e.erase();
+				li.emplace_front( rand() );
+			}
+
+			++ith;
+		}
+	}
+}
+BENCHMARK( INSERT_ERASE_salgo_randalloc );
+
+
+
+
+static void INSERT_ERASE_salgo_vectoralloc(State& state) {
+	srand(69); clear_cache();
+
+	const int N = state.iterations();
+
+	using Alloc = salgo::Vector_Allocator<int>;
+	salgo::List<int> :: COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch(li.count()) ) {
+		int ith = 0;
+		for(auto& e : li) {
+
+			if(ith%2) {
+				e.erase();
+				li.emplace_front( rand() );
+			}
+
+			++ith;
+		}
+	}
+}
+BENCHMARK( INSERT_ERASE_salgo_vectoralloc );
+
+
+
+
+
+
 
 
 
@@ -131,6 +303,34 @@ static void ITERATE_salgo_countable_randalloc(State& state) {
 }
 BENCHMARK( ITERATE_salgo_countable_randalloc );
 
+
+
+
+
+
+static void ITERATE_salgo_countable_vectoralloc(State& state) {
+	srand(69); clear_cache();
+
+	const int N = state.iterations();
+
+	using Alloc = salgo::Vector_Allocator<int>;
+	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch( li.count() ) ) {
+		int sum = 0;
+		for(auto& e : li) sum += e;
+		DoNotOptimize(sum);
+	}
+
+
+
+}
+BENCHMARK( ITERATE_salgo_countable_vectoralloc );
 
 
 
@@ -354,6 +554,43 @@ static void ERASE_salgo_countable_randalloc(State& state) {
 	}
 }
 BENCHMARK( ERASE_salgo_countable_randalloc );
+
+
+
+
+static void ERASE_salgo_countable_vectoralloc(State& state) {
+	srand(69); clear_cache();
+
+	const int N = state.iterations();
+
+	using Alloc = salgo::Vector_Allocator<int>;
+	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
+
+	for(int i=0; i<N; ++i) {
+		li.emplace_back( rand() );
+		li.emplace_front( rand() );
+	}
+
+	while( state.KeepRunningBatch(li.count()) ) {
+		int ith = 0;
+		for(auto& e : li) {
+			if(ith%2) {
+				e.erase();
+			}
+
+			++ith;
+		}
+	}
+}
+BENCHMARK( ERASE_salgo_countable_vectoralloc );
+
+
+
+
+
+
+
+
 
 
 

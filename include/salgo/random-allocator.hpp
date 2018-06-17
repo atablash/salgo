@@ -145,12 +145,18 @@ struct Context {
 	public:
 		template<class... ARGS>
 		auto construct(ARGS&&... args) {
+			// if current chunk not full yet, or congestion too high
 			if(v.domain() < v.capacity() || v.count()*2 >= v.domain()) {
+				// ...simply emplace_back a new element
 				return Accessor<MUTAB>( this, v.emplace_back( std::forward<ARGS>(args)... ) );
 			}
 
+			// otherwise, find a hole in the chunked vector
 			for(;;) {
 				DCHECK((v.domain() & (v.domain()+1)) == 0); // power of 2
+
+				// draw a random index, and check if it's free
+				// check up to 10 subsequent elements before drawing another random index
 				int idx = rand_32() & v.domain();
 				for(int i=0; i<10; ++i) {
 					int new_idx = idx + i;
@@ -167,6 +173,7 @@ struct Context {
 		template<class... ARGS>
 		auto construct_near(Handle, ARGS&&... args) {
 			// TODO
+			// currently we don't use the hint
 			return construct(std::forward<ARGS>(args)...);
 		}
 
@@ -245,6 +252,9 @@ struct Context {
 
 		using SINGLETON = typename
 			Context<Val, true> :: With_Builder;
+
+		// identity - it's always auto_destruct
+		using AUTO_DESTRUCT = With_Builder;
 	};
 
 

@@ -185,6 +185,7 @@ They are different from `std` Allocators:
 * They're only for fixed size objects, no arrays.
 * They return handles instead of pointers.
 * They don't separate allocation and destruction.
+* Allocators are allowed to move their elements to different memory locations (but handles don't change). Such allocators are called **non-persistent**.
 
 > NOTE
 >
@@ -440,28 +441,46 @@ Pointers to elements never invalidate, because objects are never moved.
 
 
 
+Vector_Allocator
+----------------
+It's currently the default allocator used by most Salgo containers.
+
+> NOTE
+>
+> `Vector_Allocator` is not persistent. When constructing an element, previous elements could be moved to a new memory location.
+
+`Vector_Allocator` searches for holes in a continuous allocated memory block, in circular fashion.
+
+When congestion reaches 0.5, memory block is resized to twice the current size.
+
+Currently, the memory block is never shrunk.
+
+
+Random_Allocator
+----------------
+Built on top of Chunked_Vector. Searches for memory holes by randomly drawing indices.
+
+### TODO
+* Allocate in circular fashion instead of drawing random numbers, and rename to Chunked_Allocator.
+
+
 Crude_Allocator
 ---------------
-It's the first Salgo custom allocator implementation. As the name suggests, it's not the best. Actually it doesn't reuse memory.
+Fast persistent allocator that doesn't reuse memory. Generally rather for testing/benchmarking purposes.
 
 ### TODO
 * Implement using `Chunked_Vector` instead of custom memory blocks implementation. And compare performance of course.
 
 
-Random_Allocator
-----------------
-It's currently the default Salgo allocator.
-
-### Performance (x86_64)
+Allocators Performance (x86_64)
+-------------------------------
+|Benchmark         | Vector_Allocator | Random_Allocator | Crude_Allocator | std::allocator|
+|------------------|-----------------:|-----------------:|----------------:|--------------:|
+|SEQUENTIAL        | 8 ns             | 10 ns            | 4 ns            | 34 ns         |
+|QUEUE             | 18 ns            | 21 ns            | 17 ns           | 33 ns         |
+|RANDOM            | 31 ns            | 47 ns            | 23 ns           | 67 ns         |
 
 `std::allocator` simply proxies requests to the system allocator (Ubuntu 16.04).
-
-|Benchmark         | Random_Allocator | Crude_Allocator | std::allocator|
-|------------------|-----------------:|----------------:|--------------:|
-|SEQUENTIAL        |10 ns             |4 ns             |34 ns          |
-|QUEUE             |21 ns             |17 ns            |33 ns          |
-|RANDOM            |47 ns             |23 ns            |67 ns          |
-
 
 > NOTE
 >

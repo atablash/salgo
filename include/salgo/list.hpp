@@ -5,7 +5,8 @@
 #include "accessors.hpp"
 #include "stack-storage.hpp"
 //#include "crude-allocator.hpp"
-#include "random-allocator.hpp"
+//#include "random-allocator.hpp"
+#include "vector-allocator.hpp"
 
 #ifndef NDEBUG
 #include <unordered_set>
@@ -183,14 +184,14 @@ struct Context {
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			_container->erase( _handle );
+			_container().erase( _handle() );
 		}
 
-		auto next()       { return (*_container)( _next ); }
-		auto next() const { return (*_container)( _next ); }
+		auto next()       { return (_container())( _next ); }
+		auto next() const { return (_container())( _next ); }
 
-		auto prev()       { return (*_container)( _prev ); }
-		auto prev() const { return (*_container)( _prev ); }
+		auto prev()       { return (_container())( _prev ); }
+		auto prev() const { return (_container())( _prev ); }
 	};
 
 
@@ -214,27 +215,27 @@ struct Context {
 		friend BASE;
 
 		void _increment() {
-			_prev = _handle;
-			_handle = _next;
-			DCHECK( _handle.valid() ) << "followed broken list link";
+			_prev = _handle();
+			_handle() = _next;
+			DCHECK( _handle().valid() ) << "followed broken list link";
 			_update_next();
 		}
 
 		void _decrement() {
-			_next = _handle;
-			_handle = _prev;
-			DCHECK( _handle.valid() ) << "followed broken list link";
+			_next = _handle();
+			_handle() = _prev;
+			DCHECK( _handle().valid() ) << "followed broken list link";
 			_update_prev();
 		}
 
 
 	private:
 		void _update_prev() {
-			_prev = list_prev(_container->_alloc(), _handle);
+			_prev = list_prev(_container()._alloc(), _handle());
 		}
 
 		void _update_next() {
-			_next = list_next(_container->_alloc(), _handle);
+			_next = list_next(_container()._alloc(), _handle());
 		}
 
 		void _init() {
@@ -259,7 +260,8 @@ struct Context {
 
 
 	struct Node {
-		typename salgo::Stack_Storage<Val>::PERSISTENT val; // make sure it's not moved
+		// typename salgo::Stack_Storage<Val>::PERSISTENT val; // make sure it's not moved
+		typename salgo::Stack_Storage<Val> val; // val can be moved
 
 		Small_Handle next;
 		Small_Handle prev;
@@ -509,7 +511,7 @@ template<
 >
 using List = typename internal::List::Context<
 	VAL,
-	Random_Allocator<VAL>, // ::SINGLETON,
+	Vector_Allocator<VAL>,
 	false // COUNTABLE
 > :: With_Builder;
 
