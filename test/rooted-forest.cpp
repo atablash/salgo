@@ -1,5 +1,5 @@
-#include <salgo/binary-tree.hpp>
-#include <salgo/crude-allocator.hpp>
+#include <salgo/rooted-forest.hpp>
+#include <salgo/inorder.hpp>
 
 #include <gtest/gtest.h>
 
@@ -17,7 +17,7 @@ using namespace salgo;
 //
 template<class TREE>
 void sample_tree_1(TREE& tree) {
-	auto root = tree.emplace_root(33);
+	auto root = tree.emplace(33);
 	root.emplace_left(22);
 	root.left().emplace_left(11);
 
@@ -30,19 +30,21 @@ void sample_tree_1(TREE& tree) {
 
 
 
-TEST(Binary_Tree, no_val) {
-	Binary_Tree<void,void> tree;
-	tree.emplace_root();
-	tree.root().emplace_right();
+TEST(Rooted_Forest, no_val) {
+	Rooted_Forest<2> tree;
+	auto root = tree.emplace();
+	root.emplace_left();
+	root.emplace_right();
 }
 
 
-TEST(Binary_Tree, iteration) {
-	Binary_Tree<void,int> tree;
+TEST(Rooted_Forest, iteration) {
+	Rooted_Forest<2,int> tree;
 	sample_tree_1(tree);
-	std::vector<int> vals;
-	for(auto& e : tree) vals.emplace_back(e);
-	EXPECT_EQ(vals, std::vector<int>({11,22,33,44,55,66,77}));
+
+	std::multiset<int> vals;
+	for(auto& e : tree) vals.emplace(e());
+	EXPECT_EQ(vals, std::multiset<int>({11,22,33,44,55,66,77}));
 }
 
 
@@ -51,9 +53,10 @@ namespace {
 	int g_destructors = 0;
 }
 
-TEST(Binary_Tree, destructors) {
+TEST(Rooted_Forest, destructors) {
 	struct S {
 		S(int) { ++g_constructors; }
+		S(const S&&) { ++g_constructors; }
 		~S() { ++g_destructors; }
 		S(const S&) = delete;
 	};
@@ -61,14 +64,29 @@ TEST(Binary_Tree, destructors) {
 	g_destructors = 0;
 
 	{
-		Binary_Tree<void,S> ::ALLOCATOR<Crude_Allocator<int>> tree;
+		Binary_Forest<void,S> tree;
 		sample_tree_1(tree);
 	}
 	EXPECT_EQ(g_constructors, g_destructors);
 
 	{
-		Binary_Tree<S,void> ::ALLOCATOR<Crude_Allocator<int>> tree;
+		Binary_Forest<S,void> tree;
 		sample_tree_1(tree);
 	}
 	EXPECT_EQ(g_constructors, g_destructors);
 }
+
+
+
+TEST(Rooted_Forest, inorder) {
+	Binary_Forest<int> tree;
+	sample_tree_1( tree );
+
+	std::vector<int> vals;
+	for(auto& e : Inorder(tree)) {
+		vals.emplace_back( e );
+	}
+	EXPECT_EQ(vals, std::vector<int>({11,22,33,44,55,66,77}));
+}
+
+

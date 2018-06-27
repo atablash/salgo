@@ -53,7 +53,7 @@ struct Context {
 
 
 	struct Handle {
-		typename Buckets::Handle a;
+		typename Buckets::Index a;
 		typename List::Handle b;
 
 		bool valid() const { return a.valid(); }
@@ -80,7 +80,14 @@ struct Context {
 
 
 
-	struct Extra_Context {
+	template<Const_Flag C>
+	class Reference : public Reference_Base<C,Context> {
+		using BASE = Reference_Base<C,Context>;
+
+	public:
+		FORWARDING_CONSTRUCTOR(Reference, BASE) {}
+
+	protected:
 		bool _just_erased = false;
 	};
 

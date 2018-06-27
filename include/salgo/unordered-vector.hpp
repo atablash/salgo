@@ -52,7 +52,18 @@ struct Context {
 	// HACK for supporting backward range-based-for iteration with erasing elements
 	//
 	template<Const_Flag C>
-	struct End_Iterator : Iterator<C> { FORWARDING_CONSTRUCTOR(End_Iterator, Iterator<C>) {} };
+	struct End_Iterator : Iterator<C> {
+		using BASE = Iterator<C>;
+		FORWARDING_CONSTRUCTOR(End_Iterator, BASE) {}
+
+
+		// forbid decrementing
+	private:
+		using BASE::operator--;
+		using BASE::operator-=;
+		using BASE::operator++;
+		using BASE::operator+=;
+	};
 
 
 
@@ -60,7 +71,14 @@ struct Context {
 
 
 
-	struct Extra_Context {
+	template<Const_Flag C>
+	class Reference : public Reference_Base<C,Context> {
+		using BASE = Reference_Base<C,Context>;
+		
+	public:
+		FORWARDING_CONSTRUCTOR(Reference, BASE) {}
+
+	protected:
 		bool _just_erased = false;
 	};
 

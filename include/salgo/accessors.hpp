@@ -11,33 +11,54 @@
 namespace salgo {
 namespace internal {
 
+GENERATE_HAS_MEMBER(Reference)
+
+template<bool, Const_Flag C, class CONTEXT>
+class _Reference;
+
+template<Const_Flag C, class CONTEXT>
+using Reference = _Reference< has_member__Reference<CONTEXT>, C, CONTEXT>;
 
 template<Const_Flag C, class CONTEXT> class Accessor_Base;
 template<Const_Flag C, class CONTEXT> class Iterator_Base;
 
 
 
-GENERATE_HAS_MEMBER(Extra_Context)
-
-GENERATE_HAS_MEMBER(Reference)
 
 
-template<bool, class> struct Extra_Context {};
-template<class CONTEXT> struct Extra_Context<true,CONTEXT> : CONTEXT::Extra_Context {};
 
 
-template<bool, Const_Flag C, class CONTEXT>
-class _Reference : protected Extra_Context<has_member__Extra_Context<CONTEXT>, CONTEXT> {
+
+template<Const_Flag C, class CONTEXT>
+class Reference_Base {
 public:
 	using Container = typename CONTEXT::Container;
 	using Handle = typename CONTEXT::Handle;
 
+	template<Const_Flag CC> using Reference = Reference<C,CONTEXT>;
+	template<Const_Flag CC> using Accessor = typename CONTEXT::template Accessor<CC>;
+	template<Const_Flag CC> using Iterator = typename CONTEXT::template Iterator<CC>;
+
+
 public:
-	_Reference(Const<Container,C>* container, Handle handle) : __handle(handle), __container(container) {}
+	Reference_Base(Const<Container,C>* container, Handle handle) : __handle(handle), __container(container) {}
 
 private:
 	Handle __handle;
 	Const<Container,C>* __container;
+
+public:
+	auto& accessor()       { _check(); return *static_cast<      Accessor<C>*>(this); }
+	auto& accessor() const { _check(); return *static_cast<const Accessor<C>*>(this); }
+
+	auto& iterator()       { _check(); return *static_cast<      Iterator<C>*>(this); }
+	auto& iterator() const { _check(); return *static_cast<const Iterator<C>*>(this); }
+
+private:
+	void _check() const {
+		static_assert(sizeof(Accessor<C>) == sizeof(Reference<C>), "Accessors can't have any additional members");
+		static_assert(sizeof(Iterator<C>) == sizeof(Reference<C>), "Accessors can't have any additional members");
+	}
 
 protected:
 	auto& _handle()       { return __handle; }
@@ -48,23 +69,36 @@ protected:
 	auto& _val()       { return (*__container)[__handle]; }
 	auto& _val() const { return (*__container)[__handle]; }
 
-	void _will_compare_with(const _Reference& o) const {
+	void _will_compare_with(const Reference_Base& o) const {
 		DCHECK_EQ(__container, o.__container) << "comparing iterators to different containers";
 	}
 };
 
 
 
-template<Const_Flag C, class CONTEXT>
-class _Reference<true,C,CONTEXT> : public CONTEXT::template Reference<C> {
+// derive from CONTEXT::Reference
+template<bool, Const_Flag C, class CONTEXT>
+class _Reference : public CONTEXT::template Reference<C> {
+	using BASE = typename CONTEXT::template Reference<C>;
+
 public:
-	FORWARDING_CONSTRUCTOR(_Reference, CONTEXT::template Reference<C>) {}
+	FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
+};
+
+
+// ...or deliver straight from Reference_Base, if CONTEXT::Reference is not present
+template<Const_Flag C, class CONTEXT>
+class _Reference<false,C,CONTEXT> : public Reference_Base<C, CONTEXT> {
+	using BASE = Reference_Base<C, CONTEXT>;
+
+public:
+	FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
 };
 
 
 
 template<Const_Flag C, class CONTEXT>
-using Reference = _Reference<has_member__Reference<CONTEXT>, C, CONTEXT>;
+using Reference = _Reference< has_member__Reference<CONTEXT>, C, CONTEXT>;
 
 
 
@@ -73,9 +107,9 @@ template<Const_Flag C, class CONTEXT>
 class Accessor_Base : public Reference<C,CONTEXT> {
 	using BASE = Reference<C,CONTEXT>;
 
-	template<Const_Flag CC> using Accessor = typename CONTEXT::template Accessor<CC>;
-	template<Const_Flag CC> using Iterator = typename CONTEXT::template Iterator<CC>;
-	using Handle = typename CONTEXT::Handle;
+public:
+	using Handle = typename BASE::Handle;
+	template<Const_Flag CC>	using Accessor = typename BASE::template Accessor<CC>;
 
 public:
 	FORWARDING_CONSTRUCTOR(Accessor_Base, BASE) {}
@@ -106,19 +140,9 @@ public:
 
 
 private:
-	auto _base()       { return static_cast<      BASE*>(this); }
-	auto _base() const { return static_cast<const BASE*>(this); }
-
-	void _check() const {
-		static_assert(sizeof(Accessor<C>) == sizeof(BASE), "Accessors can't have any additional members");
-		static_assert(sizeof(Iterator<C>) == sizeof(BASE), "Accessors can't have any additional members");
-	}
+	using BASE::accessor; // turn off
 
 public:
-	auto& iterator()       { _check(); return *static_cast<      Iterator<C>*>(_base()); }
-	auto& iterator() const { _check(); return *static_cast<const Iterator<C>*>(_base()); }
-
-
 	CRTP_COMMON( Iterator_Base, Accessor<C> )
 };
 
@@ -136,9 +160,9 @@ template<Const_Flag C, class CONTEXT>
 class Iterator_Base : public Reference<C,CONTEXT> {
 	using BASE = Reference<C,CONTEXT>;
 
-	template<Const_Flag CC> using Accessor = typename CONTEXT::template Accessor<CC>;
-	template<Const_Flag CC> using Iterator = typename CONTEXT::template Iterator<CC>;
-	using Handle = typename CONTEXT::Handle;
+public:
+	using Handle = typename BASE::Handle;
+	template<Const_Flag CC>	using Iterator = typename BASE::template Iterator<CC>;
 
 public:
 	FORWARDING_CONSTRUCTOR(Iterator_Base, BASE) {}
@@ -163,7 +187,7 @@ public:
 
 public:
 	// get handle
-	auto     handle() const { return BASE::handle(); }
+	auto     handle() const { return BASE::_handle(); }
 	operator Handle() const { return handle(); }
 
 	// get value
@@ -195,6 +219,21 @@ public:
 		else for(int i=0; i<n; ++i) _self()._decrement();
 		return _self();
 	}
+
+
+public:
+	Iterator<C> operator+(int n) {
+		auto iter = _self();
+		iter += n;
+		return iter;
+	}
+
+	Iterator<C> operator-(int n) {
+		auto iter = _self();
+		iter -= n;
+		return iter;
+	}
+
 
 public:
 	template<Const_Flag CC>
@@ -254,27 +293,17 @@ private:
 		}
 	}
 
+public:
+	// return accessor
+	auto& operator*()       { return BASE::accessor(); }
+	auto& operator*() const { return BASE::accessor(); }
+	auto operator->()       { return &BASE::accessor(); }
+	auto operator->() const { return &BASE::accessor(); }
 
 private:
-	auto _base()       { return static_cast<      BASE*>(this); }
-	auto _base() const { return static_cast<const BASE*>(this); }
-
-	void _check() const {
-		static_assert(sizeof(Accessor<C>) == sizeof(BASE), "Iterators can't have any additional members");
-		static_assert(sizeof(Iterator<C>) == sizeof(BASE), "Iterators can't have any additional members");
-	}
+	using BASE::iterator; // turn off
 
 public:
-	auto& accessor()       { _check(); return *static_cast<      Accessor<C>*>(_base()); }
-	auto& accessor() const { _check(); return *static_cast<const Accessor<C>*>(_base()); }
-
-	// return accessor
-	auto& operator*()       { return accessor(); }
-	auto& operator*() const { return accessor(); }
-	auto operator->()       { return &accessor(); }
-	auto operator->() const { return &accessor(); }
-
-
 	CRTP_COMMON( Iterator_Base, Iterator<C> )
 };
 

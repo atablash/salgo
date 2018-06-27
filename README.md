@@ -184,8 +184,10 @@ Salgo uses some custom allocators by default, designed for fixed-size objects.
 They are different from `std` Allocators:
 * They're only for fixed size objects, no arrays.
 * They return handles instead of pointers.
+* To retrieve an object by handle, allocator object is required.
 * They don't separate allocation and destruction.
 * Allocators are allowed to move their elements to different memory locations (but handles don't change). Such allocators are called **non-persistent**.
+* Allocators generally auto-destruct their objects when they are destructed. One exception is `salgo::Salgo_From_Std_Allocator` wrapper that relies on the underlying implementation.
 
 > NOTE
 >
@@ -240,7 +242,7 @@ However, Salgo passes *const*-ness of an accessor to the underlying vertex.
 
 Generally, the *pointed object* is considered *const*, if at least one of the following conditions is true:
 * The *accessor* object is *const*
-* It's `CONST`-flavor accessor
+* It's a `CONST`-flavor accessor
 
 
 
@@ -397,12 +399,12 @@ Comparing to `std::vector` from `libstdc++`.
 
 Grow factor is `1.5` for Salgo.
 
-|Benchmark         |    Salgo|   libstdc++|
-|------------------|--------:|-----------:|
-|PUSH_BACK         |10 ns    |10 ns       |
-|RANDOM_ACCESS     |28 ns    |29 ns       |
-|SEQUENTIAL_ACCESS |350 us   |117 us      |
-|FOREACH_ACCESS    |351 us   |329 us      |
+| Benchmark         |     Salgo | libstdc++ |
+|-------------------|----------:|----------:|
+| PUSH_BACK         |     10 ns |     10 ns |
+| RANDOM_ACCESS     |     28 ns |     29 ns |
+| SEQUENTIAL_ACCESS |    350 us |    117 us |
+| FOREACH_ACCESS    |    351 us |    329 us |
 
 
 ### TODO
@@ -472,27 +474,9 @@ Fast persistent allocator that doesn't reuse memory. Generally rather for testin
 * Implement using `Chunked_Vector` instead of custom memory blocks implementation. And compare performance of course.
 
 
-Allocators Performance (x86_64)
--------------------------------
-|Benchmark         | Vector_Allocator | Random_Allocator | Crude_Allocator | std::allocator|
-|------------------|-----------------:|-----------------:|----------------:|--------------:|
-|SEQUENTIAL        | 8 ns             | 10 ns            | 4 ns            | 34 ns         |
-|QUEUE             | 18 ns            | 21 ns            | 17 ns           | 33 ns         |
-|RANDOM            | 31 ns            | 47 ns            | 23 ns           | 67 ns         |
-
-`std::allocator` simply proxies requests to the system allocator (Ubuntu 16.04).
-
-> NOTE
->
-> Crude_Allocator is unable to reuse memory - it keeps all the memory allocated, until Crude_Allocator is destructed.
->
-> Use it only if you know what you're doing.
-
-
-
 Salgo_From_Std_Allocator
 ------------------------
-Wraps an allocator concept of the standard library. It uses regular pointers as handles.
+A Salgo allocator that Wraps an allocator concept of the standard library. It uses regular pointers as handles.
 
 To use the default `new` and `delete` (i.e. system allocator directly), use:
 
@@ -509,6 +493,24 @@ To use the default `new` and `delete` (i.e. system allocator directly), use:
 > `Salgo_From_Std_Allocator` doesn't use provided allocator directly, but using `std::allocator_traits` instead.
 
 
+Allocators Performance (x86_64)
+-------------------------------
+| Benchmark  | Vector_Allocator | Random_Allocator | Crude_Allocator | std::allocator |
+|------------|-----------------:|-----------------:|----------------:|---------------:|
+| SEQUENTIAL |             8 ns |            10 ns |            4 ns |          34 ns |
+| QUEUE      |            18 ns |            21 ns |           17 ns |          33 ns |
+| RANDOM     |            31 ns |            47 ns |           23 ns |          67 ns |
+
+`std::allocator` simply proxies requests to the system allocator (Ubuntu 16.04).
+
+> NOTE
+>
+> Crude_Allocator is unable to reuse memory - it keeps all the memory allocated, until Crude_Allocator is destructed.
+>
+> Use it only if you know what you're doing.
+
+
+
 Unordered_Vector
 ----------------
 It's a small wrapper around `Vector`. When erasing an element, the last element in the vector is moved to fill the hole.
@@ -517,14 +519,15 @@ It's a small wrapper around `Vector`. When erasing an element, the last element 
 
 Erasing during backward iteration is always safe.
 
-Erasing during forward iteration is safe only through Accessor, but not though the `Unordered_Vector` object, i.e.:
+Erasing during forward iteration is safe only through iterating Accessor, but not though the `Unordered_Vector` object, i.e.:
 
 ```cpp
 	Unordered_Vector v = {1, 2, 3, 4, 5};
 	for(auto& e : v) {
 		if(e == 3) {
 			e.erase(); // good
-			// v.erase(e) // bad! iteration will skip one element (`5` moved to `3`)
+			// v.erase(e)   // bad! iteration will skip one element (`5` moved to `3`)
+			// v(e).erase() // bad! iteration will skip one element (`5` moved to `3`)
 		}
 	}
 ```

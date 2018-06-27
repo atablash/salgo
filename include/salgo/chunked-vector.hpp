@@ -192,12 +192,12 @@ struct Context {
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_container->construct( _handle(), std::forward<ARGS>(args)... );
+			_container().construct( _handle(), std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_container->destruct( _handle() );
+			_container().destruct( _handle() );
 		}
 
 		void erase() {

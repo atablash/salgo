@@ -15,7 +15,7 @@ struct Int_Handle_Base {
 	INT a = default_value;
 
 	Int_Handle_Base() = default;
-	Int_Handle_Base(INT new_key) : a(new_key) {}
+	explicit Int_Handle_Base(INT new_key) : a(new_key) {}
 
 	bool valid() const { return a != default_value; }
 	void reset() { a = default_value; }

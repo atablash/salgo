@@ -62,6 +62,7 @@ struct Context {
 	using       Handle = typename Block::      Handle;
 	using Small_Handle = typename Block::Small_Handle;
 
+	using Index = typename Block::Index;
 
 
 
@@ -140,7 +141,7 @@ struct Context {
 	class Vector_Allocator {
 	private:
 		Block v;
-		Handle lookup_index = 0;
+		Index lookup_index = 0;
 
 	public:
 		using Val = Context::Val;
@@ -153,6 +154,8 @@ struct Context {
 	public:
 		template<class... ARGS>
 		auto construct(ARGS&&... args) {
+
+			static_assert(std::is_move_constructible_v<Val>, "Vector_Allocator must be able to move its elements");
 
 			// grow if needed
 			if(v.count()*2 >= v.size()) {
@@ -187,11 +190,16 @@ struct Context {
 
 		void destruct(Handle h ) { v.destruct(h); }
 
+		auto exists(Handle h) const { return v.exists(h); }
+
 		auto& operator[]( Handle h )       { return v[h]; }
 		auto& operator[]( Handle h ) const { return v[h]; }
 
 		auto operator()( Handle h )       { return Accessor<MUTAB>(this, h); }
 		auto operator()( Handle h ) const { return Accessor<CONST>(this, h); }
+
+		auto count() const { return v.count(); }
+		auto empty() const { return v.empty(); }
 
 	public:
 		auto begin()       { return v.begin(); }
@@ -226,7 +234,7 @@ struct Context {
 
 
 
-template< class VAL >
+template< class VAL = int > // TODO: replace `int` with `void` and make it compile
 using Vector_Allocator = typename internal::vector_allocator::Context<
 	VAL
 > :: With_Builder;

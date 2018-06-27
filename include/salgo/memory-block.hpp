@@ -73,7 +73,16 @@ struct Context {
 
 	struct Handle : Int_Handle_Base<Handle,int> {
 		using BASE = Int_Handle_Base<Handle,int>;
-		FORWARDING_CONSTRUCTOR( Handle, BASE ) {}
+		EXPLICIT_FORWARDING_CONSTRUCTOR( Handle, BASE ) {} // explicit, because we don't want automatic creation from `int`
+
+		//Handle() = default;
+		//explicit Handle(int val) : BASE(val) {}
+	};
+
+
+	// same as Handle, but allow creation from `int`
+	struct Index : Handle {
+		FORWARDING_CONSTRUCTOR(Index, Handle) {}
 	};
 
 
@@ -176,6 +185,8 @@ struct Context {
 		using       Handle = Context::      Handle;
 		using Small_Handle = Handle;
 
+		using Index = Context::Index;
+
 
 	private:
 		friend Accessor<MUTAB>;
@@ -209,8 +220,8 @@ struct Context {
 			return (const Node*)_stack_buffer;
 		}
 
-		auto& _get(Handle key)       { return _data[key]; }
-		auto& _get(Handle key) const { return _data[key]; }
+		auto& _get(Index key)       { return _data[key]; }
+		auto& _get(Index key) const { return _data[key]; }
 
 
 	public:
@@ -436,7 +447,7 @@ struct Context {
 		//
 	public:
 		template<class... ARGS>
-		auto construct(Handle key, ARGS&&... args) {
+		auto construct(Index key, ARGS&&... args) {
 			static_assert(!Dense, "construct() not supported for DENSE memory-blocks");
 
 			_check_bounds(key);
@@ -450,7 +461,7 @@ struct Context {
 			return Accessor<MUTAB>(this, key);
 		}
 
-		void destruct(Handle key) {
+		void destruct(Index key) {
 			static_assert(!Dense, "destruct() not supported for DENSE memory-blocks");
 
 			_check_bounds(key);
@@ -462,7 +473,7 @@ struct Context {
 			if constexpr(Count) --NUM_EXISTING_BASE::num_existing;
 		}
 
-		bool exists(Handle key) const {
+		bool exists(Index key) const {
 			_check_bounds(key);
 			static_assert(Dense || Exists, "called exists() on object without EXISTS or DENSE");
 
@@ -475,13 +486,13 @@ struct Context {
 			}
 		}
 
-		Val& operator[](Handle key) {
+		Val& operator[](Index key) {
 			_check_bounds(key);
 			if constexpr(Exists) DCHECK( exists(key) ) << "accessing non-existing element";
 			return _get(key);
 		}
 
-		const Val& operator[](Handle key) const {
+		const Val& operator[](Index key) const {
 			_check_bounds(key);
 			if constexpr(Exists) DCHECK( exists(key) ) << "accessing non-existing element";
 			return _get(key);
@@ -508,15 +519,16 @@ struct Context {
 		// interface
 		//
 	public:
-		auto operator()(Handle key) {
+		auto operator()(Index key) {
 			_check_bounds(key);
 			return Accessor<MUTAB>(this, key);
 		}
 
-		auto operator()(Handle key) const {
+		auto operator()(Index key) const {
 			_check_bounds(key);
 			return Accessor<CONST>(this, key);
 		}
+
 
 
 		int count() const {
@@ -525,12 +537,10 @@ struct Context {
 			else return NUM_EXISTING_BASE::num_existing;
 		}
 
-		/* ambiguous - what does it mean?
 		bool empty() const {
 			static_assert(Countable);
-			return size() == 0;
+			return count() == 0;
 		}
-		*/
 
 
 
@@ -538,14 +548,14 @@ struct Context {
 	public:
 		auto begin() {
 			static_assert(Iterable);
-			auto e = Iterator<MUTAB>(this, 0);
+			auto e = Iterator<MUTAB>(this, Index(0));
 			if(_size && !e.accessor().exists()) ++e;
 			return e;
 		}
 
 		auto begin() const {
 			static_assert(Iterable);
-			auto e = Iterator<CONST>(this, 0);
+			auto e = Iterator<CONST>(this, Index(0));
 			if(_size && !e.accessor().exists()) ++e;
 			return e;
 		}
@@ -553,12 +563,12 @@ struct Context {
 
 		auto end() {
 			static_assert(Iterable);
-			return Iterator<MUTAB>(this, _size);
+			return Iterator<MUTAB>(this, Index(_size));
 		}
 
 		auto end() const {
 			static_assert(Iterable);
-			return Iterator<CONST>(this, _size);
+			return Iterator<CONST>(this, Index(_size));
 		}
 
 

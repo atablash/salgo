@@ -27,8 +27,6 @@ namespace key_val {
 		const Key key;
 		FORWARDING_CONSTRUCTOR(Key_Val, key) {}
 
-		Key_Val(Key_Val&&) = default;
-
 		auto& operator()()       { return key; }
 		auto& operator()() const { return key; }
 	};
@@ -37,6 +35,7 @@ namespace key_val {
 	struct Key_Val<void,Val> {
 		Val val;
 		FORWARDING_CONSTRUCTOR(Key_Val, val) {}
+
 		auto& operator()()       { return val; }
 		auto& operator()() const { return val; }
 	};

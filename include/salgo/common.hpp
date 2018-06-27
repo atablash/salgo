@@ -105,6 +105,13 @@ constexpr X operator ~ (X x)                                                    
   template<class _X> SELF(std::initializer_list<_X>&& il) : BASE( std::move(il) )
 
 
+#define EXPLICIT_FORWARDING_CONSTRUCTOR(SELF,BASE) \
+  template<class... ARGS> \
+  explicit SELF(ARGS&&... args) : BASE( std::forward<ARGS>(args)... )
+
+#define EXPLICIT_FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(SELF,BASE) \
+  template<class _X> explicit SELF(std::initializer_list<_X>&& il) : BASE( std::move(il) )
+
 
 
 

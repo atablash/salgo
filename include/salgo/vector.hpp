@@ -86,12 +86,12 @@ struct Context {
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_container().construct( _handle, std::forward<ARGS>(args)... );
+			_container().construct( _handle(), std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_container().destruct( _handle );
+			_container().destruct( _handle() );
 		}
 
 		void erase() {
@@ -111,7 +111,17 @@ struct Context {
 	// store a `reference` to end()
 	//
 	template<Const_Flag C>
-	struct End_Iterator : Iterator<C> { FORWARDING_CONSTRUCTOR(End_Iterator, Iterator<C>) {} };
+	struct End_Iterator : Iterator<C> {
+		using BASE = Iterator<C>;
+		FORWARDING_CONSTRUCTOR(End_Iterator, BASE) {}
+
+		// forbid decrementing
+	private:
+		using BASE::operator--;
+		using BASE::operator-=;
+		using BASE::operator++;
+		using BASE::operator+=;
+	};
 
 
 

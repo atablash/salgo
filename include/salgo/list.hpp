@@ -130,8 +130,8 @@ struct Context {
 	// forward declarations
 	//
 	struct Node;
-	template<Const_Flag C> struct Accessor;
-	template<Const_Flag C> struct Iterator;
+	template<Const_Flag C> class Accessor;
+	template<Const_Flag C> class Iterator;
 	class List;
 	using Container = List;
 
@@ -162,10 +162,44 @@ struct Context {
 
 
 
+	template<Const_Flag C>
+	class Reference : public Reference_Base<C,Context> {
+		using BASE = Reference_Base<C,Context>;
 
-	struct Extra_Context {
+	protected:
+		using BASE::_container;
+		using BASE::_handle;
+
+	public:
+		FORWARDING_CONSTRUCTOR(Reference, BASE) {}
+
+	private:
 		Small_Handle _prev;
 		Small_Handle _next;
+		bool just_erased = false;
+
+	protected:
+		void on_erase() {
+			_next = list_next(_container()._alloc(), _handle() );
+			_prev = list_prev(_container()._alloc(), _handle() );
+			just_erased = true;
+		}
+
+		void reset() {
+			_prev.reset();
+			_next.reset();
+			just_erased = false;
+		}
+
+		auto get_next() {
+			if(just_erased) return _next;
+			else return list_next(_container()._alloc(), _handle() );
+		}
+
+		auto get_prev() {
+			if(just_erased) return _prev;
+			else return list_prev(_container()._alloc(), _handle() );
+		}
 	};
 
 
@@ -173,25 +207,25 @@ struct Context {
 	// accessor
 	//
 	template<Const_Flag C>
-	struct Accessor : Accessor_Base<C,Context> {
+	class Accessor : public Accessor_Base<C,Context> {
 		using BASE = Accessor_Base<C,Context>;
-		FORWARDING_CONSTRUCTOR(Accessor,BASE) { BASE::iterator()._init(); }
-
 		using BASE::_container;
 		using BASE::_handle;
-		using BASE::_next;
-		using BASE::_prev;
+
+	public:
+		FORWARDING_CONSTRUCTOR(Accessor,BASE) {}
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
+			BASE::on_erase();
 			_container().erase( _handle() );
 		}
 
-		auto next()       { return (_container())( _next ); }
-		auto next() const { return (_container())( _next ); }
+		auto next()       { return _container()( BASE::get_next() ); }
+		auto next() const { return _container()( BASE::get_next() ); }
 
-		auto prev()       { return (_container())( _prev ); }
-		auto prev() const { return (_container())( _prev ); }
+		auto prev()       { return _container()( BASE::get_prev() ); }
+		auto prev() const { return _container()( BASE::get_prev() ); }
 	};
 
 
@@ -201,48 +235,28 @@ struct Context {
 	// iterator
 	//
 	template<Const_Flag C>
-	struct Iterator : Iterator_Base<C,Context> {
+	class Iterator : public Iterator_Base<C,Context> {
 		using BASE = Iterator_Base<C,Context>;
-		FORWARDING_CONSTRUCTOR(Iterator, BASE) { _init(); }
-
 		using BASE::_container;
 		using BASE::_handle;
-		using BASE::_next;
-		using BASE::_prev;
 
+	public:
+		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 
 	private:
 		friend BASE;
 
 		void _increment() {
-			_prev = _handle();
-			_handle() = _next;
+			_handle() = BASE::get_next();
+			BASE::reset();
 			DCHECK( _handle().valid() ) << "followed broken list link";
-			_update_next();
 		}
 
 		void _decrement() {
-			_next = _handle();
-			_handle() = _prev;
+			_handle() = BASE::get_prev();
+			BASE::reset();
 			DCHECK( _handle().valid() ) << "followed broken list link";
-			_update_prev();
 		}
-
-
-	private:
-		void _update_prev() {
-			_prev = list_prev(_container()._alloc(), _handle());
-		}
-
-		void _update_next() {
-			_next = list_next(_container()._alloc(), _handle());
-		}
-
-		void _init() {
-			_update_prev();
-			_update_next();
-		}
-		friend Accessor<C>;
 	};
 
 
@@ -291,10 +305,12 @@ struct Context {
 
 
 	private:
-		friend Accessor<MUTAB>;
-		friend Accessor<CONST>;
-		friend Iterator<MUTAB>;
-		friend Iterator<CONST>;
+		//friend Accessor<MUTAB>;
+		//friend Accessor<CONST>;
+		//friend Iterator<MUTAB>;
+		//friend Iterator<CONST>;
+		friend Reference<MUTAB>;
+		friend Reference<CONST>;
 
 
 		//
