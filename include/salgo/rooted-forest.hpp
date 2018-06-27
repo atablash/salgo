@@ -113,6 +113,8 @@ struct Context {
 
 		FORWARDING_CONSTRUCTOR(Node, Key_Val) {}
 
+		using Key_Val::operator();
+
 		std::conditional_t<
 			N_Ary==0,
 			std::vector<Small_Handle>,
@@ -123,6 +125,39 @@ struct Context {
 
 
 
+	template<Const_Flag C>
+	class Reference : public Reference_Base<C,Context> {
+		using BASE = Reference_Base<C,Context>;
+
+	public:
+		FORWARDING_CONSTRUCTOR(Reference, BASE) {}
+
+	protected:
+		using BASE::_container;
+		using BASE::_handle;
+
+	protected:
+		bool just_erased = false;
+		void on_erase() {
+			cached_parent = std::move( _container()._alloc()[_handle()].parent );
+			cached_children = std::move( _container()._alloc()[_handle()].children );
+			just_erased = true;
+		}
+
+		auto get_parent() const {
+			if(just_erased) return cached_parent;
+			else return _container()._alloc()[ _handle() ].parent;
+		}
+
+		const auto& get_children() const {
+			if(just_erased) return cached_children;
+			else return _container()._alloc()[ _handle() ].children;
+		}
+
+	private:
+		Small_Handle cached_parent;
+		decltype(Node::children) cached_children;
+	};
 
 
 
@@ -138,6 +173,9 @@ struct Context {
 
 		friend Rooted_Forest;
 
+		//friend Accessor<CONST>;
+		friend Accessor<MUTAB>;
+
 	public:
 		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 
@@ -152,44 +190,42 @@ struct Context {
 		bool exists() const { return _handle().valid(); }
 
 
-		auto child(int ith)       { _check_child_index(ith); return Accessor<C    >( &_container(), _node().children[ith] ); }
-		auto child(int ith) const { _check_child_index(ith); return Accessor<CONST>( &_container(), _node().children[ith] ); }
+		auto child(int ith)       { _check_child_index(ith); return Accessor<C    >( &_container(), BASE::get_children()[ith] ); }
+		auto child(int ith) const { _check_child_index(ith); return Accessor<CONST>( &_container(), BASE::get_children()[ith] ); }
 
-		auto left()        { return child(0); }
-		auto left()  const { return child(0); }
+		auto left()        { static_assert(N_Ary == 2); return child(0); }
+		auto left()  const { static_assert(N_Ary == 2); return child(0); }
 
-		auto right()       { return child(1); }
-		auto right() const { return child(1); }
+		auto right()       { static_assert(N_Ary == 2); return child(1); }
+		auto right() const { static_assert(N_Ary == 2); return child(1); }
 
-		auto parent()       { return Accessor<C    >( &_container(), _node().parent ); }
-		auto parent() const { return Accessor<CONST>( &_container(), _node().parent ); }
+		auto parent()       { return Accessor<C    >( &_container(), BASE::get_parent() ); }
+		auto parent() const { return Accessor<CONST>( &_container(), BASE::get_parent() ); }
 
 
 
 		bool has_child(int ith) const { _check_child_index(ith); return _node().children[ith].valid(); }
 
-		bool has_left()   const { return has_child(0); }
-		bool has_right()  const { return has_child(1); }
-		bool has_parent() const { return _node().parent.valid(); }
+		bool has_left()   const { static_assert(N_Ary == 2); return has_child(0); }
+		bool has_right()  const { static_assert(N_Ary == 2); return has_child(1); }
+		bool has_parent() const { return BASE::get_parent().valid(); }
 
 
 
 		bool is_ith_child(int ith) const {
-			auto par = _node().parent; DCHECK(par.valid());
-			DCHECK(parent()._check_child_index(ith));
+			auto par = BASE::get_parent(); DCHECK(par.valid());
+			parent()._check_child_index(ith);
 			return _handle() == _node(par).children[ith];
 		}
 
 		bool is_left() const {
-			auto par = _node().parent;
-			DCHECK(par.valid());
-			return _handle() == _node(par).children[0];
+			static_assert(N_Ary == 2);
+			return is_ith_child(0);
 		}
 
 		bool is_right() const {
-			auto par = _node().parent;
-			DCHECK(par.valid());
-			return _handle() == _node(par).children[1];
+			static_assert(N_Ary == 2);
+			return is_ith_child(0);
 		}
 
 
@@ -212,48 +248,83 @@ struct Context {
 
 		void link_child(int ith, Handle new_child) {
 			static_assert(C == MUTAB, "called on CONST accessor");
+			DCHECK( exists() );
 			_check_child_index(ith);
 			DCHECK( !child(ith).exists() );
 			_node().children[ith] = new_child;
 			_node(new_child).parent = _handle();
 		}
 
-		void link_left (Handle new_child) { link_child(0, new_child); }
-		void link_right(Handle new_child) { link_child(1, new_child); }
+		void link_left (Handle new_child) { static_assert(N_Ary == 2); link_child(0, new_child); }
+		void link_right(Handle new_child) { static_assert(N_Ary == 2); link_child(1, new_child); }
 
 
+
+
+	private:
+		void _unlink_child_1way(Small_Handle& ch) {
+			static_assert(C == MUTAB, "called on CONST accessor");
+			DCHECK( exists() );
+
+			DCHECK( ch.valid() );
+			_node(ch).parent.reset();
+		}
+
+	public:
 		void unlink_child(int ith) {
 			static_assert(C == MUTAB, "called on CONST accessor");
+			DCHECK( exists() );
+
 			auto& ch = _node().children[ith];
-			DCHECK( ch.valid() );
-			_node().children[ch].parent.reset();
+			_unlink_child_1way(ch);
 			ch.reset();
 		}
 
 		void unlink_left()  { unlink_child(0); }
 		void unlink_right() { unlink_child(1); }
 
+
+
 		// NOTE: linear in the number of children!
-		void unlink_parent() {
+	private:
+		void _unlink_parent_1way() {
+			DCHECK( exists() );
 			auto& par = _node( _node().parent );
 			DCHECK( std::find(par.children.begin(), par.children.end(), _handle()) != par.children.end() );
 			for(auto& ch : par.children) if(ch == _handle()) {
 				ch.reset();
+				DCHECK_GT(N_Ary, 0) << "not implemented";
 				// TODO: don't leave holes when N_ARY==0 (dynamic)
 				// maybe use Unordered_Vector or Vector_Allocator instead for children list
 				break;
 			}
+		}
+	public:
+		void unlink_parent() {
+			_unlink_parent_1way();
 			_node().parent.reset();
 		}
 
 
+	private:
+		// prerequisite: no element points to this element (not checked)
+		// when unlink_and_erase was just called, links will be 1-way
+		void _erase_unchecked() {
+			static_assert(C == MUTAB, "called on CONST accessor");
+			DCHECK( exists() );
+			BASE::on_erase(); // cache links before removing this node
+			_container()._alloc().destruct( _handle() );
+		}
+
+	public:
 		void erase() {
 			static_assert(C == MUTAB, "called on CONST accessor");
 			DCHECK( exists() );
 			DCHECK(!_node().parent.valid());
 
 			for(auto& ch : _node().children) DCHECK( !ch.valid() );
-			_container()._alloc().destruct( _handle() );
+
+			_erase_unchecked();
 		}
 
 		void unlink_and_erase() {
@@ -261,20 +332,20 @@ struct Context {
 			DCHECK( exists() );
 
 			// unlink parent (if present)
-			if( _node().parent.valid() ) unlink_parent();
+			if( _node().parent.valid() ) _unlink_parent_1way();
 
 			// unlink children
 			for(auto& ch : _node().children) {
-				if(ch.valid()) unlink_child(ch);
+				if(ch.valid()) _unlink_child_1way(ch);
 			}
 
-			erase();
+			_erase_unchecked();
 		}
 
 
 	private:
 		void _check_child_index(int ith) const {
-			DCHECK_GE(ith, 0); DCHECK_LT(ith, _node().children.size());
+			DCHECK_GE(ith, 0); DCHECK_LT(ith, BASE::get_children().size());
 		}
 
 		//void aggregate() {
@@ -334,8 +405,13 @@ struct Context {
 	class Rooted_Forest : private Allocator {
 		friend Accessor<MUTAB>;
 		friend Accessor<CONST>;
+
 		friend Iterator<MUTAB>;
 		friend Iterator<CONST>;
+
+		friend Reference<MUTAB>;
+		friend Reference<CONST>;
+
 
 	public:
 		using Key = Context::Key;

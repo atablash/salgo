@@ -630,13 +630,14 @@ Similar to `std::list`.
 
 Check Travis builds for full benchmarks using gcc/clang and libstdc++/libc++.
 
-Comparing `salgo::List<int> ::COUNT` to `std::list<int>` from `libstdc++`.
+Comparing `salgo::List<int> ::COUNT` to `std::list<int>` from `libstdc++`, compiled using `clang++-5.0`.
 
-|Benchmark         |    Salgo| Salgo + Crude_Allocator| Salgo + std::allocator|   libstdc++|
-|------------------|--------:|-----------------------:|----------------------:|-----------:|
-|ITERATE           |12 ns    |9 ns                    |13 ns                  |12 ns       |
-|INSERT            |53 ns    |39 ns                   |81 ns                  |95 ns       |
-|ERASE             |12 ns    |10 ns                   |17 ns                  |14 ns       |
+|Benchmark         |    Salgo| Salgo + std::allocator|   libstdc++|
+|------------------|--------:|----------------------:|-----------:|
+|INSERT_ERASE      |19 ns    |37 ns                  |23 ns       |
+|ITERATE           |5 ns     |13 ns                  |12 ns       |
+|INSERT            |48 ns    |81 ns                  |95 ns       |
+|ERASE             |6 ns     |18 ns                  |13 ns       |
 
 
 > NOTE

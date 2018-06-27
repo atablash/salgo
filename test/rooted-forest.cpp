@@ -16,7 +16,7 @@ using namespace salgo;
 //           o
 //
 template<class TREE>
-void sample_tree_1(TREE& tree) {
+auto sample_tree_1(TREE& tree) {
 	auto root = tree.emplace(33);
 	root.emplace_left(22);
 	root.left().emplace_left(11);
@@ -26,6 +26,8 @@ void sample_tree_1(TREE& tree) {
 	root.right().emplace_right(77);
 
 	root.right().right().emplace_left(66);
+
+	return root;
 }
 
 
@@ -74,6 +76,36 @@ TEST(Rooted_Forest, destructors) {
 		sample_tree_1(tree);
 	}
 	EXPECT_EQ(g_constructors, g_destructors);
+}
+
+
+
+TEST(Rooted_Forest, traverse_and_erase) {
+	Binary_Forest<int> tree;
+	auto v = sample_tree_1( tree );
+
+	v = v.left().left();
+	v.erase();
+
+	v = v.parent();
+	v.erase();
+
+	v = v.parent();
+	v.erase();
+
+	v = v.right().left();
+	v.erase();
+
+	v = v.parent();
+	v.erase();
+
+	v = v.right();
+	v.erase();
+
+	v = v.left();
+	v.erase();
+
+	EXPECT_TRUE( tree.empty() );
 }
 
 

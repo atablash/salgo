@@ -41,7 +41,10 @@ namespace key_val {
 	};
 
 	template<>
-	struct Key_Val<void,void> {};
+	struct Key_Val<void,void> {
+		auto& operator()()       { return *this; }
+		auto& operator()() const { return *this; }
+	};
 
 
 } // namespace key_val
