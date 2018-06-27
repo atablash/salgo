@@ -42,8 +42,8 @@ static const int div = 27;
 
 // big
 template<class X>
-struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<>, int> {
-	using BASE = Pair_Handle_Base<Handle<X>, Int_Handle<>, int>;
+struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int,(1<<(32-div))-1>, int> {
+	using BASE = Pair_Handle_Base<Handle<X>, Int_Handle<int,(1<<(32-div))-1>, int>;
 
 	Handle() = default;
 
@@ -69,10 +69,15 @@ struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int> {
 	Small_Handle& operator=(const Handle<X>& h) {
 		DCHECK_LT(h.a, 1<<(32-div));
 		DCHECK_LT(h.b, 1<<div);
-		return *this = (h.a << div) | h.b;
+		*this = (h.a << div) | h.b;
+		//LOG(INFO) << h << " -> " << *this;
+		return *this;
 	}
 
-	operator Handle<X>() const { return Handle<X>((*this)>>div, (*this)&((1<<div)-1)); }
+	operator Handle<X>() const {
+		//LOG(INFO) << *this << " -> " << Handle<X>((*this)>>div, (*this)&((1<<div)-1));
+		return Handle<X>((*this)>>div, (*this)&((1<<div)-1));
+	}
 };
 
 
@@ -194,7 +199,7 @@ struct Context {
 				current_filled = 0;
 			}
 
-			v.back()().construct( current_filled, std::forward<ARGS>(args)... );
+			v[LAST](current_filled).construct( std::forward<ARGS>(args)... );
 
 			Handle handle = {v.size()-1, current_filled++};
 
@@ -208,7 +213,7 @@ struct Context {
 		}
 
 
-		void destruct(       Handle h )  { v[h.a].destruct( h.b ); }
+		void destruct(       Handle h )  { v[h.a](h.b).destruct(); }
 
 		auto& operator[]( Handle h )       { return v[h.a][h.b]; }
 		auto& operator[]( Handle h ) const { return v[h.a][h.b]; }

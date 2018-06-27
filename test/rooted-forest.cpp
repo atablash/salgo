@@ -112,10 +112,10 @@ TEST(Rooted_Forest, traverse_and_erase) {
 
 TEST(Rooted_Forest, inorder) {
 	Binary_Forest<int> tree;
-	sample_tree_1( tree );
+	auto root = sample_tree_1( tree );
 
 	std::vector<int> vals;
-	for(auto& e : Inorder(tree)) {
+	for(auto& e : Inorder(root)) {
 		vals.emplace_back( e );
 	}
 	EXPECT_EQ(vals, std::vector<int>({11,22,33,44,55,66,77}));

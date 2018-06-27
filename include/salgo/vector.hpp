@@ -21,10 +21,6 @@ namespace internal {
 namespace Vector {
 
 
-struct Handle : Int_Handle_Base<Handle,int> {
-	using BASE = Int_Handle_Base<Handle,int>;
-	FORWARDING_CONSTRUCTOR(Handle, BASE) {}
-};
 
 
 template<class _VAL, bool _SPARSE, class _MEMORY_BLOCK>
@@ -56,10 +52,18 @@ struct Context {
 
 	static constexpr bool Iterable = Dense || Exists;
 
-	using Handle = internal::Vector::Handle;
 
 
 
+	struct Handle : Int_Handle_Base<Handle,int> {
+		using BASE = Int_Handle_Base<Handle,int>;
+		EXPLICIT_FORWARDING_CONSTRUCTOR(Handle, BASE) {}
+	};
+
+	// same as Handle, but allow creation from `int`
+	struct Index : Handle {
+		FORWARDING_CONSTRUCTOR(Index, Handle) {}
+	};
 
 
 
@@ -86,21 +90,35 @@ struct Context {
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_container().construct( _handle(), std::forward<ARGS>(args)... );
+			static_assert(Sparse);
+			_container()._check_bounds( _handle() );
+			_container()._mb( _handle() ).construct( std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_container().destruct( _handle() );
+			static_assert(Sparse);
+			_container()._check_bounds( _handle() );
+			_container()._mb( _handle() ).destruct();
 		}
 
 		void erase() {
 			destruct();
 		}
 
-		bool exists() const {
-			return _container().exists( _handle() );
+		// assumes element is in bounds
+		bool constructed() const {
+			_container()._check_bounds( _handle() );
+			if constexpr(Dense) return true;
+			else return _container()._mb( _handle() ).constructed();
 		}
+
+		// same as `constructed()`, but also checks bounds
+		bool exists_SLOW() const {
+			if(!_container()._is_in_bounds( _handle() )) return false;
+			return constructed();
+		}
+
 	};
 
 
@@ -110,18 +128,7 @@ struct Context {
 	//
 	// store a `reference` to end()
 	//
-	template<Const_Flag C>
-	struct End_Iterator : Iterator<C> {
-		using BASE = Iterator<C>;
-		FORWARDING_CONSTRUCTOR(End_Iterator, BASE) {}
-
-		// forbid decrementing
-	private:
-		using BASE::operator--;
-		using BASE::operator-=;
-		using BASE::operator++;
-		using BASE::operator+=;
-	};
+	struct End_Iterator {};
 
 
 
@@ -134,7 +141,6 @@ struct Context {
 		using BASE = Iterator_Base<C,Context>;
 		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 		friend Vector;
-		friend End_Iterator<C>;
 
 		using BASE::_container;
 		using BASE::_handle;
@@ -143,15 +149,15 @@ struct Context {
 		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++_handle(); while( (int)_handle() != _container().domain() && !_container().exists( _handle() ) );
+			do ++_handle(); while( (int)_handle() != _container().domain() && !_container()( _handle() ).constructed() );
 		}
 
 		void _decrement() {
-			do --_handle(); while( !_container()->exists( _handle() ) );
+			do --_handle(); while( !_container( _handle() ).constructed() );
 		}
 
 	public:
-		bool operator!=(const End_Iterator<C>&) { return BASE::operator!=( _container().end() ); }
+		bool operator!=(End_Iterator) { return _handle() < _container().domain(); }
 	};
 
 
@@ -205,7 +211,7 @@ struct Context {
 		template<class... ARGS>
 		Vector(int size, ARGS&&... args) : _mb( std::max(size, Memory_Block::Stack_Buffer )), _size(size) {
 			for(int i=0; i<size; ++i) {
-				_mb.construct(i, args...);
+				_mb(i).construct( args... );
 			}
 		}
 
@@ -222,10 +228,10 @@ struct Context {
 
 			if constexpr(Dense) {
 				for(int i=0; i<_size; ++i) {
-					_mb.destruct(i);
+					_mb(i).destruct();
 				}
 			}
-			DCHECK_LE(_size, _mb.size());
+			DCHECK_LE(_size, _mb.domain());
 			// for sparse vectors, memory block takes care of destruction
 		}
 
@@ -256,8 +262,8 @@ struct Context {
 			}
 
 			// construct new elements
-			for(int i=_size; i<_mb.size(); ++i) {
-				_mb.construct(i, args...);
+			for(int i=_size; i<_mb.domain(); ++i) {
+				_mb(i).construct( args... );
 			}
 
 			_size = new_size;
@@ -278,59 +284,58 @@ struct Context {
 
 
 
-		//
-		// interface: manipulate element - can be accessed via the Accessor
-		//
+
+		// direct access
 	public:
-		template<class... ARGS>
-		void construct(Handle key, ARGS&&... args) {  static_assert(Sparse);
-			_check_bounds(key);
-			_mb.construct( key, std::forward<ARGS>(args)... );
-		}
-
-		void destruct(Handle key) {  static_assert(Sparse);
-			_check_bounds(key);
-			_mb.destruct( key );
-		}
-
-		bool exists(Handle key) const {
-			_check_bounds(key);
-			if constexpr(Dense) return true;
-			else return _mb.exists( (int)key );
-		}
-
-		Val& operator[](Handle key) {
+		auto& operator[](Index key) {
 			_check_bounds(key);
 			return _mb[ key.a ];
 		}
 
-		const Val& operator[](Handle key) const {
+		auto& operator[](Index key) const {
 			_check_bounds(key);
 			return _mb[ key.a ];
 		}
 
+		auto& operator[](First_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator[]( Index(0) ); }
+		auto& operator[](First_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator[]( Index(0) ); }
+
+		auto& operator[](Last_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator[]( Index(_size-1) ); }
+		auto& operator[](Last_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator[]( Index(_size-1) ); }
 
 
 
-
-		//
-		// interface
-		//
+		// accessor access
 	public:
-		auto operator()(Handle key) {
+		auto operator()(Index key) {
 			_check_bounds(key);
 			return Accessor<MUTAB>(this, key);
 		}
 
-		auto operator()(Handle key) const {
+		auto operator()(Index key) const {
 			_check_bounds(key);
 			return Accessor<CONST>(this, key);
 		}
 
+		auto& operator()(First_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(0) ); }
+		auto& operator()(First_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(0) ); }
+
+		auto& operator()(Last_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(_size-1) ); }
+		auto& operator()(Last_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(_size-1) ); }
+
+
+
+
+
+
+
 	private:
-		inline void _check_bounds(Handle key) const {
-			DCHECK_GE( key, 0 ) << "index out of bounds";
-			DCHECK_LT( key, _size ) << "index out of bounds";
+		bool _is_in_bounds(Index key) const {
+			return key >= 0 && key < domain();
+		}
+
+		void _check_bounds(Index key) const {
+			DCHECK(_is_in_bounds(key)) << "index " << key << " out of bounds [0," << domain() << ")";
 		}
 
 
@@ -344,25 +349,25 @@ struct Context {
 			static_assert( Dense || Exists || std::is_trivially_move_constructible_v<Val>,
 				"non-trivially-constructible types require EXISTS to emplace_back()" );
 
-			if(_size == _mb.size()) {
+			if(_size == _mb.domain()) {
 				if constexpr(Dense) {
-					_mb.resize( (_mb.size() + 1) * 3/2, [](int){ return /*i<_size*/true; } );
+					_mb.resize( (_mb.domain() + 1) * 3/2, [](int){ return /*i<_size*/true; } );
 				}
 				else {
-					_mb.resize( (_mb.size() + 1) * 3/2 );
+					_mb.resize( (_mb.domain() + 1) * 3/2 );
 				}
 			}
 
-			_mb.construct( _size, std::forward<ARGS>(args)... );
+			_mb(_size).construct( std::forward<ARGS>(args)... );
 
-			return Accessor<MUTAB>( this, _size++ );
+			return Accessor<MUTAB>( this, Index(_size++) );
 		}
 
 		Val pop_back() {
 			static_assert(Dense || Exists, "can't pop_back() if last element is unknown");
 
 			if constexpr(Exists) {
-				while(!_mb.exists(_size-1)) {
+				while(!_mb(_size-1).constructed()) {
 					--_size;
 					DCHECK_GE(_size, 0);
 				}
@@ -370,16 +375,13 @@ struct Context {
 
 			DCHECK_GE(_size, 1) << "pop_back() on empty Vector";
 
-			DCHECK(exists(_size-1));
+			DCHECK( (*this)(_size-1).constructed() );
 
 			Val result( std::move(_mb[_size-1]) );
-			_mb.destruct(--_size);
+			_mb(--_size).destruct();
 			return result;
 		}
 
-		// currently only available for DENSE vectors:
-		auto back()       { static_assert(Dense); return Accessor<MUTAB>(this, _size-1); }
-		auto back() const { static_assert(Dense); return Accessor<CONST>(this, _size-1); }
 
 
 		int count() const {
@@ -397,7 +399,7 @@ struct Context {
 		}
 
 		int capacity() const {
-			return _mb.size();
+			return _mb.domain();
 		}
 
 
@@ -412,11 +414,11 @@ struct Context {
 			static_assert(std::is_move_constructible_v<Val>, "compact() requires move constructible Val type");
 
 			int target = 0;
-			for(int i=0; i<_mb.size(); ++i) {
-				if(_mb.exists(i) && target != i) {
+			for(int i=0; i<_mb.domain(); ++i) {
+				if(_mb(i).constructed() && target != i) {
 
-					_mb.construct( target, std::move( _mb[i] ) );
-					_mb.destruct( i );
+					_mb(target).construct( std::move( _mb[i] ) );
+					_mb(i).destruct();
 
 					fun(i, target);
 					++target;
@@ -435,30 +437,25 @@ struct Context {
 
 
 	public:
-		inline auto begin() {
+		auto begin() {
 			static_assert(Iterable);
-			auto e = Iterator<MUTAB>(this, 0);
-			if(_size && !e->exists()) ++e;
+			auto e = Iterator<MUTAB>(this, Index(0));
+			if(_size && !e->constructed()) ++e;
 			return e;
 		}
 
-		inline auto begin() const {
+		auto begin() const {
 			static_assert(Iterable);
-			auto e = Iterator<CONST>(this, 0);
-			if(_size && !e->exists()) ++e;
+			auto e = Iterator<CONST>(this, Index(0));
+			if(_size && !e->constructed()) ++e;
 			return e;
 		}
 
 
 
-		inline auto end() {
+		auto end() const {
 			static_assert(Iterable);
-			return End_Iterator<MUTAB>(this, _size);
-		}
-
-		inline auto end() const {
-			static_assert(Iterable);
-			return End_Iterator<CONST>(this, _size);
+			return End_Iterator();
 		}
 
 	};

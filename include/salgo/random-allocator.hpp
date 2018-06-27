@@ -16,7 +16,7 @@
 
 
 
-
+#include "helper-macros-on"
 namespace salgo {
 
 
@@ -90,7 +90,7 @@ struct Context {
 	public:
 		void destruct() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			BASE::_container->destruct( BASE::_handle );
+			CO.v(HA).destruct();
 		}
 	};
 
@@ -133,6 +133,12 @@ struct Context {
 
 
 	class Random_Allocator {
+		friend Accessor<CONST>;
+		friend Accessor<MUTAB>;
+
+		friend Iterator<CONST>;
+		friend Iterator<MUTAB>;
+
 	private:
 		Vector v;
 
@@ -162,8 +168,8 @@ struct Context {
 					int new_idx = idx + i;
 					if(new_idx >= v.domain()) break;
 
-					if(!v.exists(new_idx)) {
-						v.construct(new_idx, std::forward<ARGS>(args)... );
+					if(!v(new_idx).constructed()) {
+						v(new_idx).construct( std::forward<ARGS>(args)... );
 						return Accessor<MUTAB>(this, new_idx);
 					}
 				}
@@ -176,9 +182,6 @@ struct Context {
 			// currently we don't use the hint
 			return construct(std::forward<ARGS>(args)...);
 		}
-
-
-		void destruct(Handle h ) { v.destruct(h); }
 
 		auto& operator[]( Handle h )       { return v[h]; }
 		auto& operator[]( Handle h ) const { return v[h]; }
@@ -284,6 +287,7 @@ using Random_Allocator = typename internal::random_allocator::Context<
 
 
 } // namespace salgo
+#include "helper-macros-off"
 
 
 

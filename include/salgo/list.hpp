@@ -13,91 +13,9 @@
 #endif
 
 
+
+#include "helper-macros-on"
 namespace salgo {
-
-
-
-
-
-//
-// operations on list nodes
-//
-template<class ALLOC, class HANDLE>
-inline auto list_next(const ALLOC& alloc, HANDLE handle) { DCHECK(handle.valid()); return alloc[handle].next; }
-
-template<class ALLOC, class HANDLE>
-inline auto list_prev(const ALLOC& alloc, HANDLE handle) { DCHECK(handle.valid()); return alloc[handle].prev; }
-
-
-
-namespace internal {
-	template<class ALLOC, class HANDLE>
-	inline auto list_erase(ALLOC& alloc, HANDLE handle) {
-		auto& me = alloc[handle];
-
-		auto prev = me.prev;
-		auto next = me.next;
-
-		DCHECK( prev.valid() ) << "erasing dummy list element";
-		DCHECK( next.valid() ) << "erasing dummy list element";
-
-		alloc[prev].next = next;
-		alloc[next].prev = prev;
-
-		me.val.destruct();
-		alloc.destruct(handle);
-
-		return next;
-	}
-}
-
-
-template<class ALLOC, class HANDLE>
-inline auto list_erase(ALLOC& alloc, HANDLE handle) {
-
-	static_assert(! decltype(alloc[handle])::Countable,
-		"element of COUNTABLE list must be erased though the list object");
-
-	return internal::list_erase(alloc, handle);
-}
-
-
-
-
-
-
-
-namespace internal {
-	template<class ALLOC, class HANDLE, class... ARGS>
-	inline auto list_emplace(ALLOC& alloc, HANDLE where, ARGS&&... args) {
-		DCHECK( where.valid() ) << "handle invalid";
-
-		auto h = alloc.construct_near(where).handle();
-		alloc[h].val.construct( std::forward<ARGS>(args)... );
-
-		DCHECK( alloc[where].prev.valid() ) << "where->prev link invalid";
-		alloc[h].prev = alloc[where].prev;
-		alloc[h].next = where;
-		alloc[alloc[h].prev].next = h;
-		alloc[alloc[h].next].prev = h;
-
-		return h;
-	}
-}
-
-
-template<class ALLOC, class HANDLE, class... ARGS>
-inline auto list_emplace(ALLOC& alloc, HANDLE where, ARGS&&... args) {
-
-	static_assert(! decltype(alloc[where])::Countable,
-		"element of COUNTABLE list must be emplaced though the list object");
-
-	return internal::list_emplace(alloc, where, std::forward<ARGS>(args)...);
-}
-
-
-
-
 
 
 
@@ -176,29 +94,31 @@ struct Context {
 	private:
 		Small_Handle _prev;
 		Small_Handle _next;
-		bool just_erased = false;
+		bool _just_erased = false;
 
 	protected:
+		bool just_erased() const { return _just_erased; }
+
 		void on_erase() {
-			_next = list_next(_container()._alloc(), _handle() );
-			_prev = list_prev(_container()._alloc(), _handle() );
-			just_erased = true;
+			_next = _container()._alloc()[_handle()].next;
+			_prev = _container()._alloc()[_handle()].prev;
+			_just_erased = true;
 		}
 
 		void reset() {
 			_prev.reset();
 			_next.reset();
-			just_erased = false;
+			_just_erased = false;
 		}
 
 		auto get_next() {
-			if(just_erased) return _next;
-			else return list_next(_container()._alloc(), _handle() );
+			if(_just_erased) return _next;
+			else return _container()._alloc()[ _handle() ].next;
 		}
 
 		auto get_prev() {
-			if(just_erased) return _prev;
-			else return list_prev(_container()._alloc(), _handle() );
+			if(_just_erased) return _prev;
+			else return _container()._alloc()[ _handle() ].prev;
 		}
 	};
 
@@ -218,8 +138,58 @@ struct Context {
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
 			BASE::on_erase();
-			_container().erase( _handle() );
+
+			auto prv = CO._alloc()[HA].prev;
+			auto nxt = CO._alloc()[HA].next;
+			if(prv.valid()) CO._alloc()[prv].next = nxt;
+			if(nxt.valid()) CO._alloc()[nxt].prev = prv;
+
+			if(_container()._front == HA) _container()._front = nxt;
+			if(_container()._back  == HA) _container()._back  = prv;
+
+			ALLOC(HA).destruct();
+
+			if constexpr(Countable) --_container().num_existing;
 		}
+
+		template<class... ARGS>
+		auto emplace_before(ARGS&&... args) {
+			static_assert(C == MUTAB, "called on CONST accessor");
+			DCHECK( HA.valid() && !BASE::just_erased());
+
+			auto new_node = _container()._alloc().construct( std::forward<ARGS>(args)... );
+
+			new_node().prev = BASE::get_prev();
+			if(new_node().prev.valid()) _container()._alloc()[ new_node().prev ].next = new_node.handle();
+
+			new_node().next = HA;
+			_container()._alloc()[ HA ].prev = new_node.handle();
+
+			if(_container()._front == HA) _container()._front = new_node.handle();
+
+			if constexpr(Countable) ++_container().num_existing;
+			return Accessor<MUTAB>(&_container(), new_node);
+		}
+
+		template<class... ARGS>
+		auto emplace_after(ARGS&&... args) {
+			static_assert(C == MUTAB, "called on CONST accessor");
+			DCHECK( HA.valid() && !BASE::just_erased());
+
+			auto new_node = _container()._alloc().construct( std::forward<ARGS>(args)... );
+
+			new_node().next = BASE::get_next();
+			if(new_node().next.valid()) _container()._alloc()[ new_node().next ].prev = new_node.handle();
+
+			new_node().prev = HA;
+			_container()._alloc()[ HA ].next = new_node.handle();
+
+			if(_container()._back == HA) _container()._back = new_node.handle();
+
+			if constexpr(Countable) ++_container().num_existing;
+			return Accessor<MUTAB>(&_container(), new_node);
+		}
+
 
 		auto next()       { return _container()( BASE::get_next() ); }
 		auto next() const { return _container()( BASE::get_next() ); }
@@ -228,6 +198,10 @@ struct Context {
 		auto prev() const { return _container()( BASE::get_prev() ); }
 	};
 
+
+
+
+	class End_Iterator {};
 
 
 
@@ -247,16 +221,19 @@ struct Context {
 		friend BASE;
 
 		void _increment() {
+			DCHECK( _handle().valid() ) << "followed broken list link";
 			_handle() = BASE::get_next();
 			BASE::reset();
-			DCHECK( _handle().valid() ) << "followed broken list link";
 		}
 
 		void _decrement() {
+			DCHECK( _handle().valid() ) << "followed broken list link";
 			_handle() = BASE::get_prev();
 			BASE::reset();
-			DCHECK( _handle().valid() ) << "followed broken list link";
 		}
+
+	public:
+		bool operator!=(End_Iterator) const { return _handle().valid(); }
 	};
 
 
@@ -274,8 +251,9 @@ struct Context {
 
 
 	struct Node {
-		// typename salgo::Stack_Storage<Val>::PERSISTENT val; // make sure it's not moved
-		typename salgo::Stack_Storage<Val> val; // val can be moved
+		Val val;
+
+		FORWARDING_CONSTRUCTOR(Node, val) {}
 
 		Small_Handle next;
 		Small_Handle prev;
@@ -305,10 +283,12 @@ struct Context {
 
 
 	private:
-		//friend Accessor<MUTAB>;
-		//friend Accessor<CONST>;
-		//friend Iterator<MUTAB>;
-		//friend Iterator<CONST>;
+		friend Accessor<MUTAB>;
+		friend Accessor<CONST>;
+
+		friend Iterator<MUTAB>;
+		friend Iterator<CONST>;
+
 		friend Reference<MUTAB>;
 		friend Reference<CONST>;
 
@@ -324,168 +304,162 @@ struct Context {
 		auto& _alloc()       { return *static_cast<      Allocator*>(this); }
 		auto& _alloc() const { return *static_cast<const Allocator*>(this); }
 
+
+
 		//
 		// construction
 		//
 	public:
-		List() {
-			_front = _alloc().construct().handle();
-			_back = _alloc().construct().handle();
-			_alloc()[_front].next = _back;
-			_alloc()[_back].prev = _front;
-			#ifndef NDEBUG
-			_alloc()[_front].prev.reset();
-			_alloc()[_back].next.reset();
-			#endif
-		};
+		List() = default;
 
-		List(int size) : List() {
+		List(int size) {
 			for(int i=0; i<size; ++i) {
-				emplace( _back );
+				emplace_back();
 			}
 		}
 
 		~List() {
-			for(auto& e : *this) {
-				_alloc()[ e.handle() ].val.destruct();
-				_alloc().destruct( e.handle() );
-			}
-
-			_alloc().destruct( _front );
-			_alloc().destruct( _back );
+			for(auto& e : *this) e.erase(); // todo: erase faster, without managing links
 		}
 
 		void clear() {
-			#ifdef NDEBUG
-			static_assert(std::is_trivially_destructible_v<Node>);
-			#endif
+			for(auto& e : *this) e.erase(); // todo: erase faster, without managing links
 
-			for(auto e : *this) {
-				_alloc()[ e.handle() ].val.destruct();
-				_alloc().destruct( e.handle() );
-			}
-
-			_alloc()[_front].next = _back;
-			_alloc()[_back].prev = _front;
+			_front.reset();
+			_back.reset();
 		}
 
 
 
 
-	public:
+
+
 		// copy
-		List(const List& o) : List() {
-			*this = o;
-		}
+		//List(const List& o) {
+		//	*this = o;
+		//}
 
 		// trivial move
-		List(List&& o) = default;
+		//List(List&& o) = default;
 
 		// copy assignment
-		List& operator=(const List& o) {
-			clear();
-			*this += o;
-		}
+		//List& operator=(const List& o) {
+		//	clear();
+		//	*this += o;
+		//}
 
 		// move assignment: todo
 
-		List& operator+=(const List& o) {
-			for(auto e : o) {
-				emplace(_back, e());
-			}
-		}
+		//List& operator+=(const List& o) {
+		//	for(auto e : o) {
+		//		emplace_back( e() );
+		//	}
+		//}
 
 		// todo
 		//List& operator+=(List&& o) {}
 
 
 
-		//
-		// interface: manipulate element - can be accessed via the Accessor
-		//
-	public:
-		void erase(Handle handle) {
-			internal::list_erase( _alloc(), handle );
-			if constexpr(Countable) --NUM_EXISTING_BASE::num_existing;
-		}
 
 		//bool exists(Handle handle) const {
 		//	return v[ key ].exists;
 		//}
 
-		Val& operator[](Handle handle) {
-			return _alloc()[handle].val;
-		}
-
-		const Val& operator[](Handle handle) const {
-			return _alloc()[handle].val;
-		}
 
 
 
 
 
-		//
-		// interface
-		//
+
+		// direct access
 	public:
-		auto operator()(Handle handle) {
-			return Accessor<MUTAB>(this, handle);
-		}
+		auto& operator[](Handle handle)       { return _alloc()[handle].val; }
+		auto& operator[](Handle handle) const { return _alloc()[handle].val; }
 
-		auto operator()(Handle handle) const {
-			return Accessor<CONST>(this, handle);
-		}
+		auto& operator[](First_Tag)       { return operator[](_front); }
+		auto& operator[](First_Tag) const { return operator[](_front); }
 
-		auto next(Handle handle)       { return Accessor<MUTAB>(this, list_next(_alloc(), handle)); }
-		auto next(Handle handle) const { return Accessor<CONST>(this, list_next(_alloc(), handle)); }
-
-		auto prev(Handle handle)       { return Accessor<MUTAB>(this, list_prev(_alloc(), handle)); }
-		auto prev(Handle handle) const { return Accessor<CONST>(this, list_prev(_alloc(), handle)); }
+		auto& operator[](Last_Tag)       { return operator[](_back); }
+		auto& operator[](Last_Tag) const { return operator[](_back); }
 
 
-		template<class... ARGS>
-		auto emplace(Handle where, ARGS&&... args) {
-			if constexpr(Countable) ++NUM_EXISTING_BASE::num_existing;
-			return Accessor<MUTAB>(this, internal::list_emplace(_alloc(), where, std::forward<ARGS>(args)...));
-		}
 
+
+		// accessor access
+	public:
+		auto operator()(Handle handle)       { return Accessor<MUTAB>(this, handle); }
+		auto operator()(Handle handle) const { return Accessor<CONST>(this, handle); }
+
+		auto operator()(First_Tag)       { return operator()(_front); }
+		auto operator()(First_Tag) const { return operator()(_front); }
+
+		auto operator()(Last_Tag)       { return operator()(_back); }
+		auto operator()(Last_Tag) const { return operator()(_back); }
+
+
+
+
+
+
+
+	public:
 		template<class... ARGS>
 		auto emplace_front(ARGS&&... args) {
-			return emplace( _alloc()[_front].next, std::forward<ARGS>(args)... );
+			if(empty()) return _emplace_into_empty( std::forward<ARGS>(args)... );
+			return (*this)(FIRST).emplace_before( std::forward<ARGS>(args)... );
 		}
 
 		template<class... ARGS>
 		auto emplace_back(ARGS&&... args) {
-			return emplace( _back, std::forward<ARGS>(args)... );
+			if(empty()) return _emplace_into_empty( std::forward<ARGS>(args)... );
+			return (*this)(LAST).emplace_after( std::forward<ARGS>(args)... );
 		}
 
 
+	private:
+		template<class... ARGS>
+		auto _emplace_into_empty(ARGS&&... args) {
+			DCHECK(!_front.valid());
+			DCHECK(!_back.valid());
+			_front = _back = _alloc().construct( std::forward<ARGS>(args)... ).handle();
+
+			if constexpr(Countable) {
+				++NUM_EXISTING_BASE::num_existing;
+				DCHECK_EQ(1, NUM_EXISTING_BASE::num_existing);
+			}
+
+			return Accessor<MUTAB>(this, _front);
+		}
+
+
+
+
+
+
+
+	public:
 		int count() const {
 			static_assert(Countable, "count() called on non countable Sparse_Vector");
 			return NUM_EXISTING_BASE::num_existing;
 		}
 
+		bool empty() const { return !_front.valid(); }
+
 
 
 
 	public:
-		inline auto begin() {
-			return Iterator<MUTAB>(this, _alloc()[_front].next);
+		auto begin() {
+			return Iterator<MUTAB>(this, _front);
 		}
 
-		inline auto begin() const {
-			return Iterator<CONST>(this, _alloc()[_front].next);
+		auto begin() const {
+			return Iterator<CONST>(this, _front);
 		}
 
 
-		inline auto end() {
-			return Iterator<MUTAB>(this, _back);
-		}
-
-		inline auto end() const {
-			return Iterator<CONST>(this, _back);
-		}
+		auto end() const { return End_Iterator(); }
 
 	};
 
@@ -541,4 +515,7 @@ using List = typename internal::List::Context<
 
 
 
-}
+} // namespace salgo
+#include "helper-macros-off"
+
+

@@ -5,17 +5,29 @@
 
 
 
-//
-// MEMBER DETECTOR
-//
-// https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Member_Detector
-//
 
 #include <type_traits> // To use 'std::integral_constant'.
 #include <iostream>    // To use 'std::cout'.
 #include <iomanip>     // To use 'std::boolalpha'.
 
 
+
+
+
+
+
+namespace salgo {
+
+
+
+
+
+
+//
+// MEMBER DETECTOR
+//
+// https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Member_Detector
+//
 #define GENERATE_HAS_MEMBER(member)                                                \
                                                                                    \
 template < class T >                                                               \
@@ -130,4 +142,26 @@ constexpr X operator ~ (X x)                                                    
     // auto&& _rv_self() const { return std::move( _self() ); }
 
 
+
+
+
+
+
+
+//
+// access first or last elements of containers
+//
+struct First_Tag {};
+struct Last_Tag {};
+
+#define FIRST salgo::First_Tag()
+#define LAST salgo::Last_Tag()
+
+
+
+
+
+
+
+} // namespace salgo
 

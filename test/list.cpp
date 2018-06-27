@@ -28,11 +28,7 @@ TEST(List, simple) {
 
 	for(auto& e : m) vals.push_back( e );
 
-	EXPECT_EQ(1, vals[0]);
-	EXPECT_EQ(2, vals[1]);
-	EXPECT_EQ(3, vals[2]);
-	EXPECT_EQ(4, vals[3]);
-	EXPECT_EQ(5, vals[4]);
+	EXPECT_EQ(vector<int>({1,2,3,4,5}), vals);
 }
 
 
@@ -50,11 +46,7 @@ TEST(List, count) {
 	vector<int> vals;
 	for(auto& e : m) vals.push_back( e );
 
-	EXPECT_EQ(1, vals[0]);
-	EXPECT_EQ(2, vals[1]);
-	EXPECT_EQ(3, vals[2]);
-	EXPECT_EQ(4, vals[3]);
-	EXPECT_EQ(5, vals[4]);
+	EXPECT_EQ(vector<int>({1,2,3,4,5}), vals);
 }
 
 
@@ -70,6 +62,7 @@ TEST(List, count_nontrivial) {
 		int val;
 
 		S(int i) : val(i) { ++g_constructors; }
+		S(S&& o) { ++g_constructors; val = o.val; }
 		~S() { ++g_destructors; }
 
 		operator int() const { return val; }
@@ -88,11 +81,7 @@ TEST(List, count_nontrivial) {
 		vector<int> vals;
 		for(auto& e : m) vals.push_back( e() );
 
-		EXPECT_EQ(1, vals[0]);
-		EXPECT_EQ(2, vals[1]);
-		EXPECT_EQ(3, vals[2]);
-		EXPECT_EQ(4, vals[3]);
-		EXPECT_EQ(5, vals[4]);
+		EXPECT_EQ(vector<int>({1,2,3,4,5}), vals);
 	}
 
 	// destructors called?

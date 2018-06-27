@@ -110,21 +110,77 @@ struct Context {
 		auto index() const { return BASE::handle(); }
 
 
+
 		template<class... ARGS>
-		auto construct(ARGS&&... args) {
+		auto& construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			return _container().construct( _handle(), std::forward<ARGS>(args)... );
+			static_assert(!Dense, "construct() not supported for DENSE memory-blocks");
+
+			_check_bounds();
+			if constexpr(Exists) {
+				DCHECK( !constructed() ) << "element already constructed";
+				_container()._set_exists(_handle(), true);
+			}
+			_get().construct( std::forward<ARGS>(args)... );
+			if constexpr(Count) ++_container().NUM_EXISTING_BASE::num_existing;
+
+			return *this;
 		}
 
-		void destruct() {
+		auto& destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_container().destruct( _handle() );
+			static_assert(!Dense, "destruct() not supported for DENSE memory-blocks");
+
+			_check_bounds();
+			if constexpr(Exists) {
+				DCHECK( constructed() ) << "erasing already erased element";
+				_container()._set_exists(_handle(), false);
+			}
+			_get().destruct();
+			if constexpr(Count) --_container().NUM_EXISTING_BASE::num_existing;
+
+			return *this;
 		}
 
-		bool exists() const {
-			return _container().exists( _handle() );
+		
+		// assumes key is in bounds
+		bool constructed() const {
+			_check_bounds();
+			static_assert(Dense || Exists, "called constructed() on object without EXISTS or DENSE");
+
+			if constexpr(Dense) {
+				return true;
+			} else if constexpr(Exists_Inplace) {
+				return _get().exists;
+			} else if constexpr(Exists_Bitset) {
+				return _container().EXISTS_BITSET_BASE::exists[ _handle() ];
+			}
 		}
+
+		// same as `constructed()` but also checks bounds
+		bool exists_SLOW() const {
+			if(!_is_in_bounds()) return false;
+			return constructed();
+		}
+
+	private:
+		bool _is_in_bounds() const {
+			return _container()._is_in_bounds( _handle() );
+		}
+
+		void _check_bounds() const {
+			_container()._check_bounds( _handle() );
+		}
+
+		auto& _get()       { return _container()._get( _handle() ); }
+		auto& _get() const { return _container()._get( _handle() ); }
 	};
+
+
+
+
+	class End_Iterator {};
+
 
 
 	//
@@ -146,14 +202,19 @@ struct Context {
 
 		void _increment() {
 			if constexpr(Dense) ++_handle();
-			else do ++_handle(); while( (int)_handle() != _container().size() && !_container().exists( _handle() ) );
+			else do ++_handle(); while( (int)_handle() != _container().domain() && !BASE::accessor().constructed() );
 		}
 
 		void _decrement() {
 			if constexpr(Dense) --_handle();
-			else do --_handle(); while( !_container->exists( _handle() ) );
+			else do --_handle(); while( !BASE::accessor().constructed() );
 		}
+
+	public:
+		bool operator!=(const End_Iterator&) { return _handle() != _container().domain(); }
 	};
+
+
 
 
 
@@ -244,7 +305,7 @@ struct Context {
 
 			for(int i=0; i<_size; ++i) {
 				std::allocator_traits<Allocator>::construct(_allocator(), _data+i);
-				if( o.exists(i) ) {
+				if( o(i).constructed() ) {
 					_get(i).construct( o._get(i) );
 				}
 			}
@@ -335,7 +396,7 @@ struct Context {
 			static_assert(Dense || Exists || std::is_trivially_destructible_v<Val>,
 				"can't destroy non-POD container if no EXISTS or DENSE flags");
 				
-			_destruct_block(data, size, [this](int i){ return exists(i); });
+			_destruct_block(data, size, [this](int i){ return (*this)(i).constructed(); });
 		}
 
 		// destruct nodes+values
@@ -364,7 +425,7 @@ struct Context {
 			if constexpr(std::is_trivially_move_constructible_v<Val>) {
 				_resize(new_size, [](int){ return true; });
 			}
-			else _resize(new_size, [this](int i){ return exists(i); });
+			else _resize(new_size, [this](int i){ return (*this)(i).constructed(); });
 		}
 
 		template<class EXISTS_FUN>
@@ -438,86 +499,33 @@ struct Context {
 
 
 	public:
-		auto size() const { return _size; }
+		auto domain() const { return _size; }
+
+		auto size() const {
+			static_assert(Dense, "size() is ambiguous when memory block is Sparse");
+			return _size;
+		}
 
 
 
-		//
-		// interface: manipulate element - can be accessed via the Accessor
-		//
+
+		// direct access
 	public:
-		template<class... ARGS>
-		auto construct(Index key, ARGS&&... args) {
-			static_assert(!Dense, "construct() not supported for DENSE memory-blocks");
-
-			_check_bounds(key);
-			if constexpr(Exists) {
-				DCHECK( !exists(key) ) << "element already constructed";
-				_set_exists(key, true);
-			}
-			_get(key).construct( std::forward<ARGS>(args)... );
-			if constexpr(Count) ++NUM_EXISTING_BASE::num_existing;
-
-			return Accessor<MUTAB>(this, key);
-		}
-
-		void destruct(Index key) {
-			static_assert(!Dense, "destruct() not supported for DENSE memory-blocks");
-
-			_check_bounds(key);
-			if constexpr(Exists) {
-				DCHECK( exists(key) ) << "erasing already erased element";
-				_set_exists(key, false);
-			}
-			_get(key).destruct();
-			if constexpr(Count) --NUM_EXISTING_BASE::num_existing;
-		}
-
-		bool exists(Index key) const {
-			_check_bounds(key);
-			static_assert(Dense || Exists, "called exists() on object without EXISTS or DENSE");
-
-			if constexpr(Dense) {
-				return true;
-			} else if constexpr(Exists_Inplace) {
-				return _get(key).exists;
-			} else if constexpr(Exists_Bitset) {
-				return EXISTS_BITSET_BASE::exists[key];
-			}
-		}
-
 		Val& operator[](Index key) {
 			_check_bounds(key);
-			if constexpr(Exists) DCHECK( exists(key) ) << "accessing non-existing element";
+			if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element";
 			return _get(key);
 		}
 
 		const Val& operator[](Index key) const {
 			_check_bounds(key);
-			if constexpr(Exists) DCHECK( exists(key) ) << "accessing non-existing element";
+			if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element";
 			return _get(key);
 		}
 
 
-		template<class... ARGS>
-		void construct_all(const ARGS&... args) {
-			static_assert(!Dense, "construct_all() not supported for DENSE memory-blocks");
 
-			for(int i=0; i<_size; ++i) {
-				if constexpr(Exists) {
-					DCHECK( !exists(i) ) << "can't construct_all() if some elements already exist";
-				}
-				construct(i, args...);
-			}
-		}
-
-
-
-
-
-		//
-		// interface
-		//
+		// accessor access
 	public:
 		auto operator()(Index key) {
 			_check_bounds(key);
@@ -531,9 +539,38 @@ struct Context {
 
 
 
+
+
+
+	public:
+		template<class... ARGS>
+		void construct_all(const ARGS&... args) {
+			static_assert(!Dense, "construct_all() not supported for DENSE memory-blocks");
+
+			for(int i=0; i<_size; ++i) {
+				if constexpr(Exists) {
+					DCHECK( !(*this)(i).constructed() ) << "can't construct_all() if some elements already exist";
+				}
+				(*this)(i).construct( args... );
+			}
+		}
+
+
+	private:
+		bool _is_in_bounds(Index key) const {
+			return key >= 0 && key < domain();
+		}
+
+		void _check_bounds(Index key) const {
+			DCHECK( _is_in_bounds(key) ) << "index " << key << " out of bounds [0," << domain() << ")";
+		}
+
+
+
+	public:
 		int count() const {
 			static_assert(Countable);
-			if constexpr(Dense) return size();
+			if constexpr(Dense) return domain();
 			else return NUM_EXISTING_BASE::num_existing;
 		}
 
@@ -549,26 +586,20 @@ struct Context {
 		auto begin() {
 			static_assert(Iterable);
 			auto e = Iterator<MUTAB>(this, Index(0));
-			if(_size && !e.accessor().exists()) ++e;
+			if(_size && !e.accessor().constructed()) ++e;
 			return e;
 		}
 
 		auto begin() const {
 			static_assert(Iterable);
 			auto e = Iterator<CONST>(this, Index(0));
-			if(_size && !e.accessor().exists()) ++e;
+			if(_size && !e.accessor().constructed()) ++e;
 			return e;
-		}
-
-
-		auto end() {
-			static_assert(Iterable);
-			return Iterator<MUTAB>(this, Index(_size));
 		}
 
 		auto end() const {
 			static_assert(Iterable);
-			return Iterator<CONST>(this, Index(_size));
+			return End_Iterator();
 		}
 
 
@@ -584,11 +615,6 @@ struct Context {
 			else if constexpr(Exists_Bitset) {
 				EXISTS_BITSET_BASE::exists[key] = new_exists;
 			}
-		}
-
-		void _check_bounds(Handle key) const {
-			DCHECK_GE( key, 0 ) << "index out of bounds";
-			DCHECK_LT( key, _size ) << "index out of bounds";
 		}
 
 	};

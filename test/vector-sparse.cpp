@@ -113,8 +113,8 @@ static void push_delete_compact_common(MB& m) {
 	m(2).destruct();
 	m(4).destruct();
 
-	EXPECT_TRUE(  m(1).exists() );
-	EXPECT_FALSE( m(2).exists() );
+	EXPECT_TRUE(  m(1).constructed() );
+	EXPECT_FALSE( m(2).constructed() );
 
 	{
 		int sum = 0;

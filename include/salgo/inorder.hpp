@@ -3,12 +3,11 @@
 #include "bst.hpp"
 
 
+
+#include "helper-macros-on"
 namespace salgo {
 
 
-// forward
-template<class Container>
-class Inorder;
 
 
 
@@ -45,33 +44,27 @@ struct Context {
 	template<Const_Flag C> static auto&& _cast(Base_Iterator<C>&& x) { return std::move(*static_cast<Iterator<C>*>(&x)); }
 
 
-	class Common_Data {
-	protected:
-		Handle cached_next;
-		Handle cached_prev;
-	};
 
 
 	template<Const_Flag C>
-	class Accessor : public Base_Accessor<C>, public Common_Data {
+	class Accessor : public Base_Accessor<C> {
 		using BASE = Base_Accessor<C>;
 
 	private:
-		friend Inorder<Container>;
-		Accessor(BASE&& base_accessor) : BASE(base_accessor) { iterator()._init(); }
+		Accessor(BASE&& base_accessor) : BASE(base_accessor) {}
 
 	public:		
-		auto child(int ith)       { return Accessor<MUTAB>( std::move( BASE::child(ith) ) ); }
-		auto child(int ith) const { return Accessor<CONST>( std::move( BASE::child(ith) ) ); }
+		auto child(int ith)       { return _cast( BASE::child(ith) ); }
+		auto child(int ith) const { return _cast( BASE::child(ith) ); }
 
-		auto left()       { return Accessor<MUTAB>( std::move( BASE::left() ) ); }
-		auto left() const { return Accessor<CONST>( std::move( BASE::left() ) ); }
+		auto left()       { return _cast( BASE::left() ); }
+		auto left() const { return _cast( BASE::left() ); }
 
-		auto right()       { return Accessor<MUTAB>( std::move( BASE::right() ) ); }
-		auto right() const { return Accessor<CONST>( std::move( BASE::right() ) ); }
+		auto right()       { return _cast( BASE::right() ); }
+		auto right() const { return _cast( BASE::right() ); }
 
-		auto parent()       { return Accessor<MUTAB>( std::move( BASE::parent() ) ); }
-		auto parent() const { return Accessor<CONST>( std::move( BASE::parent() ) ); }
+		auto parent()       { return _cast( BASE::parent() ); }
+		auto parent() const { return _cast( BASE::parent() ); }
 
 
 	public:
@@ -81,16 +74,18 @@ struct Context {
 
 
 
+
+	class End_Iterator {};
+
+
+
+
 	template<Const_Flag C>
-	class Iterator : public Base_Iterator<C>, public Common_Data {
+	class Iterator : public Base_Iterator<C> {
 		using BASE = Base_Iterator<C>;
 
-		using Common_Data::cached_prev;
-		using Common_Data::cached_next;
-
 	private:
-		friend Inorder<Container>;
-		Iterator(BASE&& base_iterator) : BASE(base_iterator) { _init(); }
+		Iterator(BASE&& base_iterator) : BASE(base_iterator) {}
 
 	public:
 		auto&& operator++() && { increment(); return std::move(*this); }
@@ -104,31 +99,15 @@ struct Context {
 
 	private:
 		void increment() {
-			BASE::_handle() = cached_next;
-			update_next();
+			HA = bst_next( accessor() );
 		}
 
 		void decrement() {
-			BASE::_handle() = cached_prev;
-			update_prev();
-		}
-
-		void update_next() {
-			cached_next = bst_next( BASE::accessor() );
-		}
-
-		void update_prev() {
-			cached_prev = bst_prev( BASE::accessor() );
+			HA = bst_prev( accessor() );
 		}
 
 	private:
 		friend Accessor<C>;
-		void _init() {
-			if(!BASE::_handle().valid()) return; // does not exist
-			update_prev();
-			update_next();
-		}
-
 
 	private:
 		using BASE::operator+=;
@@ -142,11 +121,30 @@ struct Context {
 
 	public:
 		auto& accessor() { return _cast( BASE::accessor() ); }
+
+	public:
+		bool operator!=(End_Iterator) const { return HA.valid(); }
 	};
 
 
 
 
+	class Inorder {
+
+	public:
+		Inorder(const typename Container::template Accessor<MUTAB>& v) : root(v) { DCHECK( !root.parent() ); }
+
+		auto begin() {
+			auto first = root;
+			while( first.left() ) first = first.left();
+			return _cast( std::move(first).iterator() );
+		}
+
+		auto end() { return End_Iterator(); }
+
+	private:
+		typename Container::template Accessor<MUTAB> root;
+	};
 
 
 
@@ -161,39 +159,14 @@ struct Context {
 
 
 
-template<class Container>
-class Inorder {
-	using Context = internal::inorder::Context<Container>;
 
-	template<Const_Flag C>
-	using Iterator = typename Context::template Iterator<C>;
 
-	template<Const_Flag C>
-	using Base_Iterator = typename Context::template Base_Iterator<C>;
 
-public:
-	Inorder(Container& cc) : c(cc) {}
+template<class V>
+auto Inorder(const V& root) {
+	return typename internal::inorder::Context< typename V::Container >::Inorder(root);
+}
 
-	auto before_begin() {
-		return create_iterator( c.before_begin() );
-	}
-
-	auto begin() {
-		return create_iterator( c.begin() );
-	}
-
-	auto end() {
-		return create_iterator( c.end() );
-	}
-
-private:
-	auto create_iterator( Iterator<MUTAB>&& base_iterator ) {
-		return Iterator<MUTAB>( std::move(base_iterator) );
-	}
-
-private:
-	Container& c;
-};
 
 
 
@@ -201,5 +174,6 @@ private:
 
 
 } // namespace salgo
+#include "helper-macros-off"
 
 

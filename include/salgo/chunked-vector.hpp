@@ -12,6 +12,9 @@
 
 
 
+
+
+#include "helper-macros-on"
 namespace salgo {
 
 
@@ -57,8 +60,8 @@ template<class> struct Small_Handle;
 
 
 template<class X>
-struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int>, int> { // for first number, char is enough
-	using BASE = Pair_Handle_Base<Handle<X>, Int_Handle<int>, int>;
+struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int,31>, int> { // for first number, char is enough
+	using BASE = Pair_Handle_Base<Handle<X>, Int_Handle<int,31>, int>;
 
 	Handle() = default;
 
@@ -75,7 +78,9 @@ struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int>, int> { // for first
 		#endif
 
 		BASE::a = bit_scan_reverse(small.a);
-		BASE::b = (1<<BASE::a) ^ small.a;
+		BASE::b = (1<<BASE::a) ^ small.a; // turn off highest bit
+
+		//LOG(INFO) << small << " -> " << *this;
 	}
 
 	// convert from/to array index
@@ -104,14 +109,15 @@ struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int>, int> { // for first
 
 
 template<class X>
-struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int, 0> {
-	using BASE = Int_Handle_Base<Small_Handle<X>, unsigned int, 0>;
+struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int> {
+	using BASE = Int_Handle_Base<Small_Handle<X>, unsigned int>;
 
 	Small_Handle() = default;
 
 	Small_Handle(const Handle<X>& big) : BASE((1<<big.a) | big.b) {
 		DCHECK_LT(big.a, 32);
 		DCHECK_LT(big.b, 1<<big.a);
+		//LOG(INFO) << big << " -> " << *this;
 	}
 
 	//operator Handle<X>() const {
@@ -179,34 +185,47 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor : public Accessor_Base<C,Context> {
 		using BASE = Accessor_Base<C,Context>;
+
+	private:
 		FORWARDING_CONSTRUCTOR(Accessor,BASE) {}
 		friend Chunked_Vector;
-
-		using BASE::_container;
-		using BASE::_handle;
-
 
 	public:
 		using BASE::operator=;
 
+
 		template<class... ARGS>
 		void construct(ARGS&&... args) {
-			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_container().construct( _handle(), std::forward<ARGS>(args)... );
+			static_assert(Sparse);
+			static_assert(C == MUTAB, "called destruct() on CONST accessor");
+			CO._check_bounds( HA );
+			CO._blocks[ HA.a ]( HA.b ).construct( std::forward<ARGS>(args)... );
+			if constexpr(Count) ++CO.num_existing;
 		}
 
 		void destruct() {
+			static_assert(Sparse);
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_container().destruct( _handle() );
+			CO._check_bounds( HA );
+			CO._blocks[ HA.a ]( HA.b ).destruct();
+			if constexpr(Count) --CO.num_existing;
 		}
 
-		void erase() {
-			destruct();
+		void erase() { destruct(); } // alias
+
+
+		bool constructed() const {
+			CO._check_bounds( HA );
+			if constexpr(Dense) return true;
+			if constexpr(Exists_Chunk_Bitset || Exists_Inplace) return CO._blocks[ HA.a ]( HA.b ).constructed();
+			// TODO: global bitset
 		}
 
-		bool exists() const {
-			return _container().exists( _handle() );
-		}
+		//bool exists_SLOW(Handle handle) const {
+			// check bounds
+			//return constructed;
+		//}
+
 
 	};
 
@@ -228,11 +247,11 @@ struct Context {
 		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++_handle(); while( _handle() != _container().end().accessor() && !_container().exists( _handle() ) );
+			do ++_handle(); while( _handle() != _container().end().accessor() && !_container()( _handle() ).constructed() );
 		}
 
 		void _decrement() {
-			do --_handle(); while( !_container().exists( _handle() ) );
+			do --_handle(); while( !_container()( _handle() ).constructed() );
 		}
 	};
 
@@ -297,8 +316,8 @@ struct Context {
 		~Chunked_Vector() {
 			if constexpr(Dense) {
 				for(auto& block : _blocks) {
-					for(int i=0; i<block().size(); ++i) {
-						block().destruct(i);
+					for(int i=0; i<block().domain(); ++i) {
+						block()(i).destruct();
 						--_size;
 						if(_size == 0) break;
 					}
@@ -337,34 +356,17 @@ struct Context {
 
 
 
-		template<class... ARGS>
-		void construct(Handle handle, ARGS&&... args) {  static_assert(Sparse);
-			_check_bounds(handle);
-			_blocks[handle.a].construct( handle.b, std::forward<ARGS>(args)... );
-			if constexpr(Count) Add_num_existing<Count>::num_existing++;
-		}
-
-		void destruct(Handle handle) {  static_assert(Sparse);
-			_check_bounds(handle);
-			_blocks[handle.a].destruct( handle.b );
-			if constexpr(Count) Add_num_existing<Count>::num_existing--;
-		}
-
-		bool exists(Handle handle) const {
-			_check_bounds(handle);
-			if constexpr(Dense) return true;
-			if constexpr(Exists_Chunk_Bitset || Exists_Inplace) return _blocks[handle.a].exists( handle.b );
-			// TODO: global bitset
-		}
-
-
 
 
 	private:
-		void _check_bounds(Handle handle) const {
-			DCHECK_LT(handle.a, _blocks.size());
-			DCHECK_LT(handle.b, _blocks[handle.a].size());
+		bool _is_in_bounds(Handle h) const {
+			return h.a >= 0 && h.a < _blocks.size()  &&  h.b >= 0 && h.b < _blocks[h.a].domain();
 		}
+
+		void _check_bounds(Handle h) const {
+			DCHECK(_is_in_bounds(h)) << "handle " << h << " out of bounds";
+		}
+
 
 		//
 		// interface
@@ -379,8 +381,8 @@ struct Context {
 				_blocks.emplace_back( _size );
 			}
 
-			auto idx = _size - _blocks.back()().size();
-			_blocks.back()().construct( idx, std::forward<ARGS>(args)... );
+			auto idx = _size - _blocks[LAST].domain();
+			_blocks[LAST](idx).construct( std::forward<ARGS>(args)... );
 
 			if constexpr(Count) Add_num_existing<Count>::num_existing++;
 
@@ -404,10 +406,10 @@ struct Context {
 
 			DCHECK_GT(_size, 0) << "pop_back() on empty Vector";
 
-			auto idx = _size - _blocks.back()().size();
+			auto idx = _size - _blocks[LAST].domain();
 
 			if constexpr(Exists_Chunk_Bitset || Exists_Inplace) {
-				while(!_blocks.back()().exists(idx)) {
+				while(!_blocks[LAST](idx).constructed()) {
 					if(idx == 0) {
 						idx = _size >> 1;
 						_blocks.pop_back();
@@ -418,11 +420,11 @@ struct Context {
 					DCHECK_GT(_blocks.size(), 0);
 				}
 			}
-			DCHECK( exists(_size-1) );
+			DCHECK( (*this)(_size-1).constructed() );
 
 			if constexpr(std::is_move_constructible_v<V>) {
-				Val result = std::move( _blocks.back()()[idx] );
-				_blocks.back()().destruct(idx);
+				Val result = std::move( _blocks[LAST][idx] );
+				_blocks[LAST](idx).destruct();
 				if constexpr(Count) Add_num_existing<Count>::num_existing--;
 				if(idx == 0) {
 					_blocks.pop_back();
@@ -432,7 +434,7 @@ struct Context {
 				return result;
 			}
 			else {
-				_blocks.back()().destruct(idx);
+				_blocks[LAST](idx).destruct();
 				if constexpr(Count) Add_num_existing<Count>::num_existing--;
 				if(idx == 0) {
 					_blocks.pop_back();
@@ -471,8 +473,8 @@ struct Context {
 			// destruct elements
 			for(int i=new_size; i<_size; ++i ) {
 				auto h = Handle(i);
-				if( exists(h) ) {
-					_blocks[h.a].destruct(h.b);
+				if( (*this)(h).constructed() ) {
+					_blocks[h.a](h.b).destruct();
 					if constexpr(Count) Add_num_existing<Count>::num_existing--;
 				}
 			}
@@ -481,7 +483,7 @@ struct Context {
 
 			// construct blocks
 			if(new_num_blocks > _blocks.size()) {
-				int curr_size = _blocks.empty() ? 1 : _blocks.back()().size()*2;
+				int curr_size = _blocks.empty() ? 1 : _blocks[LAST].domain()*2;
 				_blocks.reserve( new_num_blocks );
 				for(int i=_blocks.size(); i<new_num_blocks; ++i) {
 					_blocks.emplace_back( curr_size );
@@ -497,7 +499,7 @@ struct Context {
 			// construct elements
 			for(int i=_size; i<new_size; ++i) {
 				auto h = Handle(i);
-				_blocks[h.a].construct(h.b, args...);
+				_blocks[h.a](h.b).construct( args... );
 				if constexpr(Count) Add_num_existing<Count>::num_existing++;
 			}
 
@@ -507,8 +509,8 @@ struct Context {
 		void clear() { resize(0); }
 
 		int capacity() const {
-			DCHECK_EQ((_blocks.empty() ? 0 : _blocks.back()().size()*2-1), ((1<<_blocks.size())-1));
-			return (1 << _blocks.size()) - 1;
+			DCHECK_EQ((_blocks.empty() ? 0 : _blocks[LAST].domain()*2-1), ((1<<_blocks.domain())-1));
+			return (1 << _blocks.domain()) - 1;
 
 			//if(_blocks.empty()) return 0;
 			//return _blocks.back()().size()*2 - 1;
@@ -525,14 +527,14 @@ struct Context {
 		inline auto begin() {
 			static_assert(Iterable);
 			auto e = (*this)(0).iterator();
-			if(!e->exists()) ++e;
+			if(!e->constructed()) ++e;
 			return e;
 		}
 
 		inline auto begin() const {
 			static_assert(Iterable);
 			auto e = (*this)(0).iterator();
-			if(!e->exists()) ++e;
+			if(!e->constructed()) ++e;
 			return e;
 		}
 
@@ -615,4 +617,8 @@ using Chunked_Vector = typename internal::chunked_vector::Context<
 
 
 
-}
+} // namespace salgo
+
+#include "helper-macros-off"
+
+

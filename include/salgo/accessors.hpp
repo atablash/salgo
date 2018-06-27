@@ -124,6 +124,9 @@ public:
 	operator       auto&()       { return operator()(); }
 	operator const auto&() const { return operator()(); }
 
+	// is handle non-null
+	//explicit operator bool() const { return BASE::_handle().valid(); }
+
 	template<class VAL>
 	auto& operator=(VAL&& val) { operator()() = std::forward<VAL>(val); return _self(); }
 
@@ -167,13 +170,6 @@ public:
 public:
 	FORWARDING_CONSTRUCTOR(Iterator_Base, BASE) {}
 
-
-public:
-	Iterator_Base() = default;
-	Iterator_Base(const Iterator_Base&) = delete;
-	Iterator_Base(Iterator_Base&&) = default;
-	Iterator_Base& operator=(const Iterator_Base&) = delete;
-	Iterator_Base& operator=(Iterator_Base&&) = delete;
 
 //
 // required to be std::iterator-like

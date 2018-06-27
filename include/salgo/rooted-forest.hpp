@@ -7,6 +7,9 @@
 #include "key-val.hpp"
 
 
+
+
+#include "helper-macros-on"
 namespace salgo {
 
 
@@ -133,25 +136,21 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Reference, BASE) {}
 
 	protected:
-		using BASE::_container;
-		using BASE::_handle;
-
-	protected:
 		bool just_erased = false;
 		void on_erase() {
-			cached_parent = std::move( _container()._alloc()[_handle()].parent );
-			cached_children = std::move( _container()._alloc()[_handle()].children );
+			cached_parent = std::move( NODE.parent );
+			cached_children = std::move( NODE.children );
 			just_erased = true;
 		}
 
 		auto get_parent() const {
 			if(just_erased) return cached_parent;
-			else return _container()._alloc()[ _handle() ].parent;
+			else return NODE.parent;
 		}
 
 		const auto& get_children() const {
 			if(just_erased) return cached_children;
-			else return _container()._alloc()[ _handle() ].children;
+			else return NODE.children;
 		}
 
 	private:
@@ -168,30 +167,28 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor : public Accessor_Base<C,Context> {
 		using BASE = Accessor_Base<C,Context>;
-		using BASE::_container;
-		using BASE::_handle;
 
 		friend Rooted_Forest;
 
-		//friend Accessor<CONST>;
+		friend Accessor<CONST>;
 		friend Accessor<MUTAB>;
 
 	public:
 		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 
 	public:
-		auto& key()       { return _container()[_handle()].key; }
-		auto& key() const { return _container()[_handle()].key; }
+		auto& key()       { return CO[HA].key; }
+		auto& key() const { return CO[HA].key; }
 
-		auto& val()       { return _container()[_handle()].val; }
-		auto& val() const { return _container()[_handle()].val; }
+		auto& val()       { return CO[HA].val; }
+		auto& val() const { return CO[HA].val; }
 
 	public:
-		bool exists() const { return _handle().valid(); }
+		bool exists() const { return HA.valid(); }
 
 
-		auto child(int ith)       { _check_child_index(ith); return Accessor<C    >( &_container(), BASE::get_children()[ith] ); }
-		auto child(int ith) const { _check_child_index(ith); return Accessor<CONST>( &_container(), BASE::get_children()[ith] ); }
+		auto child(int ith)       { _check_child_index(ith); return Accessor<C    >( &CO, BASE::get_children()[ith] ); }
+		auto child(int ith) const { _check_child_index(ith); return Accessor<CONST>( &CO, BASE::get_children()[ith] ); }
 
 		auto left()        { static_assert(N_Ary == 2); return child(0); }
 		auto left()  const { static_assert(N_Ary == 2); return child(0); }
@@ -199,8 +196,8 @@ struct Context {
 		auto right()       { static_assert(N_Ary == 2); return child(1); }
 		auto right() const { static_assert(N_Ary == 2); return child(1); }
 
-		auto parent()       { return Accessor<C    >( &_container(), BASE::get_parent() ); }
-		auto parent() const { return Accessor<CONST>( &_container(), BASE::get_parent() ); }
+		auto parent()       { return Accessor<C    >( &CO, BASE::get_parent() ); }
+		auto parent() const { return Accessor<CONST>( &CO, BASE::get_parent() ); }
 
 
 
@@ -215,7 +212,7 @@ struct Context {
 		bool is_ith_child(int ith) const {
 			auto par = BASE::get_parent(); DCHECK(par.valid());
 			parent()._check_child_index(ith);
-			return _handle() == _node(par).children[ith];
+			return HA == _node(par).children[ith];
 		}
 
 		bool is_left() const {
@@ -234,7 +231,7 @@ struct Context {
 		auto emplace_child(int ith, Args&&... args) {
 			static_assert(C == MUTAB, "called on CONST accessor");
 			DCHECK( !child(ith).exists() );
-			auto new_node = _container()._alloc().construct( std::forward<Args>(args)... );
+			auto new_node = CO._alloc().construct( std::forward<Args>(args)... );
 			link_child(ith, new_node);
 			return child(ith);
 		}
@@ -252,7 +249,7 @@ struct Context {
 			_check_child_index(ith);
 			DCHECK( !child(ith).exists() );
 			_node().children[ith] = new_child;
-			_node(new_child).parent = _handle();
+			_node(new_child).parent = HA;
 		}
 
 		void link_left (Handle new_child) { static_assert(N_Ary == 2); link_child(0, new_child); }
@@ -290,8 +287,8 @@ struct Context {
 		void _unlink_parent_1way() {
 			DCHECK( exists() );
 			auto& par = _node( _node().parent );
-			DCHECK( std::find(par.children.begin(), par.children.end(), _handle()) != par.children.end() );
-			for(auto& ch : par.children) if(ch == _handle()) {
+			DCHECK( std::find(par.children.begin(), par.children.end(), HA) != par.children.end() );
+			for(auto& ch : par.children) if(ch == HA) {
 				ch.reset();
 				DCHECK_GT(N_Ary, 0) << "not implemented";
 				// TODO: don't leave holes when N_ARY==0 (dynamic)
@@ -313,7 +310,7 @@ struct Context {
 			static_assert(C == MUTAB, "called on CONST accessor");
 			DCHECK( exists() );
 			BASE::on_erase(); // cache links before removing this node
-			_container()._alloc().destruct( _handle() );
+			CO._alloc()(HA).destruct();
 		}
 
 	public:
@@ -355,15 +352,16 @@ struct Context {
 		//}
 
 	private:
-		auto& _node()       { return _container()._alloc()[_handle()]; }
-		auto& _node() const { return _container()._alloc()[_handle()]; }
-		auto& _node(Handle h)       { return _container()._alloc()[h]; }
-		auto& _node(Handle h) const { return _container()._alloc()[h]; }
+		auto& _node()       { return CO._alloc()[HA]; }
+		auto& _node() const { return CO._alloc()[HA]; }
+		auto& _node(Handle h)       { return CO._alloc()[h]; }
+		auto& _node(Handle h) const { return CO._alloc()[h]; }
 	};
 
 
 
 
+	class End_Iterator {};
 
 	//
 	// iterator
@@ -372,10 +370,6 @@ struct Context {
 	class Iterator : public Iterator_Base<C,Context> {
 		using BASE = Iterator_Base<C,Context>;
 
-	protected:
-		using BASE::_container;
-		using BASE::_handle;
-
 	public:
 		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 
@@ -383,12 +377,15 @@ struct Context {
 		friend BASE;
 
 		void _increment() {
-			_handle() = ++_container()._alloc()( _handle() ).iterator();
+			HA = ++ALLOC( HA ).iterator();
 		}
 
 		void _decrement() {
-			_handle() = --_container()._alloc()( _handle() ).iterator();
+			HA = --ALLOC( HA ).iterator();
 		}
+
+	public:
+		bool operator!=(End_Iterator) const { return HA.valid(); }
 	};
 
 
@@ -487,14 +484,10 @@ struct Context {
 		auto operator()(Handle handle) const { return Accessor<CONST>(this, handle); }
 
 	public:
-		auto before_begin()       { return Iterator<MUTAB>(this, _alloc().before_begin()); }
-		auto before_begin() const { return Iterator<CONST>(this, _alloc().before_begin()); }
-
 		auto begin()       { return Iterator<MUTAB>(this, _alloc().begin()); }
 		auto begin() const { return Iterator<CONST>(this, _alloc().begin()); }
 
-		auto end()       { return Iterator<MUTAB>(this, _alloc().end()); }
-		auto end() const { return Iterator<CONST>(this, _alloc().end()); }
+		auto end() const { return End_Iterator(); }
 	};
 
 
@@ -548,3 +541,5 @@ using Binary_Forest = Rooted_Forest<2, KEY_OR_VAL, VAL_OR_TAG>;
 
 
 } // salgo
+#include "helper-macros-off"
+

@@ -43,7 +43,7 @@ TEST(Memory_block, stack_optim_inplace_nontrivial) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::EXISTS_INPLACE::COUNT::INPLACE_BUFFER<2> m(1);
+		Memory_Block<S> ::EXISTS_INPLACE ::COUNT ::INPLACE_BUFFER<2> m(1);
 		m(0).construct(1);
 		m.resize(2);
 		m(1).construct(2);
@@ -56,8 +56,8 @@ TEST(Memory_block, stack_optim_inplace_nontrivial) {
 
 		m(1).destruct();
 
-		EXPECT_TRUE ( m(0).exists() );
-		EXPECT_FALSE( m(1).exists() );
+		EXPECT_TRUE ( m(0).constructed() );
+		EXPECT_FALSE( m(1).constructed() );
 
 		int sum = 0;
 		for(auto& e : m) {
@@ -86,7 +86,7 @@ TEST(Memory_block, destructors_called_exists) {
 		Memory_Block<S>::EXISTS::COUNT block(10);
 		block.construct_all();
 
-		EXPECT_EQ(10, block.size());
+		EXPECT_EQ(10, block.domain());
 		EXPECT_EQ(10, block.count());
 	}
 
@@ -109,7 +109,7 @@ TEST(Memory_block, destructors_called_dense) {
 	{
 		Memory_Block<S>::DENSE block(10);
 
-		EXPECT_EQ(10, block.size());
+		EXPECT_EQ(10, block.domain());
 		EXPECT_EQ(10, block.count());
 	}
 
@@ -129,11 +129,11 @@ TEST(Memory_block, destructors_called_dense_resized) {
 
 	{
 		Memory_Block<S>::DENSE block;
-		EXPECT_EQ(0, block.size());
+		EXPECT_EQ(0, block.domain());
 		EXPECT_EQ(0, block.count());
 		block.resize(1);
 
-		EXPECT_EQ(1, block.size());
+		EXPECT_EQ(1, block.domain());
 		EXPECT_EQ(1, block.count());
 	}
 
@@ -217,10 +217,10 @@ TEST(Memory_block, move_container_exists) {
 		block.construct_all();
 
 		auto block2 = std::move(block);
-		EXPECT_EQ(10, block2.size());
+		EXPECT_EQ(10, block2.domain());
 
 		block = std::move(block2);
-		EXPECT_EQ(10, block.size());
+		EXPECT_EQ(10, block.domain());
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);

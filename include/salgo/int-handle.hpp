@@ -82,6 +82,11 @@ struct Pair_Handle_Base {
 };
 
 
+template<class CRTP, class HANDLE_A, class HANDLE_B>
+std::ostream& operator<<(std::ostream& s, const Pair_Handle_Base<CRTP,HANDLE_A, HANDLE_B>& p) {
+	return s << "{" << p.a << "," << p.b << "}";
+}
+
 
 
 

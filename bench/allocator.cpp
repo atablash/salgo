@@ -31,7 +31,7 @@ static void SEQUENTIAL_std(State& state) {
 		v.emplace_back( h );
 	}
 
-	for(auto& e : v) alloc.destruct(e);
+	for(auto& e : v) alloc(e).destruct();
 }
 BENCHMARK( SEQUENTIAL_std );
 
@@ -53,7 +53,7 @@ static void SEQUENTIAL_salgo_crude(State& state) {
 		v.emplace_back( h );
 	}
 
-	for(auto& e : v) alloc.destruct(e);
+	for(auto& e : v) alloc(e).destruct();
 }
 BENCHMARK( SEQUENTIAL_salgo_crude );
 
@@ -74,7 +74,7 @@ static void SEQUENTIAL_salgo_random(State& state) {
 		v.emplace_back( h );
 	}
 
-	for(auto& e : v) alloc.destruct(e);
+	for(auto& e : v) alloc(e).destruct();
 }
 BENCHMARK( SEQUENTIAL_salgo_random );
 
@@ -95,7 +95,7 @@ static void SEQUENTIAL_salgo_vector(State& state) {
 		v.emplace_back( h );
 	}
 
-	for(auto& e : v) alloc.destruct(e);
+	for(auto& e : v) alloc(e).destruct();
 }
 BENCHMARK( SEQUENTIAL_salgo_vector );
 
@@ -126,24 +126,24 @@ static void QUEUE_std(State& state) {
 	int fst = 0;
 	int lst = 0;
 	auto is_empty = [&](){ return fst == lst; };
-	auto is_full  = [&](){ return fst != lst && (v.size()+fst-lst)%v.size() <= 2; };
+	auto is_full  = [&](){ return fst != lst && (v.domain()+fst-lst)%v.domain() <= 2; };
 
 	for(auto _ : state) {
 		if(is_full() || (!is_empty() && rand()%2)) {
 			auto h = v[fst];
-			fst = (fst+1)%v.size();
+			fst = (fst+1)%v.domain();
 			alloc.destruct(h);
 		}
 		else {
 			auto h = alloc.construct().handle();
 			v[lst] = h;
-			lst = (lst+1)%v.size();
+			lst = (lst+1)%v.domain();
 		}
 	}
 
 	while(!is_empty()) {
 		auto h = v[fst];
-		fst = (fst+1)%v.size();
+		fst = (fst+1)%v.domain();
 		alloc.destruct(h);
 	}
 }
@@ -165,24 +165,24 @@ static void QUEUE_salgo_crude(State& state) {
 	int fst = 0;
 	int lst = 0;
 	auto is_empty = [&](){ return fst == lst; };
-	auto is_full  = [&](){ return fst != lst && (v.size()+fst-lst)%v.size() <= 2; };
+	auto is_full  = [&](){ return fst != lst && (v.domain()+fst-lst)%v.domain() <= 2; };
 
 	for(auto _ : state) {
 		if(is_full() || (!is_empty() && rand()%2)) {
 			auto h = v[fst];
-			fst = (fst+1)%v.size();
+			fst = (fst+1)%v.domain();
 			alloc.destruct(h);
 		}
 		else {
 			auto h = alloc.construct().handle();
 			v[lst] = h;
-			lst = (lst+1)%v.size();
+			lst = (lst+1)%v.domain();
 		}
 	}
 
 	while(!is_empty()) {
 		auto h = v[fst];
-		fst = (fst+1)%v.size();
+		fst = (fst+1)%v.domain();
 		alloc.destruct(h);
 	}
 }
@@ -204,25 +204,25 @@ static void QUEUE_salgo_random(State& state) {
 	int fst = 0;
 	int lst = 0;
 	auto is_empty = [&](){ return fst == lst; };
-	auto is_full  = [&](){ return fst != lst && (v.size()+fst-lst)%v.size() <= 2; };
+	auto is_full  = [&](){ return fst != lst && (v.domain()+fst-lst)%v.domain() <= 2; };
 
 	for(auto _ : state) {
 		if(is_full() || (!is_empty() && rand()%2)) {
 			auto h = v[fst];
-			fst = (fst+1)%v.size();
-			alloc.destruct(h);
+			fst = (fst+1)%v.domain();
+			alloc(h).destruct();
 		}
 		else {
 			auto h = alloc.construct().handle();
 			v[lst] = h;
-			lst = (lst+1)%v.size();
+			lst = (lst+1)%v.domain();
 		}
 	}
 
 	while(!is_empty()) {
 		auto h = v[fst];
-		fst = (fst+1)%v.size();
-		alloc.destruct(h);
+		fst = (fst+1)%v.domain();
+		alloc(h).destruct();
 	}
 }
 BENCHMARK( QUEUE_salgo_random );
@@ -243,25 +243,25 @@ static void QUEUE_salgo_vector(State& state) {
 	int fst = 0;
 	int lst = 0;
 	auto is_empty = [&](){ return fst == lst; };
-	auto is_full  = [&](){ return fst != lst && (v.size()+fst-lst)%v.size() <= 2; };
+	auto is_full  = [&](){ return fst != lst && (v.domain()+fst-lst)%v.domain() <= 2; };
 
 	for(auto _ : state) {
 		if(is_full() || (!is_empty() && rand()%2)) {
 			auto h = v[fst];
-			fst = (fst+1)%v.size();
-			alloc.destruct(h);
+			fst = (fst+1)%v.domain();
+			alloc(h).destruct();
 		}
 		else {
 			auto h = alloc.construct().handle();
 			v[lst] = h;
-			lst = (lst+1)%v.size();
+			lst = (lst+1)%v.domain();
 		}
 	}
 
 	while(!is_empty()) {
 		auto h = v[fst];
-		fst = (fst+1)%v.size();
-		alloc.destruct(h);
+		fst = (fst+1)%v.domain();
+		alloc(h).destruct();
 	}
 }
 BENCHMARK( QUEUE_salgo_vector );
@@ -291,8 +291,8 @@ static void RANDOM_std(State& state) {
 	Memory_Block<Alloc::Handle> ::EXISTS v(state.iterations()/10 + 10);
 
 	for(auto _ : state) {
-		int idx = rand() % v.size();
-		if(v(idx).exists()) {
+		int idx = rand() % v.domain();
+		if(v(idx).constructed()) {
 			alloc.destruct( v[idx] );
 			v(idx).destruct();
 		}
@@ -303,7 +303,7 @@ static void RANDOM_std(State& state) {
 	}
 
 	for(auto& e : v) {
-		alloc.destruct(e);
+		alloc(e).destruct();
 	}
 }
 BENCHMARK( RANDOM_std );
@@ -322,8 +322,8 @@ static void RANDOM_salgo_crude(State& state) {
 	Memory_Block<Alloc::Handle> ::EXISTS v(state.iterations()/10 + 10);
 
 	for(auto _ : state) {
-		int idx = rand() % v.size();
-		if(v(idx).exists()) {
+		int idx = rand() % v.domain();
+		if(v(idx).constructed()) {
 			alloc.destruct( v[idx] );
 			v(idx).destruct();
 		}
@@ -334,7 +334,7 @@ static void RANDOM_salgo_crude(State& state) {
 	}
 
 	for(auto& e : v) {
-		alloc.destruct(e);
+		alloc(e).destruct();
 	}
 }
 BENCHMARK( RANDOM_salgo_crude );
@@ -353,9 +353,9 @@ static void RANDOM_salgo_random(State& state) {
 	Memory_Block<Alloc::Handle> ::EXISTS v(state.iterations()/10 + 10);
 
 	for(auto _ : state) {
-		int idx = rand() % v.size();
-		if(v(idx).exists()) {
-			alloc.destruct( v[idx] );
+		int idx = rand() % v.domain();
+		if(v(idx).constructed()) {
+			alloc( v[idx] ).destruct();
 			v(idx).destruct();
 		}
 		else {
@@ -365,7 +365,7 @@ static void RANDOM_salgo_random(State& state) {
 	}
 
 	for(auto& e : v) {
-		alloc.destruct(e);
+		alloc(e).destruct();
 	}
 }
 BENCHMARK( RANDOM_salgo_random );
@@ -384,9 +384,9 @@ static void RANDOM_salgo_vector(State& state) {
 	Memory_Block<Alloc::Handle> ::EXISTS v(state.iterations()/10 + 10);
 
 	for(auto _ : state) {
-		int idx = rand() % v.size();
-		if(v(idx).exists()) {
-			alloc.destruct( v[idx] );
+		int idx = rand() % v.domain();
+		if(v(idx).constructed()) {
+			alloc( v[idx] ).destruct();
 			v(idx).destruct();
 		}
 		else {
@@ -396,7 +396,7 @@ static void RANDOM_salgo_vector(State& state) {
 	}
 
 	for(auto& e : v) {
-		alloc.destruct(e);
+		alloc(e).destruct();
 	}
 }
 BENCHMARK( RANDOM_salgo_vector );
