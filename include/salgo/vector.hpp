@@ -347,7 +347,7 @@ struct Context {
 		Accessor<MUTAB> emplace_back(ARGS&&... args) {
 			// because of vector realloc:
 			static_assert( Dense || Exists || std::is_trivially_move_constructible_v<Val>,
-				"non-trivially-constructible types require EXISTS to emplace_back()" );
+				"non-trivially-constructible types require CONSTRUCTED_FLAGS to emplace_back()" );
 
 			if(_size == _mb.domain()) {
 				if constexpr(Dense) {
@@ -410,7 +410,7 @@ struct Context {
 		//
 		template<class FUN>
 		int compact(const FUN& fun = [](int,int){}) {
-			static_assert(Exists, "can only compact if have EXISTS flags");
+			static_assert(Exists, "can only compact if have CONSTRUCTED_FLAGS flags");
 			static_assert(std::is_move_constructible_v<Val>, "compact() requires move constructible Val type");
 
 			int target = 0;
@@ -475,23 +475,23 @@ struct Context {
 			typename Context< Val, Sparse, typename Memory_Block::template INPLACE_BUFFER<X> > :: With_Builder;
 
 
-		using EXISTS =
-			typename Context< Val, Sparse, typename Memory_Block::EXISTS > :: With_Builder;
+		using CONSTRUCTED_FLAGS =
+			typename Context< Val, Sparse, typename Memory_Block::CONSTRUCTED_FLAGS > :: With_Builder;
 
-		using EXISTS_INPLACE =
-			typename Context< Val, Sparse, typename Memory_Block::EXISTS_INPLACE > :: With_Builder;
+		using CONSTRUCTED_FLAGS_INPLACE =
+			typename Context< Val, Sparse, typename Memory_Block::CONSTRUCTED_FLAGS_INPLACE > :: With_Builder;
 
-		using EXISTS_BITSET =
-			typename Context< Val, Sparse, typename Memory_Block::EXISTS_BITSET > :: With_Builder;
+		using CONSTRUCTED_FLAGS_BITSET =
+			typename Context< Val, Sparse, typename Memory_Block::CONSTRUCTED_FLAGS_BITSET > :: With_Builder;
 
 
-		// also enable EXISTS by default
+		// also enable CONSTRUCTED_FLAGS by default
 		using SPARSE =
-			typename Context< Val, true, Memory_Block > :: With_Builder :: EXISTS;
+			typename Context< Val, true, Memory_Block > :: With_Builder :: CONSTRUCTED_FLAGS;
 
 
-		// just enable SPARSE, but no EXISTS
-		using SPARSE_NO_EXISTS =
+		// just enable SPARSE, but no CONSTRUCTED_FLAGS
+		using SPARSE_NO_CONSTRUCTED_FLAGS =
 			typename Context< Val, true, Memory_Block > :: With_Builder;
 
 

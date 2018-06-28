@@ -72,6 +72,22 @@ protected:
 	void _will_compare_with(const Reference_Base& o) const {
 		DCHECK_EQ(__container, o.__container) << "comparing iterators to different containers";
 	}
+
+
+public:
+	// get handle
+	auto     handle() const { return _handle(); }
+	operator Handle() const { return handle(); }
+
+	// get value
+	auto& operator()()       { return _val(); }
+	auto& operator()() const { return _val(); }
+	operator       auto&()       { return operator()(); }
+	operator const auto&() const { return operator()(); }
+
+	// is handle non-null
+	//explicit operator bool() const { return _handle().valid(); }
+	bool exists() const { return _handle().valid(); }
 };
 
 
@@ -114,29 +130,16 @@ public:
 public:
 	FORWARDING_CONSTRUCTOR(Accessor_Base, BASE) {}
 
-	// get handle
-	auto     handle() const { return BASE::_handle(); }
-	operator Handle() const { return handle(); }
-
-	// get value
-	auto& operator()()       { return BASE::_val(); }
-	auto& operator()() const { return BASE::_val(); }
-	operator       auto&()       { return operator()(); }
-	operator const auto&() const { return operator()(); }
-
-	// is handle non-null
-	//explicit operator bool() const { return BASE::_handle().valid(); }
-
 	template<class VAL>
-	auto& operator=(VAL&& val) { operator()() = std::forward<VAL>(val); return _self(); }
+	auto& operator=(VAL&& val) { BASE::operator()() = std::forward<VAL>(val); return _self(); }
 
 public:
-	Accessor<C>& operator++() { ++operator()(); return _self(); }
-	Accessor<C>& operator--() { --operator()(); return _self(); }
+	Accessor<C>& operator++() { ++BASE::operator()(); return _self(); }
+	Accessor<C>& operator--() { --BASE::operator()(); return _self(); }
 
 	// doesn't return accessor:
-	auto operator++(int) { return operator()()++; }
-	auto operator--(int) { return operator()()--; }
+	auto operator++(int) { return BASE::operator()()++; }
+	auto operator--(int) { return BASE::operator()()--; }
 
 	//template<class T> Accessor<C>& operator+=(T&& t) { operator()()+=std::forward<T>(t); return _self(); }
 	//template<class T> Accessor<C>& operator-=(T&& t) { operator()()-=std::forward<T>(t); return _self(); }
@@ -180,17 +183,6 @@ public:
 	using pointer = value_type*;
 	using reference = value_type&;
 	using iterator_category = std::bidirectional_iterator_tag;
-
-public:
-	// get handle
-	auto     handle() const { return BASE::_handle(); }
-	operator Handle() const { return handle(); }
-
-	// get value
-	auto& operator()()       { return BASE::_val(); }
-	auto& operator()() const { return BASE::_val(); }
-	operator       auto&()       { return operator()(); }
-	operator const auto&() const { return operator()(); }
 
 	
 public:

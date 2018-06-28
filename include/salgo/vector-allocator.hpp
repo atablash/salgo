@@ -56,7 +56,7 @@ struct Context {
 	using Val = _VAL;
 
 
-	using Block = typename salgo::Memory_Block<Val> ::EXISTS ::COUNT;
+	using Block = typename salgo::Memory_Block<Val> ::CONSTRUCTED_FLAGS ::COUNT;
 
 
 	using       Handle = typename Block::      Handle;
@@ -217,11 +217,11 @@ struct Context {
 		auto empty() const { return v.empty(); }
 
 	public:
-		auto begin()       { return v.begin(); }
-		auto begin() const { return v.begin(); }
+		auto begin()       { return Iterator<MUTAB>(this, v.begin()); }
+		auto begin() const { return Iterator<MUTAB>(this, v.begin()); }
 
-		auto end()       { return v.end(); }
-		auto end() const { return v.end(); }
+		auto end()       { return End_Iterator(); }
+		auto end() const { return End_Iterator(); }
 	};
 
 

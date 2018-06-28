@@ -54,17 +54,24 @@ struct Context {
 		Accessor(BASE&& base_accessor) : BASE(base_accessor) {}
 
 	public:		
-		auto child(int ith)       { return _cast( BASE::child(ith) ); }
-		auto child(int ith) const { return _cast( BASE::child(ith) ); }
+		auto child(int ith)       { DCHECK(!BASE::just_erased); return _cast( BASE::child(ith) ); }
+		auto child(int ith) const { DCHECK(!BASE::just_erased); return _cast( BASE::child(ith) ); }
 
-		auto left()       { return _cast( BASE::left() ); }
-		auto left() const { return _cast( BASE::left() ); }
+		auto left()       { DCHECK(!BASE::just_erased); return _cast( BASE::left() ); }
+		auto left() const { DCHECK(!BASE::just_erased); return _cast( BASE::left() ); }
 
-		auto right()       { return _cast( BASE::right() ); }
-		auto right() const { return _cast( BASE::right() ); }
+		auto right()       { DCHECK(!BASE::just_erased); return _cast( BASE::right() ); }
+		auto right() const { DCHECK(!BASE::just_erased); return _cast( BASE::right() ); }
 
-		auto parent()       { return _cast( BASE::parent() ); }
-		auto parent() const { return _cast( BASE::parent() ); }
+		auto parent()       { DCHECK(!BASE::just_erased); return _cast( BASE::parent() ); }
+		auto parent() const { DCHECK(!BASE::just_erased); return _cast( BASE::parent() ); }
+
+
+		void erase() {
+			DCHECK(!BASE::just_erased);
+			bst_erase( *(BASE*)this );
+			BASE::just_erased = true; // reuse this value... but with different meaning
+		}
 
 
 	public:
@@ -99,11 +106,13 @@ struct Context {
 
 	private:
 		void increment() {
-			HA = bst_next( accessor() );
+			BASE::just_erased = false;
+			HA = bst_next( BASE::accessor() );
 		}
 
 		void decrement() {
-			HA = bst_prev( accessor() );
+			if(!BASE::just_erased) HA = bst_prev( BASE::accessor() );
+			BASE::just_erased = false;
 		}
 
 	private:
@@ -132,11 +141,16 @@ struct Context {
 	class Inorder {
 
 	public:
-		Inorder(const typename Container::template Accessor<MUTAB>& v) : root(v) { DCHECK( !root.parent() ); }
+		Inorder(const typename Container::template Accessor<MUTAB>& v) : root(v) {
+			DCHECK( !root.parent().exists() );
+		}
 
 		auto begin() {
 			auto first = root;
-			while( first.left() ) first = first.left();
+			while( first.left().exists() ) {
+				LOG(INFO) << "go left";
+				first = first.left();
+			}
 			return _cast( std::move(first).iterator() );
 		}
 

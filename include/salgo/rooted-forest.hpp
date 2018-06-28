@@ -201,18 +201,19 @@ struct Context {
 
 
 
-		bool has_child(int ith) const { _check_child_index(ith); return _node().children[ith].valid(); }
-
-		bool has_left()   const { static_assert(N_Ary == 2); return has_child(0); }
-		bool has_right()  const { static_assert(N_Ary == 2); return has_child(1); }
-		bool has_parent() const { return BASE::get_parent().valid(); }
-
-
-
 		bool is_ith_child(int ith) const {
 			auto par = BASE::get_parent(); DCHECK(par.valid());
 			parent()._check_child_index(ith);
 			return HA == _node(par).children[ith];
+		}
+
+		auto& is_which() const {
+			auto par = BASE::get_parent(); DCHECK(par.valid());
+			for(auto& ch : _node(par).children) {
+				if(ch == BASE::_handle()) return ch;
+			}
+			DCHECK(false);
+			return _node(par).children[0]; // just to supress warning
 		}
 
 		bool is_left() const {
@@ -247,7 +248,10 @@ struct Context {
 			static_assert(C == MUTAB, "called on CONST accessor");
 			DCHECK( exists() );
 			_check_child_index(ith);
-			DCHECK( !child(ith).exists() );
+
+			DCHECK( !child(ith).exists() ); // no child
+			DCHECK( !BASE::_container()(new_child).parent().exists() ); // new_child has no parent
+
 			_node().children[ith] = new_child;
 			_node(new_child).parent = HA;
 		}
@@ -255,6 +259,14 @@ struct Context {
 		void link_left (Handle new_child) { static_assert(N_Ary == 2); link_child(0, new_child); }
 		void link_right(Handle new_child) { static_assert(N_Ary == 2); link_child(1, new_child); }
 
+
+		// automatically unlink things if needed (slower)
+		void relink_child(int ith, Handle new_child) {
+			if(_node(new_child).parent.valid()) BASE::_container()(new_child).unlink_parent();
+			if(_node().children[ith].valid()) unlink_child(ith);
+
+			link_child(ith, new_child);
+		}
 
 
 
@@ -317,9 +329,9 @@ struct Context {
 		void erase() {
 			static_assert(C == MUTAB, "called on CONST accessor");
 			DCHECK( exists() );
-			DCHECK(!_node().parent.valid());
+			DCHECK(!_node().parent.valid()) << "can't erase, still has parent";
 
-			for(auto& ch : _node().children) DCHECK( !ch.valid() );
+			for(auto& ch : _node().children) DCHECK( !ch.valid() ) << "can't erase, still has child";
 
 			_erase_unchecked();
 		}
@@ -385,7 +397,7 @@ struct Context {
 		}
 
 	public:
-		bool operator!=(End_Iterator) const { return HA.valid(); }
+		bool operator!=(End_Iterator) const { return ALLOC(HA).iterator() != ALLOC.end(); }
 	};
 
 

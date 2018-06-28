@@ -13,19 +13,18 @@ auto bst_next(const V& v) {
 
 	auto curr = v;
 
-	if(curr.has_right()) {
+	if(curr.right().exists()) {
 		// go 1 right and n left
 		curr = curr.right();
-		while(curr.has_left()) curr = curr.left();
+		while(curr.left().exists()) curr = curr.left();
 		return curr;
 	}
 	else {
 		// go n up-left and 1 up-right
 		for(;;) {
-			DCHECK(curr.has_parent());
+			//DCHECK(curr.has_parent());
+			if(!curr.parent().exists() || curr.is_left()) return curr.parent(); 
 			curr = curr.parent();
-
-			if(curr.is_left()) return curr.parent();
 		}
 	}
 }
@@ -37,19 +36,18 @@ auto bst_prev(const V& v) {
 
 	auto curr = v;
 
-	if(curr.has_left()) {
+	if(curr.left().exists()) {
 		// go 1 left and n right
 		curr = curr.left();
-		while(curr.has_right()) curr = curr.right();
+		while(curr.right().exists()) curr = curr.right();
 		return curr;
 	}
 	else {
 		// go n up-right and 1 up-left
 		for(;;) {
-			DCHECK(curr.has_parent());
+			//DCHECK(curr.has_parent());
+			if(!curr.parent().handle().valid() || curr.is_right()) return curr.parent(); 
 			curr = curr.parent();
-
-			if(curr.is_right()) return curr.parent();
 		}
 	}
 }
@@ -62,26 +60,33 @@ template<class V>
 bool bst_cut_out(V& v) {
 	DCHECK(v.exists());
 
-	if(!v.has_right()) {
-		if(!v.has_parent()) return true;
+	if(!v.right().exists()) {
+		if(!v.parent().exists()) {
+			v.unlink_and_erase(); // optim?
+			return true;
+		}
 
 		auto parent = v.parent();
-		auto ith = v.is_which();
+		auto ch = v.is_which();
 
-		if(v.has_left()) parent.link_child(ith, v.left());
+		if(v.left().exists()) parent.relink_child(ch, v.left());
 	}
-	else if(!v.has_left()) {
-		if(!v.has_parent()) return true;
+	else if(!v.left().exists()) {
+		if(!v.parent().exists()) {
+			v.unlink_and_erase(); // optim?
+			return true;
+		}
 
 		auto parent = v.parent();
-		auto ith = v.is_which();
+		auto ch = v.is_which();
 
-		if(v.has_right()) parent.link_child(ith, v.right());
+		if(v.right().exists()) parent.relink_child(ch, v.right());
 	}
 	else {
 		return false;
 	}
 
+	v.unlink_and_erase();
 	return true;
 }
 
@@ -89,24 +94,20 @@ bool bst_cut_out(V& v) {
 
 
 
-// remove node and replace the hole with _next
+// remove node and replace the hole with prev element
 template<class V>
 void bst_erase(V& v) {
 	DCHECK(v.exists());
 
-	if( bst_cut_out(v) ) {
-		v.erase();
-		return;
-	}
+	if( bst_cut_out(v) ) return;
 
-	auto next = bst_next(v);
+	auto prv = bst_prev(v);
 
-	v() = next();
+	v() = std::move( prv() ); // move value
 
-	// replace with _next
-	bool r = bst_cut_out(next);
+	// replace with prev
+	bool r = bst_cut_out(prv);
 	DCHECK(r);
-	next.erase();
 }
 
 

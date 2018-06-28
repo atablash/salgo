@@ -300,14 +300,14 @@ By default, a minimal object is constructed:
 
 Allows erasing elements in the middle of the vector, and leaving "holes".
 
-Also enables `::EXISTS`.
+Also enables `::CONSTRUCTED_FLAGS`.
 
 > NOTE
 >
-> If you want just sparse, but not `::EXISTS`, use `::SPARSE_NO_EXISTS` instead, but it'll work only for trivially move constructible types (implies trivially destructible as well).
+> If you want just sparse, but not `::CONSTRUCTED_FLAGS`, use `::SPARSE_NO_CONSTRUCTED_FLAGS` instead, but it'll work only for trivially move constructible types (implies trivially destructible as well).
 
 
-#### ::EXISTS (default on if ::SPARSE)
+#### ::CONSTRUCTED_FLAGS (default on if ::SPARSE)
 
 For sparse vectors, makes the *Vector* aware of which elements are existing.
 
@@ -325,9 +325,9 @@ This allows resizing (move construction on reallocation), iteration and destruct
 >
 > You can also choose to keep the flags in-place with the elements, if it works faster for you (probably won't).
 >
-> You can choose from these two using `::EXISTS_BITSET` or `::EXISTS_INPLACE`. If so, don't include the `::EXISTS` selector!
+> You can choose from these two using `::CONSTRUCTED_FLAGS_BITSET` or `::CONSTRUCTED_FLAGS_INPLACE`. If so, don't include the `::CONSTRUCTED_FLAGS` selector!
 >
-> `::EXISTS` maps to `::EXISTS_BITSET`.
+> `::CONSTRUCTED_FLAGS` maps to `::CONSTRUCTED_FLAGS_BITSET`.
 
 
 #### ::COUNT
@@ -419,7 +419,7 @@ It's the type used for underlying `Vector` implementation. It has the same funct
 * Its elements are first deleted and you have to construct them.
 * It doesn't allow automatic resizing on push_back - keeping to vector terminology, it only has capacity, and no size.
 
-The type builder exposes following parameters: `::DENSE`, `::STACK_BUFFER<N>`, `::EXISTS`, `::EXISTS_INPLACE`, `::EXISTS_BITSET`, `::COUNT` (see the `Vector` for some explaination).
+The type builder exposes following parameters: `::DENSE`, `::STACK_BUFFER<N>`, `::CONSTRUCTED_FLAGS`, `::CONSTRUCTED_FLAGS_INPLACE`, `::CONSTRUCTED_FLAGS_BITSET`, `::COUNT` (see the `Vector` for some explaination).
 
 
 Chunked_Vector

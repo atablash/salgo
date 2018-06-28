@@ -43,7 +43,7 @@ TEST(Memory_block, stack_optim_inplace_nontrivial) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S> ::EXISTS_INPLACE ::COUNT ::INPLACE_BUFFER<2> m(1);
+		Memory_Block<S> ::CONSTRUCTED_FLAGS_INPLACE ::COUNT ::INPLACE_BUFFER<2> m(1);
 		m(0).construct(1);
 		m.resize(2);
 		m(1).construct(2);
@@ -83,7 +83,7 @@ TEST(Memory_block, destructors_called_exists) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::EXISTS::COUNT block(10);
+		Memory_Block<S>::CONSTRUCTED_FLAGS::COUNT block(10);
 		block.construct_all();
 
 		EXPECT_EQ(10, block.domain());
@@ -168,7 +168,7 @@ TEST(Memory_block, copy_container_exists) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::EXISTS block(10);
+		Memory_Block<S>::CONSTRUCTED_FLAGS block(10);
 		block.construct_all();
 
 		auto block2 = block;
@@ -213,7 +213,7 @@ TEST(Memory_block, move_container_exists) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::EXISTS::INPLACE_BUFFER<2> block(10);
+		Memory_Block<S>::CONSTRUCTED_FLAGS::INPLACE_BUFFER<2> block(10);
 		block.construct_all();
 
 		auto block2 = std::move(block);

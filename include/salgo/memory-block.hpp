@@ -36,7 +36,7 @@ template<> struct Add_exists_bitset<false> {};
 
 
 template<class _VAL, class _ALLOCATOR, int _STACK_BUFFER, bool _DENSE,
-	bool _EXISTS_INPLACE, bool _EXISTS_BITSET, bool _COUNT>
+	bool _CONSTRUCTED_FLAGS_INPLACE, bool _CONSTRUCTED_FLAGS_BITSET, bool _COUNT>
 struct Context {
 
 	//
@@ -56,9 +56,9 @@ struct Context {
 	static constexpr int  Stack_Buffer = _STACK_BUFFER;
 	static constexpr bool Dense = _DENSE;
 	static constexpr bool Sparse = !Dense;
-	static constexpr bool Exists_Inplace = _EXISTS_INPLACE;
-	static constexpr bool Exists_Bitset = _EXISTS_BITSET;
-	static constexpr bool Exists = _EXISTS_BITSET || _EXISTS_INPLACE;
+	static constexpr bool Exists_Inplace = _CONSTRUCTED_FLAGS_INPLACE;
+	static constexpr bool Exists_Bitset = _CONSTRUCTED_FLAGS_BITSET;
+	static constexpr bool Exists = _CONSTRUCTED_FLAGS_BITSET || _CONSTRUCTED_FLAGS_INPLACE;
 	static constexpr bool Count = _COUNT;
 
 
@@ -146,14 +146,14 @@ struct Context {
 		// assumes key is in bounds
 		bool constructed() const {
 			_check_bounds();
-			static_assert(Dense || Exists, "called constructed() on object without EXISTS or DENSE");
+			static_assert(Dense || Exists, "called constructed() on object without CONSTRUCTED_FLAGS or DENSE");
 
 			if constexpr(Dense) {
 				return true;
 			} else if constexpr(Exists_Inplace) {
 				return _get().exists;
 			} else if constexpr(Exists_Bitset) {
-				return _container().EXISTS_BITSET_BASE::exists[ _handle() ];
+				return _container().CONSTRUCTED_FLAGS_BITSET_BASE::exists[ _handle() ];
 			}
 		}
 
@@ -230,7 +230,7 @@ struct Context {
 			private Add_exists_bitset<Exists_Bitset> {
 
 		using NUM_EXISTING_BASE = Add_num_existing<Count>;
-		using EXISTS_BITSET_BASE = Add_exists_bitset<Exists_Bitset>;
+		using CONSTRUCTED_FLAGS_BITSET_BASE = Add_exists_bitset<Exists_Bitset>;
 
 	public:
 		using Val = Context::Val;
@@ -290,11 +290,11 @@ struct Context {
 		Memory_Block(const Memory_Block& o) :
 				Allocator(o),
 				NUM_EXISTING_BASE(o),
-				EXISTS_BITSET_BASE(o),
+				CONSTRUCTED_FLAGS_BITSET_BASE(o),
 				_size(o._size) {
 
 			static_assert(Dense || Exists || std::is_trivially_copy_constructible_v<Val>,
-				"can't copy-construct non-POD container if no EXISTS or DENSE flags");
+				"can't copy-construct non-POD container if no CONSTRUCTED_FLAGS or DENSE flags");
 
 			if(_size > Stack_Buffer) {
 				_data = std::allocator_traits<Allocator>::allocate(_allocator(), _size);
@@ -315,7 +315,7 @@ struct Context {
 		Memory_Block(Memory_Block&& o) :
 				Allocator( std::move(o) ),
 				NUM_EXISTING_BASE( std::move(o) ),
-				EXISTS_BITSET_BASE( std::move(o) ),
+				CONSTRUCTED_FLAGS_BITSET_BASE( std::move(o) ),
 				_size( std::move(o._size) ) {
 
 			if(_size > Stack_Buffer) {
@@ -372,7 +372,7 @@ struct Context {
 				}
 			}
 
-			if constexpr(Exists_Bitset) EXISTS_BITSET_BASE::exists.resize( _size );
+			if constexpr(Exists_Bitset) CONSTRUCTED_FLAGS_BITSET_BASE::exists.resize( _size );
 		}
 
 		~Memory_Block() {
@@ -394,14 +394,14 @@ struct Context {
 	private:
 		void _destruct_block(Node* data, int size) {
 			static_assert(Dense || Exists || std::is_trivially_destructible_v<Val>,
-				"can't destroy non-POD container if no EXISTS or DENSE flags");
+				"can't destroy non-POD container if no CONSTRUCTED_FLAGS or DENSE flags");
 				
 			_destruct_block(data, size, [this](int i){ return (*this)(i).constructed(); });
 		}
 
 		// destruct nodes+values
-		template<class EXISTS_FUN>
-		void _destruct_block(Node* data, int size, EXISTS_FUN&& exists_fun) {
+		template<class CONSTRUCTED_FLAGS_FUN>
+		void _destruct_block(Node* data, int size, CONSTRUCTED_FLAGS_FUN&& exists_fun) {
 			(void)data;
 			if constexpr(!std::is_trivially_destructible_v<Val>) {
 
@@ -420,7 +420,7 @@ struct Context {
 	public:
 		void resize(int new_size) {
 			static_assert(Dense || Exists || std::is_trivially_move_constructible_v<Val>,
-				"can't resize non-POD container if no EXISTS or DENSE flags");
+				"can't resize non-POD container if no CONSTRUCTED_FLAGS or DENSE flags");
 
 			if constexpr(std::is_trivially_move_constructible_v<Val>) {
 				_resize(new_size, [](int){ return true; });
@@ -428,16 +428,16 @@ struct Context {
 			else _resize(new_size, [this](int i){ return (*this)(i).constructed(); });
 		}
 
-		template<class EXISTS_FUN>
-		void resize(int new_size, EXISTS_FUN&& exists_fun) {
-			static_assert(!Dense && !Exists, "can only supply EXISTS_FUN if not Dense and Exists");
+		template<class CONSTRUCTED_FLAGS_FUN>
+		void resize(int new_size, CONSTRUCTED_FLAGS_FUN&& exists_fun) {
+			static_assert(!Dense && !Exists, "can only supply CONSTRUCTED_FLAGS_FUN if not Dense and Exists");
 
-			_resize(new_size, std::forward<EXISTS_FUN>(exists_fun));
+			_resize(new_size, std::forward<CONSTRUCTED_FLAGS_FUN>(exists_fun));
 		}
 
 	private:
-		template<class EXISTS_FUN>
-		void _resize(int new_size, EXISTS_FUN&& exists_fun) {
+		template<class CONSTRUCTED_FLAGS_FUN>
+		void _resize(int new_size, CONSTRUCTED_FLAGS_FUN&& exists_fun) {
 
 			decltype(_data) new_data;
 
@@ -470,11 +470,11 @@ struct Context {
 					std::memcpy(new_data, _data, n * sizeof(Node));
 				}
 
-				_destruct_block(_data, _size, std::forward<EXISTS_FUN>(exists_fun));
+				_destruct_block(_data, _size, std::forward<CONSTRUCTED_FLAGS_FUN>(exists_fun));
 			}
 			else {
 				// same memory location
-				_destruct_block(_data + n, _size - n, std::forward<EXISTS_FUN>(exists_fun));
+				_destruct_block(_data + n, _size - n, std::forward<CONSTRUCTED_FLAGS_FUN>(exists_fun));
 			}
 
 			// construct new nodes
@@ -494,7 +494,7 @@ struct Context {
 			_data = new_data;
 			_size = new_size;
 
-			if constexpr(Exists_Bitset) EXISTS_BITSET_BASE::exists.resize( new_size );
+			if constexpr(Exists_Bitset) CONSTRUCTED_FLAGS_BITSET_BASE::exists.resize( new_size );
 		}
 
 
@@ -613,7 +613,7 @@ struct Context {
 				_get(key).exists = new_exists;
 			}
 			else if constexpr(Exists_Bitset) {
-				EXISTS_BITSET_BASE::exists[key] = new_exists;
+				CONSTRUCTED_FLAGS_BITSET_BASE::exists[key] = new_exists;
 			}
 		}
 
@@ -644,13 +644,13 @@ struct Context {
 			typename Context< Val, Allocator, Stack_Buffer, false, Exists_Inplace, Exists_Bitset, Count > :: With_Builder;
 
 
-		using EXISTS_INPLACE =
+		using CONSTRUCTED_FLAGS_INPLACE =
 			typename Context< Val, Allocator, Stack_Buffer, Dense, true, false, Count > :: With_Builder;
 
-		using EXISTS_BITSET =
+		using CONSTRUCTED_FLAGS_BITSET =
 			typename Context< Val, Allocator, Stack_Buffer, Dense, false, true, Count > :: With_Builder;
 
-		using EXISTS = EXISTS_BITSET; // seems to be faster than inplace version
+		using CONSTRUCTED_FLAGS = CONSTRUCTED_FLAGS_BITSET; // seems to be faster than inplace version
 
 		using COUNT =
 			typename Context< Val, Allocator, Stack_Buffer, Dense, Exists_Inplace, Exists_Bitset, true > :: With_Builder;
@@ -679,8 +679,8 @@ using Memory_Block = typename internal::Memory_Block::Context<
 	std::allocator<T>, // ALLCOATOR
 	0, // STACK_BUFFER
 	false, // DENSE
-	false, // EXISTS_INPLACE
-	false, // EXISTS_BITSET
+	false, // CONSTRUCTED_FLAGS_INPLACE
+	false, // CONSTRUCTED_FLAGS_BITSET
 	false  // COUNT
 > :: With_Builder;
 

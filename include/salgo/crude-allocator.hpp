@@ -107,7 +107,7 @@ struct Context {
 
 	using Memory_Block = std::conditional_t<
 		Auto_Destruct,
-		typename salgo::Memory_Block<Val> :: EXISTS,
+		typename salgo::Memory_Block<Val> :: CONSTRUCTED_FLAGS,
 		salgo::Memory_Block<Val>
 	>;
 

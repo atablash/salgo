@@ -139,7 +139,7 @@ static void push_delete_compact_common(MB& m) {
 
 TEST(Sparse_vector, push_delete_compact_inplace) {
 
-	Vector<int>::SPARSE::EXISTS_INPLACE::COUNT m;
+	Vector<int>::SPARSE::CONSTRUCTED_FLAGS_INPLACE::COUNT m;
 	push_delete_compact_common(m);
 }
 
@@ -149,7 +149,7 @@ TEST(Sparse_vector, push_delete_compact_inplace) {
 
 TEST(Sparse_vector, push_delete_compact_bitset) {
 
-	Vector<int>::SPARSE::EXISTS_BITSET::COUNT m;
+	Vector<int>::SPARSE::CONSTRUCTED_FLAGS_BITSET::COUNT m;
 	push_delete_compact_common(m);
 }
 
@@ -187,7 +187,7 @@ TEST(Sparse_vector, push_delete_compact_inplace_nontrivial) {
 	g_constructors = 0;
 
 	{
-		Vector<S>::SPARSE::EXISTS_INPLACE::COUNT m;
+		Vector<S>::SPARSE::CONSTRUCTED_FLAGS_INPLACE::COUNT m;
 		push_delete_compact_common(m);
 	}
 
@@ -210,7 +210,7 @@ TEST(Sparse_vector, copy_container_exists) {
 	g_constructors = 0;
 
 	{
-		Vector<S>::SPARSE::EXISTS block;
+		Vector<S>::SPARSE::CONSTRUCTED_FLAGS block;
 		block.emplace_back();
 		block.emplace_back();
 		block.emplace_back();
@@ -234,7 +234,7 @@ TEST(Sparse_vector, move_container_exists) {
 	g_constructors = 0;
 
 	{
-		Vector<S>::SPARSE::EXISTS::INPLACE_BUFFER<2> block(10);
+		Vector<S>::SPARSE::CONSTRUCTED_FLAGS::INPLACE_BUFFER<2> block(10);
 		block.emplace_back();
 		block.emplace_back();
 		block.emplace_back();
@@ -453,7 +453,7 @@ static void run_sparse_vector(int N, int type) {
 	srand(69);
 	auto t0 = steady_clock::now();
 
-	Vector<double>::SPARSE::EXISTS_BITSET v(N);
+	Vector<double>::SPARSE::CONSTRUCTED_FLAGS_BITSET v(N);
 	run_sparse_vector_common(v, N, type);
 
 	duration<double> diff = steady_clock::now() - t0;
@@ -471,7 +471,7 @@ static void run_sparse_vector_inplace(int N, int type) {
 	srand(69);
 	auto t0 = steady_clock::now();
 
-	Vector<double>::SPARSE::EXISTS_INPLACE v(N);
+	Vector<double>::SPARSE::CONSTRUCTED_FLAGS_INPLACE v(N);
 	run_sparse_vector_common(v, N, type);
 	
 	duration<double> diff = steady_clock::now() - t0;
@@ -492,7 +492,7 @@ static void run_sparse_vector_index(int N, int type) {
 	srand(69);
 	auto t0 = steady_clock::now();
 
-	Vector<double>::SPARSE::EXISTS_BITSET v(N);
+	Vector<double>::SPARSE::CONSTRUCTED_FLAGS_BITSET v(N);
 	long long result = 0;
 
 	if(type == 0) {
@@ -538,7 +538,7 @@ static void run_sparse_vector_noacc(int N, int type) {
 	srand(69);
 	auto t0 = steady_clock::now();
 
-	Vector<double>::SPARSE::EXISTS_BITSET v(N);
+	Vector<double>::SPARSE::CONSTRUCTED_FLAGS_BITSET v(N);
 	long long result = 0;
 
 	if(type == 0) {

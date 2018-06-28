@@ -562,29 +562,29 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(With_Builder, Chunked_Vector) {}
 
 
-		using EXISTS =
-			typename Context< Val, Sparse, Count, typename Memory_Block::EXISTS > :: With_Builder;
+		using CONSTRUCTED_FLAGS =
+			typename Context< Val, Sparse, Count, typename Memory_Block::CONSTRUCTED_FLAGS > :: With_Builder;
 
-		using EXISTS_INPLACE =
-			typename Context< Val, Sparse, Count, typename Memory_Block::EXISTS_INPLACE > :: With_Builder;
+		using CONSTRUCTED_FLAGS_INPLACE =
+			typename Context< Val, Sparse, Count, typename Memory_Block::CONSTRUCTED_FLAGS_INPLACE > :: With_Builder;
 
-		using EXISTS_CHUNK_BITSET =
-			typename Context< Val, Sparse, Count, typename Memory_Block::EXISTS_BITSET > :: With_Builder;
+		using CONSTRUCTED_FLAGS_CHUNK_BITSET =
+			typename Context< Val, Sparse, Count, typename Memory_Block::CONSTRUCTED_FLAGS_BITSET > :: With_Builder;
 
 
 
-		// also enable EXISTS by default
+		// also enable CONSTRUCTED_FLAGS by default
 		using SPARSE =
-			typename Context< Val, true, Count, Memory_Block > :: With_Builder :: EXISTS;
+			typename Context< Val, true, Count, Memory_Block > :: With_Builder :: CONSTRUCTED_FLAGS;
 
 
-		// just enable SPARSE, but no EXISTS
-		using SPARSE_NO_EXISTS =
+		// just enable SPARSE, but no CONSTRUCTED_FLAGS
+		using SPARSE_NO_CONSTRUCTED_FLAGS =
 			typename Context< Val, true, Count, Memory_Block > :: With_Builder;
 
 
 		using COUNT =
-			typename Context< Val, Sparse, true, Memory_Block > :: With_Builder :: EXISTS;
+			typename Context< Val, Sparse, true, Memory_Block > :: With_Builder :: CONSTRUCTED_FLAGS;
 	};
 
 

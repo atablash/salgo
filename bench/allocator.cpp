@@ -288,7 +288,7 @@ static void RANDOM_std(State& state) {
 	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
 	Alloc alloc;
 
-	Memory_Block<Alloc::Handle> ::EXISTS v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.iterations()/10 + 10);
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
@@ -319,7 +319,7 @@ static void RANDOM_salgo_crude(State& state) {
 	using Alloc = salgo::Crude_Allocator<int>;
 	Alloc alloc;
 
-	Memory_Block<Alloc::Handle> ::EXISTS v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.iterations()/10 + 10);
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
@@ -350,7 +350,7 @@ static void RANDOM_salgo_random(State& state) {
 	using Alloc = salgo::Random_Allocator<int>;
 	Alloc alloc;
 
-	Memory_Block<Alloc::Handle> ::EXISTS v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.iterations()/10 + 10);
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
@@ -381,7 +381,7 @@ static void RANDOM_salgo_vector(State& state) {
 	using Alloc = salgo::Vector_Allocator<int>;
 	Alloc alloc;
 
-	Memory_Block<Alloc::Handle> ::EXISTS v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.iterations()/10 + 10);
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
