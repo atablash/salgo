@@ -39,6 +39,8 @@ set(sources
 	chunked-vector.cpp
 	rooted-forest.cpp
 	graph.cpp
+	modulo.cpp
+	binomial.cpp
 	#3d/compute-normals.cpp
 	#3d/collapse-edges.cpp
 	#3d/cap-holes.cpp
