@@ -51,7 +51,7 @@ static void INSERT_ERASE_std(State& state) {
 		}
 	}
 }
-BENCHMARK( INSERT_ERASE_std );
+BENCHMARK( INSERT_ERASE_std )->MinTime(0.1);
 
 
 
@@ -81,7 +81,7 @@ static void INSERT_ERASE_salgo_stdalloc(State& state) {
 		}
 	}
 }
-BENCHMARK( INSERT_ERASE_salgo_stdalloc );
+BENCHMARK( INSERT_ERASE_salgo_stdalloc )->MinTime(0.1);
 
 
 
@@ -113,7 +113,7 @@ static void INSERT_ERASE_salgo_crudealloc(State& state) {
 		}
 	}
 }
-BENCHMARK( INSERT_ERASE_salgo_crudealloc );
+BENCHMARK( INSERT_ERASE_salgo_crudealloc )->MinTime(0.1);
 
 
 
@@ -145,7 +145,7 @@ static void INSERT_ERASE_salgo_randalloc(State& state) {
 		}
 	}
 }
-BENCHMARK( INSERT_ERASE_salgo_randalloc );
+BENCHMARK( INSERT_ERASE_salgo_randalloc )->MinTime(0.1);
 
 
 
@@ -176,7 +176,7 @@ static void INSERT_ERASE_salgo_vectoralloc(State& state) {
 		}
 	}
 }
-BENCHMARK( INSERT_ERASE_salgo_vectoralloc );
+BENCHMARK( INSERT_ERASE_salgo_vectoralloc )->MinTime(0.1);
 
 
 
@@ -216,7 +216,7 @@ static void ITERATE_std(State& state) {
 
 
 }
-BENCHMARK( ITERATE_std );
+BENCHMARK( ITERATE_std )->MinTime(0.1);
 
 
 
@@ -245,7 +245,7 @@ static void ITERATE_salgo_countable_stdalloc(State& state) {
 
 
 }
-BENCHMARK( ITERATE_salgo_countable_stdalloc );
+BENCHMARK( ITERATE_salgo_countable_stdalloc )->MinTime(0.1);
 
 
 
@@ -273,7 +273,7 @@ static void ITERATE_salgo_countable_crudealloc(State& state) {
 
 
 }
-BENCHMARK( ITERATE_salgo_countable_crudealloc );
+BENCHMARK( ITERATE_salgo_countable_crudealloc )->MinTime(0.1);
 
 
 
@@ -301,7 +301,7 @@ static void ITERATE_salgo_countable_randalloc(State& state) {
 
 
 }
-BENCHMARK( ITERATE_salgo_countable_randalloc );
+BENCHMARK( ITERATE_salgo_countable_randalloc )->MinTime(0.1);
 
 
 
@@ -330,7 +330,7 @@ static void ITERATE_salgo_countable_vectoralloc(State& state) {
 
 
 }
-BENCHMARK( ITERATE_salgo_countable_vectoralloc );
+BENCHMARK( ITERATE_salgo_countable_vectoralloc )->MinTime(0.1);
 
 
 
@@ -358,7 +358,7 @@ static void INSERT_std(State& state) {
 		li.emplace_front( rand() );
 	}
 }
-BENCHMARK( INSERT_std );
+BENCHMARK( INSERT_std )->MinTime(0.1);
 
 
 
@@ -375,7 +375,7 @@ static void INSERT_salgo_countable_stdalloc(State& state) {
 		li.emplace_front( rand() );
 	}
 }
-BENCHMARK( INSERT_salgo_countable_stdalloc );
+BENCHMARK( INSERT_salgo_countable_stdalloc )->MinTime(0.1);
 
 
 
@@ -390,7 +390,7 @@ static void INSERT_salgo_countable_crudealloc(State& state) {
 		li.emplace_front( rand() );
 	}
 }
-BENCHMARK( INSERT_salgo_countable_crudealloc );
+BENCHMARK( INSERT_salgo_countable_crudealloc )->MinTime(0.1);
 
 
 
@@ -405,7 +405,7 @@ static void INSERT_salgo_countable_randalloc(State& state) {
 		li.emplace_front( rand() );
 	}
 }
-BENCHMARK( INSERT_salgo_countable_randalloc );
+BENCHMARK( INSERT_salgo_countable_randalloc )->MinTime(0.1);
 
 
 
@@ -420,7 +420,7 @@ static void INSERT_salgo(State& state) {
 		li.emplace_front( rand() );
 	}
 }
-BENCHMARK( INSERT_salgo );
+BENCHMARK( INSERT_salgo )->MinTime(0.1);
 
 
 
@@ -464,7 +464,7 @@ static void ERASE_std(State& state) {
 		}
 	}
 }
-BENCHMARK( ERASE_std );
+BENCHMARK( ERASE_std )->MinTime(0.1);
 
 
 
@@ -493,7 +493,7 @@ static void ERASE_salgo_countable_stdalloc(State& state) {
 		}
 	}
 }
-BENCHMARK( ERASE_salgo_countable_stdalloc );
+BENCHMARK( ERASE_salgo_countable_stdalloc )->MinTime(0.1);
 
 
 
@@ -524,7 +524,7 @@ static void ERASE_salgo_countable_crudealloc(State& state) {
 		}
 	}
 }
-BENCHMARK( ERASE_salgo_countable_crudealloc );
+BENCHMARK( ERASE_salgo_countable_crudealloc )->MinTime(0.1);
 
 
 
@@ -553,7 +553,7 @@ static void ERASE_salgo_countable_randalloc(State& state) {
 		}
 	}
 }
-BENCHMARK( ERASE_salgo_countable_randalloc );
+BENCHMARK( ERASE_salgo_countable_randalloc )->MinTime(0.1);
 
 
 
@@ -582,7 +582,7 @@ static void ERASE_salgo_countable_vectoralloc(State& state) {
 		}
 	}
 }
-BENCHMARK( ERASE_salgo_countable_vectoralloc );
+BENCHMARK( ERASE_salgo_countable_vectoralloc )->MinTime(0.1);
 
 
 

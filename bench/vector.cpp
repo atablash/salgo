@@ -30,7 +30,7 @@ static void PUSH_BACK_std(State& state) {
 	for(auto& e : v) sum += e;
 	DoNotOptimize(sum);
 }
-BENCHMARK( PUSH_BACK_std );
+BENCHMARK( PUSH_BACK_std )->MinTime(0.1);
 
 
 
@@ -49,7 +49,7 @@ static void PUSH_BACK_salgo(State& state) {
 	for(auto& e : v) sum += e;
 	DoNotOptimize(sum);
 }
-BENCHMARK( PUSH_BACK_salgo );
+BENCHMARK( PUSH_BACK_salgo )->MinTime(0.1);
 
 
 
@@ -67,7 +67,7 @@ static void PUSH_BACK_salgo_chunked(State& state) {
 	for(auto& e : v) sum += e;
 	DoNotOptimize(sum);
 }
-BENCHMARK( PUSH_BACK_salgo_chunked );
+BENCHMARK( PUSH_BACK_salgo_chunked )->MinTime(0.1);
 
 
 
@@ -93,7 +93,7 @@ static void PUSH_BACK_reserved_std(State& state) {
 	for(auto& e : v) sum += e;
 	DoNotOptimize(sum);
 }
-BENCHMARK( PUSH_BACK_reserved_std );
+BENCHMARK( PUSH_BACK_reserved_std )->MinTime(0.1);
 
 
 
@@ -113,7 +113,7 @@ static void PUSH_BACK_reserved_salgo(State& state) {
 	for(auto& e : v) sum += e;
 	DoNotOptimize(sum);
 }
-BENCHMARK( PUSH_BACK_reserved_salgo );
+BENCHMARK( PUSH_BACK_reserved_salgo )->MinTime(0.1);
 
 
 static void PUSH_BACK_reserved_salgo_chunked(State& state) {
@@ -130,7 +130,7 @@ static void PUSH_BACK_reserved_salgo_chunked(State& state) {
 	for(auto& e : v) sum += e;
 	DoNotOptimize(sum);
 }
-BENCHMARK( PUSH_BACK_reserved_salgo_chunked );
+BENCHMARK( PUSH_BACK_reserved_salgo_chunked )->MinTime(0.1);
 
 
 
@@ -153,7 +153,7 @@ static void RANDOM_ACCESS_std(State& state) {
 	}
 	DoNotOptimize(sum);
 }
-BENCHMARK( RANDOM_ACCESS_std );
+BENCHMARK( RANDOM_ACCESS_std )->MinTime(0.1);
 
 
 
@@ -169,7 +169,7 @@ static void RANDOM_ACCESS_salgo(State& state) {
 	}
 	DoNotOptimize(sum);
 }
-BENCHMARK( RANDOM_ACCESS_salgo );
+BENCHMARK( RANDOM_ACCESS_salgo )->MinTime(0.1);
 
 
 
@@ -185,7 +185,7 @@ static void RANDOM_ACCESS_salgo_chunked(State& state) {
 	}
 	DoNotOptimize(sum);
 }
-BENCHMARK( RANDOM_ACCESS_salgo_chunked );
+BENCHMARK( RANDOM_ACCESS_salgo_chunked )->MinTime(0.1);
 
 
 
@@ -210,7 +210,7 @@ static void SEQUENTIAL_ACCESS_std(State& state) {
 		DoNotOptimize(sum);
 	}
 }
-BENCHMARK( SEQUENTIAL_ACCESS_std )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+BENCHMARK( SEQUENTIAL_ACCESS_std )->Arg(1'000'000)->Unit(benchmark::kMicrosecond)->MinTime(0.1);
 
 
 static void SEQUENTIAL_ACCESS_salgo(State& state) {
@@ -225,7 +225,7 @@ static void SEQUENTIAL_ACCESS_salgo(State& state) {
 		DoNotOptimize(sum);
 	}
 }
-BENCHMARK( SEQUENTIAL_ACCESS_salgo )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+BENCHMARK( SEQUENTIAL_ACCESS_salgo )->Arg(1'000'000)->Unit(benchmark::kMicrosecond)->MinTime(0.1);
 
 
 static void SEQUENTIAL_ACCESS_salgo_chunked(State& state) {
@@ -240,7 +240,7 @@ static void SEQUENTIAL_ACCESS_salgo_chunked(State& state) {
 		DoNotOptimize(sum);
 	}
 }
-BENCHMARK( SEQUENTIAL_ACCESS_salgo_chunked )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+BENCHMARK( SEQUENTIAL_ACCESS_salgo_chunked )->Arg(1'000'000)->Unit(benchmark::kMicrosecond)->MinTime(0.1);
 
 
 
@@ -265,7 +265,7 @@ static void FOREACH_ACCESS_std(State& state) {
 		DoNotOptimize(sum);
 	}
 }
-BENCHMARK( FOREACH_ACCESS_std )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+BENCHMARK( FOREACH_ACCESS_std )->Arg(1'000'000)->Unit(benchmark::kMicrosecond)->MinTime(0.1);
 
 
 static void FOREACH_ACCESS_salgo(State& state) {
@@ -280,7 +280,7 @@ static void FOREACH_ACCESS_salgo(State& state) {
 		DoNotOptimize(sum);
 	}
 }
-BENCHMARK( FOREACH_ACCESS_salgo )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+BENCHMARK( FOREACH_ACCESS_salgo )->Arg(1'000'000)->Unit(benchmark::kMicrosecond)->MinTime(0.1);
 
 
 static void FOREACH_ACCESS_salgo_unordered(State& state) {
@@ -295,7 +295,7 @@ static void FOREACH_ACCESS_salgo_unordered(State& state) {
 		DoNotOptimize(sum);
 	}
 }
-BENCHMARK( FOREACH_ACCESS_salgo_unordered )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+BENCHMARK( FOREACH_ACCESS_salgo_unordered )->Arg(1'000'000)->Unit(benchmark::kMicrosecond)->MinTime(0.1);
 
 
 static void FOREACH_ACCESS_salgo_chunked(State& state) {
@@ -310,7 +310,7 @@ static void FOREACH_ACCESS_salgo_chunked(State& state) {
 		DoNotOptimize(sum);
 	}
 }
-BENCHMARK( FOREACH_ACCESS_salgo_chunked )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+BENCHMARK( FOREACH_ACCESS_salgo_chunked )->Arg(1'000'000)->Unit(benchmark::kMicrosecond)->MinTime(0.1);
 
 
 
@@ -332,7 +332,7 @@ static void FOREACH_ACCESS_REV_salgo_unordered(State& state) {
 		DoNotOptimize(sum);
 	}
 }
-BENCHMARK( FOREACH_ACCESS_REV_salgo_unordered )->Arg(1'000'000)->Unit(benchmark::kMicrosecond);
+BENCHMARK( FOREACH_ACCESS_REV_salgo_unordered )->Arg(1'000'000)->Unit(benchmark::kMicrosecond)->MinTime(0.1);
 
 
 

@@ -36,7 +36,7 @@ static void REHASH_std(State& state) {
 		state.ResumeTiming();
 	}
 }
-BENCHMARK( REHASH_std )->Args({1'056'323, 1'142'821})->Unit(benchmark::kMillisecond);
+BENCHMARK( REHASH_std )->Args({1'056'323, 1'142'821})->Unit(benchmark::kMillisecond)->MinTime(0.1);
 
 
 
@@ -67,7 +67,7 @@ static void REHASH_salgo(State& state) {
 		state.ResumeTiming();
 	}
 }
-BENCHMARK( REHASH_salgo )->Args({1'056'323, 1'142'821})->Unit(benchmark::kMillisecond);
+BENCHMARK( REHASH_salgo )->Args({1'056'323, 1'142'821})->Unit(benchmark::kMillisecond)->MinTime(0.1);
 
 
 
@@ -93,7 +93,7 @@ static void INSERT__std(State& state) {
 		s.emplace( rand() );
 	}
 }
-BENCHMARK( INSERT__std );
+BENCHMARK( INSERT__std )->MinTime(0.1);
 
 
 
@@ -108,7 +108,7 @@ static void INSERT__salgo(State& state) {
 		s.emplace( rand() );
 	}
 }
-BENCHMARK( INSERT__salgo );
+BENCHMARK( INSERT__salgo )->MinTime(0.1);
 
 
 
@@ -136,7 +136,7 @@ static void RESERVED_INSERT__std(State& state) {
 		s.emplace( rand() );
 	}
 }
-BENCHMARK( RESERVED_INSERT__std );
+BENCHMARK( RESERVED_INSERT__std )->MinTime(0.1);
 
 
 
@@ -154,7 +154,7 @@ static void RESERVED_INSERT__salgo(State& state) {
 		s.emplace( rand() );
 	}
 }
-BENCHMARK( RESERVED_INSERT__salgo );
+BENCHMARK( RESERVED_INSERT__salgo )->MinTime(0.1);
 
 
 
@@ -182,7 +182,7 @@ static void FIND__std(State& state) {
 		if(iter != s.end()) DoNotOptimize(*iter);
 	}
 }
-BENCHMARK( FIND__std );
+BENCHMARK( FIND__std )->MinTime(0.1);
 
 
 
@@ -205,7 +205,7 @@ static void FIND__salgo(State& state) {
 		if(acc.exists()) DoNotOptimize( acc() );
 	}
 }
-BENCHMARK( FIND__salgo );
+BENCHMARK( FIND__salgo )->MinTime(0.1);
 
 
 
@@ -233,7 +233,7 @@ static void FIND_ERASE__std(State& state) {
 		if(iter != s.end()) s.erase( iter );
 	}
 }
-BENCHMARK( FIND_ERASE__std );
+BENCHMARK( FIND_ERASE__std )->MinTime(0.1);
 
 
 
@@ -256,7 +256,7 @@ static void FIND_ERASE__salgo(State& state) {
 		if(e.exists()) e.erase();
 	}
 }
-BENCHMARK( FIND_ERASE__salgo );
+BENCHMARK( FIND_ERASE__salgo )->MinTime(0.1);
 
 
 
@@ -288,7 +288,7 @@ static void ITERATE__std(State& state) {
 		DoNotOptimize(result);
 	}
 }
-BENCHMARK( ITERATE__std );
+BENCHMARK( ITERATE__std )->MinTime(0.1);
 
 
 
@@ -310,7 +310,7 @@ static void ITERATE__salgo(State& state) {
 		DoNotOptimize(result);
 	}
 }
-BENCHMARK( ITERATE__salgo );
+BENCHMARK( ITERATE__salgo )->MinTime(0.1);
 
 
 

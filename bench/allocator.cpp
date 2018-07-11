@@ -33,7 +33,7 @@ static void SEQUENTIAL_std(State& state) {
 
 	for(auto& e : v) alloc(e).destruct();
 }
-BENCHMARK( SEQUENTIAL_std );
+BENCHMARK( SEQUENTIAL_std )->MinTime(0.1);
 
 
 
@@ -55,7 +55,7 @@ static void SEQUENTIAL_salgo_crude(State& state) {
 
 	for(auto& e : v) alloc(e).destruct();
 }
-BENCHMARK( SEQUENTIAL_salgo_crude );
+BENCHMARK( SEQUENTIAL_salgo_crude )->MinTime(0.1);
 
 
 
@@ -76,7 +76,7 @@ static void SEQUENTIAL_salgo_random(State& state) {
 
 	for(auto& e : v) alloc(e).destruct();
 }
-BENCHMARK( SEQUENTIAL_salgo_random );
+BENCHMARK( SEQUENTIAL_salgo_random )->MinTime(0.1);
 
 
 
@@ -97,7 +97,7 @@ static void SEQUENTIAL_salgo_vector(State& state) {
 
 	for(auto& e : v) alloc(e).destruct();
 }
-BENCHMARK( SEQUENTIAL_salgo_vector );
+BENCHMARK( SEQUENTIAL_salgo_vector )->MinTime(0.1);
 
 
 
@@ -147,7 +147,7 @@ static void QUEUE_std(State& state) {
 		alloc.destruct(h);
 	}
 }
-BENCHMARK( QUEUE_std );
+BENCHMARK( QUEUE_std )->MinTime(0.1);
 
 
 
@@ -186,7 +186,7 @@ static void QUEUE_salgo_crude(State& state) {
 		alloc.destruct(h);
 	}
 }
-BENCHMARK( QUEUE_salgo_crude );
+BENCHMARK( QUEUE_salgo_crude )->MinTime(0.1);
 
 
 
@@ -225,7 +225,7 @@ static void QUEUE_salgo_random(State& state) {
 		alloc(h).destruct();
 	}
 }
-BENCHMARK( QUEUE_salgo_random );
+BENCHMARK( QUEUE_salgo_random )->MinTime(0.1);
 
 
 
@@ -264,7 +264,7 @@ static void QUEUE_salgo_vector(State& state) {
 		alloc(h).destruct();
 	}
 }
-BENCHMARK( QUEUE_salgo_vector );
+BENCHMARK( QUEUE_salgo_vector )->MinTime(0.1);
 
 
 
@@ -306,7 +306,7 @@ static void RANDOM_std(State& state) {
 		alloc(e).destruct();
 	}
 }
-BENCHMARK( RANDOM_std );
+BENCHMARK( RANDOM_std )->MinTime(0.1);
 
 
 
@@ -337,7 +337,7 @@ static void RANDOM_salgo_crude(State& state) {
 		alloc(e).destruct();
 	}
 }
-BENCHMARK( RANDOM_salgo_crude );
+BENCHMARK( RANDOM_salgo_crude )->MinTime(0.1);
 
 
 
@@ -368,7 +368,7 @@ static void RANDOM_salgo_random(State& state) {
 		alloc(e).destruct();
 	}
 }
-BENCHMARK( RANDOM_salgo_random );
+BENCHMARK( RANDOM_salgo_random )->MinTime(0.1);
 
 
 
@@ -399,7 +399,7 @@ static void RANDOM_salgo_vector(State& state) {
 		alloc(e).destruct();
 	}
 }
-BENCHMARK( RANDOM_salgo_vector );
+BENCHMARK( RANDOM_salgo_vector )->MinTime(0.1);
 
 
 
