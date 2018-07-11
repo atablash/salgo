@@ -118,7 +118,7 @@ struct Context {
 
 	public:
 		using Handle = Context::Handle;
-		using Small_Handle = Handle;
+		using Handle_Small = Handle;
 
 		template<class... ARGS>
 		auto construct(ARGS&&... args) {

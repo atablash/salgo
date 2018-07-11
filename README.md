@@ -112,11 +112,11 @@ Handles are meant for storage. Don't try storing accessors, they're usually big 
 >
 > In this case, the handle type is defined as `Vector<int>::Handle`.
 >
-> Often there's also a `Small_Handle` available, which is a compressed version, meant for storage.
+> Often there's also a `Handle_Small` available, which is a compressed version, meant for storage.
 >
-> For node-based structures like `salgo::List`, a `Small_Handle` is currently 4 bytes, and `Handle` is 8 bytes.
+> For node-based structures like `salgo::List`, a `Handle_Small` is currently 4 bytes, and `Handle` is 8 bytes.
 >
-> Use `Small_Handle` only for storage. It has some overhead to decode it back.
+> Use `Handle_Small` only for storage. It has some overhead to decode it back.
 >
 > There are conversions defined both ways (currently implicit).
 

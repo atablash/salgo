@@ -2,7 +2,7 @@
 
 #include "memory-block.hpp"
 #include "vector.hpp"
-#include "int-handle.hpp"
+#include "handles.hpp"
 #include "global-instance.hpp"
 #include "chunked-vector.hpp"
 #include "accessors.hpp"
@@ -53,7 +53,7 @@ struct Context {
 
 
 	using       Handle = typename Vector::      Handle;
-	using Small_Handle = typename Vector::Small_Handle;
+	using Handle_Small = typename Vector::Handle_Small;
 
 
 
@@ -144,7 +144,7 @@ struct Context {
 
 	public:
 		using Val = Context::Val;
-		using Small_Handle = Context::Small_Handle;
+		using Handle_Small = Context::Handle_Small;
 		using       Handle = Context::      Handle;
 
 
@@ -208,7 +208,7 @@ struct Context {
 
 	public:
 		using          Val = typename Random_Allocator::Val;
-		using Small_Handle = typename Random_Allocator::Small_Handle;
+		using Handle_Small = typename Random_Allocator::Handle_Small;
 		using       Handle = typename Random_Allocator::Handle;
 
 	public:

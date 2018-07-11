@@ -4,7 +4,7 @@
 #include "const-flag.hpp"
 #include "stack-storage.hpp"
 #include "accessors.hpp"
-#include "int-handle.hpp"
+#include "handles.hpp"
 
 #include "memory-block.hpp"
 
@@ -56,7 +56,7 @@ namespace {
 
 
 template<class> struct       Handle;
-template<class> struct Small_Handle;
+template<class> struct Handle_Small;
 
 
 template<class X>
@@ -68,7 +68,7 @@ struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int,31>, int> { // for fi
 	template<class A, class B>
 	Handle(A aa, B bb) : BASE(aa,bb) {}
 
-	Handle(const Small_Handle<X>& small) {
+	Handle(const Handle_Small<X>& small) {
 
 		#ifndef NDEBUG
 		if(small.a == 0) {
@@ -84,7 +84,7 @@ struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int,31>, int> { // for fi
 	}
 
 	// convert from/to array index
-	Handle(unsigned int index) : Handle(Small_Handle<X>(index)) {}
+	Handle(unsigned int index) : Handle(Handle_Small<X>(index)) {}
 
 	// iteration
 	Handle& operator++() {
@@ -109,12 +109,12 @@ struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int,31>, int> { // for fi
 
 
 template<class X>
-struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int> {
-	using BASE = Int_Handle_Base<Small_Handle<X>, unsigned int>;
+struct Handle_Small : Int_Handle_Base<Handle_Small<X>, unsigned int> {
+	using BASE = Int_Handle_Base<Handle_Small<X>, unsigned int>;
 
-	Small_Handle() = default;
+	Handle_Small() = default;
 
-	Small_Handle(const Handle<X>& big) : BASE((1<<big.a) | big.b) {
+	Handle_Small(const Handle<X>& big) : BASE((1<<big.a) | big.b) {
 		DCHECK_LT(big.a, 32);
 		DCHECK_LT(big.b, 1<<big.a);
 		//LOG(INFO) << big << " -> " << *this;
@@ -126,7 +126,7 @@ struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int> {
 	//}
 
 	// convert from/to array index
-	Small_Handle(unsigned int x) : BASE(x+1) {}
+	Handle_Small(unsigned int x) : BASE(x+1) {}
 	operator unsigned int() const { return BASE::a-1; }
 };
 
@@ -170,7 +170,7 @@ struct Context {
 
 
 	using       Handle = chunked_vector::      Handle<P>;
-	using Small_Handle = chunked_vector::Small_Handle<P>;
+	using Handle_Small = chunked_vector::Handle_Small<P>;
 
 
 
@@ -271,7 +271,7 @@ struct Context {
 	public:
 		using Val = Context::Val;
 		using       Handle = Context::      Handle;
-		using Small_Handle = Context::Small_Handle;
+		using Handle_Small = Context::Handle_Small;
 
 
 	private:

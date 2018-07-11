@@ -70,7 +70,7 @@ struct Context {
 	using Allocator = typename _ALLOCATOR :: template VAL<Node>;
 
 	using       Handle = typename Allocator ::       Handle;
-	using Small_Handle = typename Allocator :: Small_Handle;
+	using Handle_Small = typename Allocator :: Handle_Small;
 
 
 
@@ -92,8 +92,8 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Reference, BASE) {}
 
 	private:
-		Small_Handle _prev;
-		Small_Handle _next;
+		Handle_Small _prev;
+		Handle_Small _next;
 		bool _just_erased = false;
 
 	protected:
@@ -255,8 +255,8 @@ struct Context {
 
 		FORWARDING_CONSTRUCTOR(Node, val) {}
 
-		Small_Handle next;
-		Small_Handle prev;
+		Handle_Small next;
+		Handle_Small prev;
 
 		static constexpr bool Countable = Context::Countable;
 	};
@@ -279,7 +279,7 @@ struct Context {
 		static constexpr bool Is_Countable = Context::Countable;
 
 		using       Handle = Context::      Handle;
-		using Small_Handle = Context::Small_Handle;
+		using Handle_Small = Context::Handle_Small;
 
 
 	private:

@@ -66,8 +66,6 @@ static constexpr bool has_member__##member = _Has_Member__##member<X>::value; \
 // http://blog.bitwigglers.org/using-enum-classes-as-type-safe-bitmasks/
 //
 
-
-
 #define ENABLE_BITWISE_OPERATORS(X)                                               \
                                                                                   \
 constexpr X operator | (X lhs, X rhs)                                             \
@@ -109,6 +107,13 @@ constexpr X operator ~ (X x)                                                    
 
 
 
+
+
+
+
+
+
+
 #define FORWARDING_CONSTRUCTOR(SELF,BASE) \
   template<class... ARGS> \
   SELF(ARGS&&... args) : BASE( std::forward<ARGS>(args)... )
@@ -123,6 +128,11 @@ constexpr X operator ~ (X x)                                                    
 
 #define EXPLICIT_FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(SELF,BASE) \
   template<class _X> explicit SELF(std::initializer_list<_X>&& il) : BASE( std::move(il) )
+
+
+
+
+
 
 
 
@@ -148,6 +158,10 @@ constexpr X operator ~ (X x)                                                    
 
 
 
+
+
+
+
 //
 // access first or last elements of containers
 //
@@ -156,6 +170,18 @@ struct Last_Tag {};
 
 #define FIRST salgo::First_Tag()
 #define LAST salgo::Last_Tag()
+
+
+
+
+
+
+
+
+
+#define ADD_MEMBER(member) \
+template<class TYPE, bool> struct Add_##member { TYPE member; }; \
+template<class TYPE> struct Add_##member<TYPE,false> {};
 
 
 

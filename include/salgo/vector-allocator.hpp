@@ -59,8 +59,8 @@ struct Context {
 	using Block = typename salgo::Memory_Block<Val> ::CONSTRUCTED_FLAGS ::COUNT;
 
 
-	using       Handle = typename Block::      Handle;
-	using Small_Handle = typename Block::Small_Handle;
+	using Handle       = typename Block::Handle;
+	using Handle_Small = typename Block::Handle_Small;
 
 	using Index = typename Block::Index;
 
@@ -166,10 +166,25 @@ struct Context {
 
 	public:
 		using Val = Context::Val;
-		using Small_Handle = Context::Small_Handle;
-		using       Handle = Context::      Handle;
+		using Handle_Small = Context::Handle_Small;
+		using Handle       = Context::Handle;
+		using Index        = Context::Index;
 
 		static constexpr bool Auto_Destruct = true;
+
+	public:
+		Vector_Allocator() = default;
+
+		// reserve and construct `num_starting_elements`
+		template<class... ARGS>
+		Vector_Allocator(int num_starting_elements, ARGS... args) :
+				v(num_starting_elements),
+				lookup_index(num_starting_elements) {
+			for(int i=0; i<num_starting_elements; ++i) {
+				v(i).construct( args... );
+			}
+		}
+
 
 	public:
 		template<class... ARGS>
@@ -210,8 +225,24 @@ struct Context {
 		auto& operator[]( Handle h )       { return v[h]; }
 		auto& operator[]( Handle h ) const { return v[h]; }
 
-		auto operator()( Handle h )       { return Accessor<MUTAB>(this, h); }
-		auto operator()( Handle h ) const { return Accessor<CONST>(this, h); }
+		auto  operator()( Handle h )       { return Accessor<MUTAB>(this, h); }
+		auto  operator()( Handle h ) const { return Accessor<CONST>(this, h); }
+
+
+		auto& operator[]( First_Tag )       { return v[FIRST]; }
+		auto& operator[]( First_Tag ) const { return v[FIRST]; }
+
+		auto  operator()( First_Tag )       { return Accessor<MUTAB>(this, v(FIRST)); }
+		auto  operator()( First_Tag ) const { return Accessor<CONST>(this, v(FIRST)); }
+
+
+		auto& operator[]( Last_Tag )       { return v[LAST]; }
+		auto& operator[]( Last_Tag ) const { return v[LAST]; }
+
+		auto  operator()( Last_Tag )       { return Accessor<MUTAB>(this, v(LAST)); }
+		auto  operator()( Last_Tag ) const { return Accessor<CONST>(this, v(LAST)); }
+
+
 
 		auto count() const { return v.count(); }
 		auto empty() const { return v.empty(); }
@@ -231,6 +262,8 @@ struct Context {
 
 
 	struct With_Builder : Vector_Allocator {
+
+		FORWARDING_CONSTRUCTOR( With_Builder, Vector_Allocator ) {}
 
 		template<class NEW_VAL>
 		using VAL = typename

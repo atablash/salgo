@@ -44,7 +44,7 @@ struct Context {
 	using Node = std::conditional_t<
 		Inplace,
 		Key_Val,
-		typename Allocator::Small_Handle
+		typename Allocator::Handle_Small
 	>;
 
 	using List = typename salgo::Unordered_Vector<Node> :: template INPLACE_BUFFER<5>;
@@ -59,7 +59,7 @@ struct Context {
 		bool valid() const { return a.valid(); }
 	};
 
-	using Small_Handle = Handle; // the same currently
+	using Handle_Small = Handle; // the same currently
 
 
 
@@ -190,7 +190,7 @@ struct Context {
 		using Val = Context::Val;
 
 		using Handle = Context::Handle;
-		using Small_Handle = Context::Small_Handle;
+		using Handle_Small = Context::Handle_Small;
 
 
 	private:

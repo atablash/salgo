@@ -2,7 +2,7 @@
 
 #include "const-flag.hpp"
 #include "accessors.hpp"
-#include "int-handle.hpp"
+#include "handles.hpp"
 #include "vector.hpp"
 
 #include <glog/logging.h>

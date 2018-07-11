@@ -105,14 +105,14 @@ struct Context {
 	using Allocator = typename _ALLOCATOR ::template VAL<Node>;
 
 	using       Handle = typename Allocator ::       Handle;
-	using Small_Handle = typename Allocator :: Small_Handle;
+	using Handle_Small = typename Allocator :: Handle_Small;
 
 
 
 	struct Node : Key_Val,
 			Add_aggreg<Aggreg>,
 			Add_propag<Propag>,
-			Add_parent<Small_Handle, Parents> {
+			Add_parent<Handle_Small, Parents> {
 
 		FORWARDING_CONSTRUCTOR(Node, Key_Val) {}
 
@@ -120,8 +120,8 @@ struct Context {
 
 		std::conditional_t<
 			N_Ary==0,
-			std::vector<Small_Handle>,
-			std::array<Small_Handle, N_Ary>
+			std::vector<Handle_Small>,
+			std::array<Handle_Small, N_Ary>
 		> children;
 	};
 
@@ -154,7 +154,7 @@ struct Context {
 		}
 
 	private:
-		Small_Handle cached_parent;
+		Handle_Small cached_parent;
 		decltype(Node::children) cached_children;
 	};
 
@@ -271,7 +271,7 @@ struct Context {
 
 
 	private:
-		void _unlink_child_1way(Small_Handle& ch) {
+		void _unlink_child_1way(Handle_Small& ch) {
 			static_assert(C == MUTAB, "called on CONST accessor");
 			DCHECK( exists() );
 
@@ -428,7 +428,7 @@ struct Context {
 		using Key_Val = Context::Key_Val;
 
 		using       Handle = Context::      Handle;
-		using Small_Handle = Context::Small_Handle;
+		using Handle_Small = Context::Handle_Small;
 
 		template<Const_Flag C> using Accessor = Context::Accessor<C>;
 		template<Const_Flag C> using Iterator = Context::Iterator<C>;

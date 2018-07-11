@@ -38,6 +38,7 @@ set(sources
 	hash-table.cpp
 	chunked-vector.cpp
 	rooted-forest.cpp
+	graph.cpp
 	#3d/compute-normals.cpp
 	#3d/collapse-edges.cpp
 	#3d/cap-holes.cpp

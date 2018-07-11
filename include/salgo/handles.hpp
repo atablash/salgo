@@ -62,8 +62,8 @@ struct Int_Handle : Int_Handle_Base<Int_Handle<INT,default_value>, INT, default_
 
 template<
 	class CRTP,
-	class HANDLE_A,
-	class HANDLE_B
+	class HANDLE_A, // must have .valid(), .reset() methods
+	class HANDLE_B // can be ordinary int
 >
 struct Pair_Handle_Base {
 

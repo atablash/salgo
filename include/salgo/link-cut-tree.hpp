@@ -45,12 +45,12 @@ struct Context {
 	using Binary_Tree = salgo::Binary_Tree<Node> ::ALLOCATOR<_ALLOCATOR>;
 
 	using       Handle = Binary_Tree::      Handle;
-	using Small_Handle = Binary_Tree::Small_Handle;
+	using Handle_Small = Binary_Tree::Handle_Small;
 
 
 
 	struct Node : Add_val<Has_Val, Val> {
-		Small_Handle path_parent;
+		Handle_Small path_parent;
 	};
 
 

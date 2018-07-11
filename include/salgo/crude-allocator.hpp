@@ -2,7 +2,7 @@
 
 #include "memory-block.hpp"
 #include "vector.hpp"
-#include "int-handle.hpp"
+#include "handles.hpp"
 #include "global-instance.hpp"
 
 namespace salgo {
@@ -36,7 +36,7 @@ struct Params {};
 // parametrized by unused context X, to make Handles from different Contexts incompatible
 //
 template<class> struct Handle;
-template<class> struct Small_Handle;
+template<class> struct Handle_Small;
 
 static const int div = 27;
 
@@ -58,15 +58,15 @@ struct Handle : Pair_Handle_Base<Handle<X>, Int_Handle<int,(1<<(32-div))-1>, int
 
 // small
 template<class X>
-struct Small_Handle : Int_Handle_Base<Small_Handle<X>, unsigned int> {
-	using BASE = Int_Handle_Base<Small_Handle<X>, unsigned int>;
+struct Handle_Small : Int_Handle_Base<Handle_Small<X>, unsigned int> {
+	using BASE = Int_Handle_Base<Handle_Small<X>, unsigned int>;
 
 
-	Small_Handle() = default;
-	Small_Handle(unsigned int v) : BASE(v) {}
+	Handle_Small() = default;
+	Handle_Small(unsigned int v) : BASE(v) {}
 
-	Small_Handle( const Handle<X>& h ) { *this = h; }
-	Small_Handle& operator=(const Handle<X>& h) {
+	Handle_Small( const Handle<X>& h ) { *this = h; }
+	Handle_Small& operator=(const Handle<X>& h) {
 		DCHECK_LT(h.a, 1<<(32-div));
 		DCHECK_LT(h.b, 1<<div);
 		*this = (h.a << div) | h.b;
@@ -116,7 +116,7 @@ struct Context {
 
 
 	using       Handle = crude_allocator::      Handle<P>;
-	using Small_Handle = crude_allocator::Small_Handle<P>;
+	using Handle_Small = crude_allocator::Handle_Small<P>;
 
 
 
@@ -186,7 +186,7 @@ struct Context {
 
 	public:
 		using Val = Context::Val;
-		using Small_Handle = Context::Small_Handle;
+		using Handle_Small = Context::Handle_Small;
 		using       Handle = Context::      Handle;
 
 
@@ -233,7 +233,7 @@ struct Context {
 
 	public:
 		using          Val = typename Crude_Allocator::Val;
-		using Small_Handle = typename Crude_Allocator::Small_Handle;
+		using Handle_Small = typename Crude_Allocator::Handle_Small;
 		using       Handle = typename Crude_Allocator::Handle;
 
 	public:
@@ -322,8 +322,8 @@ using Crude_Allocator = typename internal::crude_allocator::Context<
 
 
 template<class X>
-struct std::hash<salgo::internal::crude_allocator::Small_Handle<X>> {
-	size_t operator()(const salgo::internal::crude_allocator::Small_Handle<X>& h) const {
+struct std::hash<salgo::internal::crude_allocator::Handle_Small<X>> {
+	size_t operator()(const salgo::internal::crude_allocator::Handle_Small<X>& h) const {
 		return h;
 	}
 };

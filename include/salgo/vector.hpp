@@ -4,7 +4,7 @@
 #include "const-flag.hpp"
 #include "stack-storage.hpp"
 #include "accessors.hpp"
-#include "int-handle.hpp"
+#include "handles.hpp"
 
 #include "memory-block.hpp"
 

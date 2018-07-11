@@ -4,7 +4,7 @@
 #include "const-flag.hpp"
 #include "stack-storage.hpp"
 #include "accessors.hpp"
-#include "int-handle.hpp"
+#include "handles.hpp"
 
 #include <cstring> // memcpy
 
@@ -243,8 +243,8 @@ struct Context {
 		static constexpr bool Has_Exists = Context::Exists;
 		static constexpr bool Has_Count = Context::Count;
 
-		using       Handle = Context::      Handle;
-		using Small_Handle = Handle;
+		using Handle       = Context::Handle;
+		using Handle_Small = Handle;
 
 		using Index = Context::Index;
 
@@ -511,17 +511,23 @@ struct Context {
 
 		// direct access
 	public:
-		Val& operator[](Index key) {
+		auto& operator[](Index key) {
 			_check_bounds(key);
 			if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element";
 			return _get(key);
 		}
 
-		const Val& operator[](Index key) const {
+		auto& operator[](Index key) const {
 			_check_bounds(key);
 			if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element";
 			return _get(key);
 		}
+
+		auto& operator[](First_Tag)       { return operator()(FIRST)(); }
+		auto& operator[](First_Tag) const { return operator()(FIRST)(); }
+
+		auto& operator[](Last_Tag)        { return operator()(LAST)(); }
+		auto& operator[](Last_Tag)  const { return operator()(LAST)(); }
 
 
 
@@ -535,6 +541,36 @@ struct Context {
 		auto operator()(Index key) const {
 			_check_bounds(key);
 			return Accessor<CONST>(this, key);
+		}
+
+
+		auto operator()(First_Tag) {
+			DCHECK(!empty());
+			Handle h = 0;
+			while(!(*this)(h).constructed()) ++h;
+			return operator()(h);
+		}
+
+		auto operator()(First_Tag) const {
+			DCHECK(!empty());
+			Handle h = 0;
+			while(!(*this)(h).constructed()) ++h;
+			return operator()(h);
+		}
+
+
+		auto operator()(Last_Tag) {
+			DCHECK(!empty());
+			Handle h = domain();
+			do --h; while(!(*this)(h).constructed());
+			return operator()(h);
+		}
+
+		auto operator()(Last_Tag) const {
+			DCHECK(!empty());
+			Handle h = domain();
+			do --h; while(!(*this)(h).constructed());
+			return operator()(h);
 		}
 
 
