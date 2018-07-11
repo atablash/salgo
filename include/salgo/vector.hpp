@@ -60,6 +60,8 @@ struct Context {
 		EXPLICIT_FORWARDING_CONSTRUCTOR(Handle, BASE) {}
 	};
 
+	using Handle_Small = Handle;
+
 	// same as Handle, but allow creation from `int`
 	struct Index : Handle {
 		FORWARDING_CONSTRUCTOR(Index, Handle) {}
@@ -186,7 +188,9 @@ struct Context {
 		static constexpr bool Has_Exists = Context::Exists;
 		static constexpr bool Has_Count = Context::Count;
 
-		using Handle = Context::Handle;
+		using Handle       = Context::Handle;
+		using Handle_Small = Context::Handle_Small;
+		using Index        = Context::Index;
 
 
 	private:
@@ -317,11 +321,11 @@ struct Context {
 			return Accessor<CONST>(this, key);
 		}
 
-		auto& operator()(First_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(0) ); }
-		auto& operator()(First_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(0) ); }
+		auto operator()(First_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(0) ); }
+		auto operator()(First_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(0) ); }
 
-		auto& operator()(Last_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(_size-1) ); }
-		auto& operator()(Last_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(_size-1) ); }
+		auto operator()(Last_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(_size-1) ); }
+		auto operator()(Last_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator()( Index(_size-1) ); }
 
 
 
@@ -363,7 +367,12 @@ struct Context {
 			return Accessor<MUTAB>( this, Index(_size++) );
 		}
 
-		Val pop_back() {
+		template<class... ARGS>
+		auto add(ARGS&&... args) {
+			return emplace_back( std::forward<ARGS>(args)... );
+		}
+
+		auto pop_back() {
 			static_assert(Dense || Exists, "can't pop_back() if last element is unknown");
 
 			if constexpr(Exists) {

@@ -144,6 +144,9 @@ public:
 	//template<class T> Accessor<C>& operator+=(T&& t) { operator()()+=std::forward<T>(t); return _self(); }
 	//template<class T> Accessor<C>& operator-=(T&& t) { operator()()-=std::forward<T>(t); return _self(); }
 
+public:
+	auto next() const { auto r = _self(); ++r.iterator(); return r; }
+	auto prev() const { auto r = _self(); --r.iterator(); return r; }
 
 private:
 	using BASE::accessor; // turn off

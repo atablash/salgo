@@ -294,7 +294,7 @@ struct Context {
 		Handle _find(const Key& k) const {
 			if(_buckets.size() == 0) return Handle();
 
-			auto i_bucket = Hash::operator()(k) % _buckets.size();
+			int i_bucket = Hash::operator()(k) % _buckets.size();
 			auto& bucket = _buckets[ i_bucket ];
 
 			for(auto& e : bucket) {
@@ -337,7 +337,7 @@ struct Context {
 
 			++_count;
 
-			auto i_bucket = Hash::operator()(k) % _buckets.size();
+			int i_bucket = Hash::operator()(k) % _buckets.size();
 
 			if constexpr(Inplace) {
 				auto b = _buckets[i_bucket].add( std::forward<K>(k), std::forward<V>(v)... ).handle();

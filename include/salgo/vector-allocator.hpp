@@ -61,8 +61,7 @@ struct Context {
 
 	using Handle       = typename Block::Handle;
 	using Handle_Small = typename Block::Handle_Small;
-
-	using Index = typename Block::Index;
+	using Index        = typename Block::Index;
 
 
 
@@ -100,12 +99,22 @@ struct Context {
 		friend Vector_Allocator;
 
 	public:
+		void construct() {
+			static_assert(C == MUTAB, "called construct() on CONST accessor");
+			_container().v( _handle() ).construct();
+		}
+
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
 			_container().v( _handle() ).destruct();
 		}
 
+		void erase() { destruct(); } // alias
+
 		bool constructed() const { return _container().v( _handle() ).constructed(); }
+
+		auto exists() const { return constructed(); } // alias
+
 		//bool exists_SLOW() const { return _container().v(h).exists_SLOW(); }
 	};
 
@@ -160,10 +169,6 @@ struct Context {
 		friend Iterator<CONST>;
 		friend Iterator<MUTAB>;
 
-	private:
-		Block v;
-		Index lookup_index = 0;
-
 	public:
 		using Val = Context::Val;
 		using Handle_Small = Context::Handle_Small;
@@ -171,6 +176,10 @@ struct Context {
 		using Index        = Context::Index;
 
 		static constexpr bool Auto_Destruct = true;
+
+	private:
+		Block v;
+		Index lookup_index = 0;
 
 	public:
 		Vector_Allocator() = default;
@@ -184,6 +193,7 @@ struct Context {
 				v(i).construct( args... );
 			}
 		}
+
 
 
 	public:
@@ -221,12 +231,26 @@ struct Context {
 			return construct( std::forward<ARGS>(args)... );
 		}
 
-	public:
-		auto& operator[]( Handle h )       { return v[h]; }
-		auto& operator[]( Handle h ) const { return v[h]; }
+		template<class... ARGS>
+		auto add(ARGS&&... args) { return construct( std::forward<ARGS>(args)... ); } // alias
 
-		auto  operator()( Handle h )       { return Accessor<MUTAB>(this, h); }
-		auto  operator()( Handle h ) const { return Accessor<CONST>(this, h); }
+
+		template<class... ARGS>
+		void resize(int new_size, ARGS&&... args) {
+			auto old_size = v.domain();
+			v.resize(new_size);
+			for(int i=old_size; i<new_size; ++i) {
+				operator()(i).construct( args... );
+			}
+		}
+
+
+	public:
+		auto& operator[]( Index h )       { return v[h]; }
+		auto& operator[]( Index h ) const { return v[h]; }
+
+		auto  operator()( Index h )       { return Accessor<MUTAB>(this, h); }
+		auto  operator()( Index h ) const { return Accessor<CONST>(this, h); }
 
 
 		auto& operator[]( First_Tag )       { return v[FIRST]; }
@@ -246,6 +270,8 @@ struct Context {
 
 		auto count() const { return v.count(); }
 		auto empty() const { return v.empty(); }
+
+		auto domain() const { return v.domain(); }
 
 	public:
 		auto begin()       { return Iterator<MUTAB>(this, v.begin()); }
