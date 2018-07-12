@@ -6,15 +6,15 @@
 using namespace salgo;
 
 
-//
-//         o
-//        / \
-//       o   o
-//      /   / \
-//     o   o   o
-//            /
-//           o
-//
+//                  |
+//         o        |
+//        / \       |
+//       o   o      |
+//      /   / \     |
+//     o   o   o    |
+//            /     |
+//           o      |
+//                  |
 template<class TREE>
 auto sample_tree_1(TREE& tree) {
 	auto root = tree.emplace(33);

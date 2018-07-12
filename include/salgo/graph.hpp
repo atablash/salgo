@@ -42,10 +42,11 @@ namespace graph {
 	template<
 		bool _DIRECTED,
 		bool _BACKLINKS, // directed graphs can have 'ins' field
-		class _VERT_PROPS,
-		//class _OUT_PROPS,
-		//class _IN_PROPS,
-		class _EDGE_PROPS,
+		class _VERT_DATA,
+		class _EDGE_DATA,
+		class _VERT_EDGE_DATA, // TODO: split into OUT_DATA and IN_DATA
+		//class _OUT_DATA,
+		//class _IN_DATA,
 		Erasable _VERTS_ERASABLE,
 		Erasable _EDGES_ERASABLE,
 		bool _EDGES_GLOBAL
@@ -55,8 +56,10 @@ namespace graph {
 		static constexpr bool Directed = _DIRECTED;
 		static constexpr bool Backlinks = _BACKLINKS;
 
-		using Vert_Data      = _VERT_PROPS;
-		using Edge_Data      = _EDGE_PROPS;
+		using Vert_Data      = _VERT_DATA;
+		using Edge_Data      = _EDGE_DATA;
+
+		using Vert_Edge_Data = _VERT_EDGE_DATA;
 
 		static constexpr Erasable Verts_Erasable = _VERTS_ERASABLE;
 		static constexpr Erasable Edges_Erasable = _EDGES_ERASABLE;
@@ -67,10 +70,13 @@ namespace graph {
 
 
 		static constexpr bool Has_Vert_Data =
-			!std::is_same_v<Vert_Data, void>;
+				!std::is_same_v<Vert_Data, void>;
 
 		static constexpr bool Has_Edge_Data =
-			!std::is_same_v<Edge_Data, void>;
+				!std::is_same_v<Edge_Data, void>;
+
+		static constexpr bool Has_Vert_Edge_Data =
+				!std::is_same_v<Vert_Edge_Data, void>;
 
 
 
@@ -93,22 +99,22 @@ namespace graph {
 			friend A_Edge<CONST>; \
 			friend I_Edge<MUTAB>; \
 			friend I_Edge<CONST>; \
-			friend A_Out<MUTAB,0>; \
-			friend A_Out<CONST,0>; \
-			friend A_Out<MUTAB,1>; \
-			friend A_Out<CONST,1>; \
-			friend I_Out<MUTAB,0>; \
-			friend I_Out<CONST,0>; \
-			friend I_Out<MUTAB,1>; \
-			friend I_Out<CONST,1>; \
+			friend A_Vert_Edge<MUTAB,0>; \
+			friend A_Vert_Edge<CONST,0>; \
+			friend A_Vert_Edge<MUTAB,1>; \
+			friend A_Vert_Edge<CONST,1>; \
+			friend I_Vert_Edge<MUTAB,0>; \
+			friend I_Vert_Edge<CONST,0>; \
+			friend I_Vert_Edge<MUTAB,1>; \
+			friend I_Vert_Edge<CONST,1>; \
 			friend A_Verts<MUTAB>; \
 			friend A_Verts<CONST>; \
 			friend A_Edges<MUTAB>; \
 			friend A_Edges<CONST>; \
-			friend A_Outs<MUTAB,0>; \
-			friend A_Outs<CONST,0>; \
-			friend A_Outs<MUTAB,1>; \
-			friend A_Outs<CONST,1>;
+			friend A_Vert_Edges<MUTAB,0>; \
+			friend A_Vert_Edges<CONST,0>; \
+			friend A_Vert_Edges<MUTAB,1>; \
+			friend A_Vert_Edges<CONST,1>;
 
 
 		class Graph;
@@ -154,15 +160,20 @@ namespace graph {
 		using  SH_Edge = typename Edges::Handle_Small;
 		using IDX_Edge = typename Edges::Index;
 
-		using   H_Out  = typename Vert_Edges::Handle;
-		using  SH_Out  = typename Vert_Edges::Handle_Small;
-		using IDX_Out  = typename Vert_Edges::Index;
+		//using   H_Out  = typename Vert_Edges::Handle;
+		//using  SH_Out  = typename Vert_Edges::Handle_Small;
+		//using IDX_Out  = typename Vert_Edges::Index;
 
 
-		struct H_Vert_Edge : Pair_Handle_Base< H_Vert_Edge, H_Vert, typename Vert_Edges::Handle > {
-			using BASE = Pair_Handle_Base< H_Vert_Edge, H_Vert, typename Vert_Edges::Handle >;
-			FORWARDING_CONSTRUCTOR(H_Vert_Edge, BASE) {}
+		struct H_Vert_Edge_Base : Pair_Handle_Base< H_Vert_Edge_Base, H_Vert, typename Vert_Edges::Handle > {
+			using BASE = Pair_Handle_Base< H_Vert_Edge_Base, H_Vert, typename Vert_Edges::Handle >;
+			FORWARDING_CONSTRUCTOR(H_Vert_Edge_Base, BASE) {}
 		};
+
+		struct H_Out : H_Vert_Edge_Base { FORWARDING_CONSTRUCTOR(H_Out, H_Vert_Edge_Base){} };
+		struct H_In  : H_Vert_Edge_Base { FORWARDING_CONSTRUCTOR(H_In,  H_Vert_Edge_Base){} };
+
+		template<int oi> using H_Vert_Edge = std::conditional_t<oi == 0, H_Out, H_In>;
 
 
 
@@ -177,9 +188,12 @@ namespace graph {
 
 
 
-		struct Vert_Edge : Add_edge<SH_Edge, Has_Edge_Data || Edges_Global> {
+		struct Vert_Edge :
+				Add_edge<SH_Edge, Has_Edge_Data || Edges_Global>,
+				Add_data<Vert_Edge_Data, Has_Vert_Edge_Data> {
+				
 			static constexpr bool Links_Vert_Edge = Outs_Link_Outs || Outs_Link_Ins;
-			std::conditional_t<Links_Vert_Edge, H_Vert_Edge, H_Vert> link;
+			std::conditional_t<Links_Vert_Edge, H_Vert_Edge_Base, H_Vert> link;
 
 			auto& vert() { if constexpr(Links_Vert_Edge) return link.a; else return link; }
 		};
@@ -205,7 +219,7 @@ namespace graph {
 
 		struct Verts_Context;
 		struct Edges_Context;
-		template<int> struct Outs_Context;
+		template<int> struct Vert_Edges_Context;
 
 
 
@@ -219,15 +233,15 @@ namespace graph {
 		template<Const_Flag C> using A_Edge = typename Edges_Context::template Accessor<C>;
 		template<Const_Flag C> using I_Edge = typename Edges_Context::template Iterator<C>;
 
-		template<Const_Flag C, int oi_idx> using A_Out = typename Outs_Context<oi_idx>::template Accessor<C>;
-		template<Const_Flag C, int oi_idx> using I_Out = typename Outs_Context<oi_idx>::template Iterator<C>;
+		template<Const_Flag C, int oi_idx> using A_Vert_Edge = typename Vert_Edges_Context<oi_idx>::template Accessor<C>;
+		template<Const_Flag C, int oi_idx> using I_Vert_Edge = typename Vert_Edges_Context<oi_idx>::template Iterator<C>;
 
 		//template<Const_Flag C> using A_In  = typename Ins_Context::template Accessor<C>;
 		//template<Const_Flag C> using I_In  = typename Ins_Context::template Iterator<C>;
 
 		template<Const_Flag C> class A_Verts;
 		template<Const_Flag C> class A_Edges;
-		template<Const_Flag, int> class A_Outs;
+		template<Const_Flag, int> class A_Vert_Edges;
 
 
 
@@ -261,11 +275,11 @@ namespace graph {
 				auto operator->() const { return &data(); }
 
 
-				auto outs()       { return A_Outs<MUTAB,0>( _container(), _handle() ); }
-				auto outs() const { return A_Outs<CONST,0>( _container(), _handle() ); }
+				auto outs()       { return A_Vert_Edges<MUTAB,0>( _container(), _handle() ); }
+				auto outs() const { return A_Vert_Edges<CONST,0>( _container(), _handle() ); }
 
-				auto ins()       { return A_Outs<MUTAB,1>( _container(), _handle() ); }
-				auto ins() const { return A_Outs<CONST,1>( _container(), _handle() ); }
+				auto ins()       { return A_Vert_Edges<MUTAB,1>( _container(), _handle() ); }
+				auto ins() const { return A_Vert_Edges<CONST,1>( _container(), _handle() ); }
 
 				template<class X> auto out(const X& x)       { return outs()(x); }
 				template<class X> auto out(const X& x) const { return outs()(x); }
@@ -421,14 +435,14 @@ namespace graph {
 
 
 		template<int oi>
-		struct Outs_Context {
+		struct Vert_Edges_Context {
 			using Container = Graph;
-			using Handle = H_Vert_Edge;
+			using Handle = H_Vert_Edge<oi>;
 
 
 			template<Const_Flag C>
-			class Accessor : public Accessor_Base<C,Outs_Context> {
-				using BASE = Accessor_Base<C,Outs_Context>;
+			class Accessor : public Accessor_Base<C,Vert_Edges_Context> {
+				using BASE = Accessor_Base<C,Vert_Edges_Context>;
 				using BASE::_container;
 				using BASE::_handle;
 
@@ -439,8 +453,19 @@ namespace graph {
 				auto& graph()       {  return _container();  }
 				auto& graph() const {  return _container();  }
 
-				auto& data()       {  return _raw().data();  }
-				auto& data() const {  return _raw().data();  }
+
+				auto& data() {
+					if constexpr(Has_Vert_Edge_Data) return _raw().data();
+					else DCHECK(false);
+					return *this; // never reached
+				}
+
+				auto& data() const {
+					if constexpr(Has_Vert_Edge_Data) return _raw().data();
+					else DCHECK(false);
+					return *this; // never reached
+				}
+
 
 				auto vert() { return _container().vert( _raw().vert() ); }
 				auto edge() { return _container().edge( _raw().edge ); }
@@ -466,8 +491,8 @@ namespace graph {
 			struct End_Iterator {};
 
 			template<Const_Flag C>
-			class Iterator : public Iterator_Base<C,Outs_Context> {
-				using BASE = Iterator_Base<C,Outs_Context>;
+			class Iterator : public Iterator_Base<C,Vert_Edges_Context> {
+				using BASE = Iterator_Base<C,Vert_Edges_Context>;
 				using BASE::_container;
 				using BASE::_handle;
 
@@ -568,8 +593,8 @@ namespace graph {
 				else if constexpr(Directed && Backlinks) {
 					auto fr_out = _graph._vs[fr].outs().add();
 					auto to_in  = _graph._vs[to].ins().add();
-					fr_out().link = H_Vert_Edge{ to, to_in };
-					to_in().link  = H_Vert_Edge{ fr, fr_out };
+					fr_out().link = H_Vert_Edge_Base{ to, to_in };
+					to_in().link  = H_Vert_Edge_Base{ fr, fr_out };
 					if constexpr(Has_Edge_Data || Edges_Global) {
 						auto edge = _graph._es.add( fr, to, std::forward<ARGS>(args)... );
 						fr_out().edge = edge;
@@ -579,8 +604,8 @@ namespace graph {
 				else if constexpr(!Directed) {
 					auto fr_out = _graph._vs[fr].outs().add();
 					auto to_out = _graph._vs[to].outs().add();
-					fr_out().link = H_Vert_Edge{ to, to_out };
-					to_out().link = H_Vert_Edge{ fr, fr_out };
+					fr_out().link = H_Vert_Edge_Base{ to, to_out };
+					to_out().link = H_Vert_Edge_Base{ fr, fr_out };
 					if constexpr(Has_Edge_Data || Edges_Global) {
 						auto edge = _graph._es.add( fr, to, std::forward<ARGS>(args)... );
 						fr_out().edge = edge;
@@ -616,28 +641,28 @@ namespace graph {
 
 
 		template<Const_Flag C, int oi>
-		class A_Outs {
+		class A_Vert_Edges {
 		public:
 			auto domain() const { return _raw().domain(); }
 
 			auto empty() const {  return _raw().empty();  }
 			auto count() const {  return _raw().count();  }
 
-			auto operator()(typename Vert_Edges::Index idx)       { return A_Out<C,oi>(&_graph, _vert, idx); }
-			auto operator()(typename Vert_Edges::Index idx) const { return A_Out<C,oi>(&_graph, _vert, idx); }
+			auto operator()(typename Vert_Edges::Index idx)       { return A_Vert_Edge<C,oi>(&_graph, _vert, idx); }
+			auto operator()(typename Vert_Edges::Index idx) const { return A_Vert_Edge<C,oi>(&_graph, _vert, idx); }
 
-			auto operator()(First_Tag)       { return A_Out<C,oi>(&_graph, H_Vert_Edge{_vert, _raw()(FIRST)}); }
-			auto operator()(First_Tag) const { return A_Out<C,oi>(&_graph, H_Vert_Edge{_vert, _raw()(FIRST)}); }
+			auto operator()(First_Tag)       { return A_Vert_Edge<C,oi>(&_graph, H_Vert_Edge<oi>{_vert, _raw()(FIRST)}); }
+			auto operator()(First_Tag) const { return A_Vert_Edge<C,oi>(&_graph, H_Vert_Edge<oi>{_vert, _raw()(FIRST)}); }
 
-			auto operator()(Last_Tag)        { return A_Out<C,oi>(&_graph, H_Vert_Edge{_vert, _raw()(LAST)}); }
-			auto operator()(Last_Tag)  const { return A_Out<C,oi>(&_graph, H_Vert_Edge{_vert, _raw()(LAST)}); }
+			auto operator()(Last_Tag)        { return A_Vert_Edge<C,oi>(&_graph, H_Vert_Edge<oi>{_vert, _raw()(LAST)}); }
+			auto operator()(Last_Tag)  const { return A_Vert_Edge<C,oi>(&_graph, H_Vert_Edge<oi>{_vert, _raw()(LAST)}); }
 
 
-			auto begin()       { return I_Out<C,oi>(&_graph, H_Vert_Edge{_vert, _raw().begin()}); }
-			auto begin() const { return I_Out<C,oi>(&_graph, H_Vert_Edge{_vert, _raw().begin()}); }
+			auto begin()       { return I_Vert_Edge<C,oi>(&_graph, H_Vert_Edge_Base{_vert, _raw().begin()}); }
+			auto begin() const { return I_Vert_Edge<C,oi>(&_graph, H_Vert_Edge_Base{_vert, _raw().begin()}); }
 
-			auto end()         { return typename Outs_Context<oi>::End_Iterator(); }
-			auto end() const   { return typename Outs_Context<oi>::End_Iterator(); }
+			auto end()         { return typename Vert_Edges_Context<oi>::End_Iterator(); }
+			auto end() const   { return typename Vert_Edges_Context<oi>::End_Iterator(); }
 
 
 		private:
@@ -645,7 +670,7 @@ namespace graph {
 			auto& _raw() const { return _graph._vs[_vert].outs_ins[oi]; }
 
 		private:
-			A_Outs(Const<Graph,C>& graph, H_Vert vert) : _graph(graph), _vert(vert) {}
+			A_Vert_Edges(Const<Graph,C>& graph, H_Vert vert) : _graph(graph), _vert(vert) {}
 			GRAPH_FRIENDS
 
 		private:
@@ -717,6 +742,20 @@ namespace graph {
 			auto& operator[](H_Edge handle) const {  return A_Edge<CONST>( this, handle ).data();  }
 
 
+			auto operator()(H_Out handle)       {  return A_Vert_Edge<MUTAB,0>( this, handle );  }
+			auto operator()(H_Out handle) const {  return A_Vert_Edge<CONST,0>( this, handle );  }
+
+			auto& operator[](H_Out handle)       {  return A_Vert_Edge<MUTAB,0>( this, handle ).data();  }
+			auto& operator[](H_Out handle) const {  return A_Vert_Edge<CONST,0>( this, handle ).data();  }
+
+
+			auto operator()(H_In handle)       {  return A_Vert_Edge<MUTAB,1>( this, handle );  }
+			auto operator()(H_In handle) const {  return A_Vert_Edge<CONST,1>( this, handle );  }
+
+			auto& operator[](H_In handle)       {  return A_Vert_Edge<MUTAB,1>( this, handle ).data();  }
+			auto& operator[](H_In handle) const {  return A_Vert_Edge<CONST,1>( this, handle ).data();  }
+
+
 		public:
 			auto verts()       {  return A_Verts<MUTAB>( *this );  }
 			auto verts() const {  return A_Verts<CONST>( *this );  }
@@ -739,32 +778,45 @@ namespace graph {
 		struct With_Builder : Graph {
 			FORWARDING_CONSTRUCTOR( With_Builder, Graph ) {}
 
-			using DIRECTED = typename Context<true, Backlinks, Vert_Data, Edge_Data, Verts_Erasable,
+			using DIRECTED = typename Context<true, Backlinks, Vert_Data,
+					Edge_Data, Vert_Edge_Data, Verts_Erasable,
 					Edges_Erasable, Edges_Global> ::With_Builder;
 
-			using BACKLINKS = typename Context<Directed, true, Vert_Data, Edge_Data, Verts_Erasable,
+			using BACKLINKS = typename Context<Directed, true, Vert_Data,
+					Edge_Data, Vert_Edge_Data, Verts_Erasable,
 					Edges_Erasable, Edges_Global> ::With_Builder;
 
 			template<class DATA>
-			using VERT_DATA = typename Context<Directed, Backlinks, DATA, Edge_Data, Verts_Erasable,
+			using VERT_DATA = typename Context<Directed, Backlinks, DATA,
+					Edge_Data, Vert_Edge_Data, Verts_Erasable,
 					Edges_Erasable, Edges_Global> ::With_Builder;
 
 			template<class DATA>
-			using EDGE_DATA = typename Context<Directed, Backlinks, Vert_Data, DATA, Verts_Erasable,
+			using EDGE_DATA = typename Context<Directed, Backlinks, Vert_Data,
+					DATA, Vert_Edge_Data, Verts_Erasable,
+					Edges_Erasable, Edges_Global> ::With_Builder;
+
+			template<class DATA>
+			using VERT_EDGE_DATA = typename Context<Directed, Backlinks, Vert_Data,
+					Edge_Data, DATA, Verts_Erasable,
 					Edges_Erasable, Edges_Global> ::With_Builder;
 
 
-			using VERTS_ERASABLE = typename Context<Directed, Backlinks, Vert_Data, Edge_Data, ERASABLE_HOLES,
+			using VERTS_ERASABLE = typename Context<Directed, Backlinks, Vert_Data,
+					Edge_Data, Vert_Edge_Data, ERASABLE_HOLES,
 					Edges_Erasable, Edges_Global> ::With_Builder;
 
-			using EDGES_ERASABLE = typename Context<Directed, Backlinks, Vert_Data, Edge_Data, Verts_Erasable,
+			using EDGES_ERASABLE = typename Context<Directed, Backlinks, Vert_Data,
+					Edge_Data, Vert_Edge_Data, Verts_Erasable,
 					ERASABLE_HOLES, Edges_Global> ::With_Builder;
 
 
-			using VERTS_ERASABLE_REORDER = typename Context<Directed, Backlinks, Vert_Data, Edge_Data, ERASABLE_REORDER,
+			using VERTS_ERASABLE_REORDER = typename Context<Directed, Backlinks, Vert_Data,
+					Edge_Data, Vert_Edge_Data, ERASABLE_REORDER,
 					Edges_Erasable, Edges_Global> ::With_Builder;
 
-			using EDGES_ERASABLE_REORDER = typename Context<Directed, Backlinks, Vert_Data, Edge_Data, Verts_Erasable,
+			using EDGES_ERASABLE_REORDER = typename Context<Directed, Backlinks, Vert_Data,
+					Edge_Data, Vert_Edge_Data, Verts_Erasable,
 					ERASABLE_REORDER, Edges_Global> ::With_Builder;
 			
 		};
@@ -782,6 +834,7 @@ using Graph = internal::graph::Context<
 	false, // backlinks
 	void, // vert data
 	void, // edge data
+	void, // vert-edge data
 	internal::graph::NON_ERASABLE, // verts erasable
 	internal::graph::NON_ERASABLE, // edges erasable
 	false // edges_global
