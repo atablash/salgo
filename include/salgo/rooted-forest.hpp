@@ -413,16 +413,6 @@ struct Context {
 
 
 	class Rooted_Forest : private Allocator {
-		friend Accessor<MUTAB>;
-		friend Accessor<CONST>;
-
-		friend Iterator<MUTAB>;
-		friend Iterator<CONST>;
-
-		friend Reference<MUTAB>;
-		friend Reference<CONST>;
-
-
 	public:
 		using Key = Context::Key;
 		using Val = Context::Val;
@@ -433,6 +423,17 @@ struct Context {
 
 		template<Const_Flag C> using Accessor = Context::Accessor<C>;
 		template<Const_Flag C> using Iterator = Context::Iterator<C>;
+
+
+	private:
+		friend Accessor<MUTAB>;
+		friend Accessor<CONST>;
+
+		friend Iterator<MUTAB>;
+		friend Iterator<CONST>;
+
+		friend Reference<MUTAB>;
+		friend Reference<CONST>;
 
 
 	private:

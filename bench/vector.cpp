@@ -153,7 +153,7 @@ static void RANDOM_ACCESS_std(State& state) {
 	}
 	DoNotOptimize(sum);
 }
-BENCHMARK( RANDOM_ACCESS_std )->MinTime(0.1);
+BENCHMARK( RANDOM_ACCESS_std )->MinTime(1.1);
 
 
 
