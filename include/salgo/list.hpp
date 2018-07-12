@@ -29,9 +29,7 @@ namespace List {
 
 
 
-
-template<bool> struct Add_num_existing { int num_existing = 0; };
-template<> struct Add_num_existing<false> {};
+ADD_MEMBER(num_existing);
 
 
 
@@ -100,8 +98,8 @@ struct Context {
 		bool just_erased() const { return _just_erased; }
 
 		void on_erase() {
-			_next = _container()._alloc()[_handle()].next;
-			_prev = _container()._alloc()[_handle()].prev;
+			_next = ALLOC[_handle()].next;
+			_prev = ALLOC[_handle()].prev;
 			_just_erased = true;
 		}
 
@@ -113,12 +111,12 @@ struct Context {
 
 		auto get_next() {
 			if(_just_erased) return _next;
-			else return _container()._alloc()[ _handle() ].next;
+			else return ALLOC[ _handle() ].next;
 		}
 
 		auto get_prev() {
 			if(_just_erased) return _prev;
-			else return _container()._alloc()[ _handle() ].prev;
+			else return ALLOC[ _handle() ].prev;
 		}
 	};
 
@@ -139,63 +137,63 @@ struct Context {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
 			BASE::on_erase();
 
-			auto prv = CO._alloc()[HA].prev;
-			auto nxt = CO._alloc()[HA].next;
-			if(prv.valid()) CO._alloc()[prv].next = nxt;
-			if(nxt.valid()) CO._alloc()[nxt].prev = prv;
+			auto prv = NODE.prev;
+			auto nxt = NODE.next;
+			if(prv.valid()) ALLOC[prv].next = nxt;
+			if(nxt.valid()) ALLOC[nxt].prev = prv;
 
-			if(_container()._front == HA) _container()._front = nxt;
-			if(_container()._back  == HA) _container()._back  = prv;
+			if(CONT._front == HANDLE) CONT._front = nxt;
+			if(CONT._back  == HANDLE) CONT._back  = prv;
 
-			ALLOC(HA).destruct();
+			ALLOC( HANDLE ).destruct();
 
-			if constexpr(Countable) --_container().num_existing;
+			if constexpr(Countable) --CONT.num_existing;
 		}
 
 		template<class... ARGS>
 		auto emplace_before(ARGS&&... args) {
 			static_assert(C == MUTAB, "called on CONST accessor");
-			DCHECK( HA.valid() && !BASE::just_erased());
+			DCHECK( HANDLE.valid() && !BASE::just_erased());
 
-			auto new_node = _container()._alloc().construct( std::forward<ARGS>(args)... );
+			auto new_node = ALLOC.construct( std::forward<ARGS>(args)... );
 
 			new_node().prev = BASE::get_prev();
-			if(new_node().prev.valid()) _container()._alloc()[ new_node().prev ].next = new_node.handle();
+			if(new_node().prev.valid()) ALLOC[ new_node().prev ].next = new_node.handle();
 
-			new_node().next = HA;
-			_container()._alloc()[ HA ].prev = new_node.handle();
+			new_node().next = HANDLE;
+			NODE.prev = new_node.handle();
 
-			if(_container()._front == HA) _container()._front = new_node.handle();
+			if(CONT._front == HANDLE) CONT._front = new_node.handle();
 
-			if constexpr(Countable) ++_container().num_existing;
-			return Accessor<MUTAB>(&_container(), new_node);
+			if constexpr(Countable) ++CONT.num_existing;
+			return Accessor<MUTAB>(&CONT, new_node);
 		}
 
 		template<class... ARGS>
 		auto emplace_after(ARGS&&... args) {
 			static_assert(C == MUTAB, "called on CONST accessor");
-			DCHECK( HA.valid() && !BASE::just_erased());
+			DCHECK( HANDLE.valid() && !BASE::just_erased());
 
-			auto new_node = _container()._alloc().construct( std::forward<ARGS>(args)... );
+			auto new_node = ALLOC.construct( std::forward<ARGS>(args)... );
 
 			new_node().next = BASE::get_next();
-			if(new_node().next.valid()) _container()._alloc()[ new_node().next ].prev = new_node.handle();
+			if(new_node().next.valid()) ALLOC[ new_node().next ].prev = new_node.handle();
 
-			new_node().prev = HA;
-			_container()._alloc()[ HA ].next = new_node.handle();
+			new_node().prev = HANDLE;
+			NODE.next = new_node.handle();
 
-			if(_container()._back == HA) _container()._back = new_node.handle();
+			if(CONT._back == HANDLE) CONT._back = new_node.handle();
 
-			if constexpr(Countable) ++_container().num_existing;
-			return Accessor<MUTAB>(&_container(), new_node);
+			if constexpr(Countable) ++CONT.num_existing;
+			return Accessor<MUTAB>(&CONT, new_node);
 		}
 
 
-		auto next()       { return _container()( BASE::get_next() ); }
-		auto next() const { return _container()( BASE::get_next() ); }
+		auto next()       { return CONT( BASE::get_next() ); }
+		auto next() const { return CONT( BASE::get_next() ); }
 
-		auto prev()       { return _container()( BASE::get_prev() ); }
-		auto prev() const { return _container()( BASE::get_prev() ); }
+		auto prev()       { return CONT( BASE::get_prev() ); }
+		auto prev() const { return CONT( BASE::get_prev() ); }
 	};
 
 
@@ -270,9 +268,9 @@ struct Context {
 
 	class List :
 			private Allocator,
-			private Add_num_existing<Countable> {
+			private Add_num_existing<int, Countable> {
 
-		using NUM_EXISTING_BASE = Add_num_existing<Countable>;
+		using NUM_EXISTING_BASE = Add_num_existing<int, Countable>;
 
 	public:
 		using Val = Context::Val;

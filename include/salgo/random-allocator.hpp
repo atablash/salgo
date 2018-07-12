@@ -90,7 +90,7 @@ struct Context {
 	public:
 		void destruct() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			CO.v(HA).destruct();
+			CONT.v(HANDLE).destruct();
 		}
 	};
 

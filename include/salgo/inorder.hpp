@@ -107,11 +107,11 @@ struct Context {
 	private:
 		void increment() {
 			BASE::just_erased = false;
-			HA = bst_next( BASE::accessor() );
+			HANDLE = bst_next( BASE::accessor() );
 		}
 
 		void decrement() {
-			if(!BASE::just_erased) HA = bst_prev( BASE::accessor() );
+			if(!BASE::just_erased) HANDLE = bst_prev( BASE::accessor() );
 			BASE::just_erased = false;
 		}
 
@@ -132,7 +132,7 @@ struct Context {
 		auto& accessor() { return _cast( BASE::accessor() ); }
 
 	public:
-		bool operator!=(End_Iterator) const { return HA.valid(); }
+		bool operator!=(End_Iterator) const { return HANDLE.valid(); }
 	};
 
 

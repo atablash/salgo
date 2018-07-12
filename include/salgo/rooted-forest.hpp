@@ -177,18 +177,21 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 
 	public:
-		auto& key()       { return CO[HA].key; }
-		auto& key() const { return CO[HA].key; }
+		auto& key()       { return NODE.key; }
+		auto& key() const { return NODE.key; }
 
-		auto& val()       { return CO[HA].val; }
-		auto& val() const { return CO[HA].val; }
+		auto& val()       { return NODE.val; }
+		auto& val() const { return NODE.val; }
 
 	public:
-		bool exists() const { return HA.valid(); }
+		bool exists() const { return HANDLE.valid(); }
 
 
-		auto child(int ith)       { _check_child_index(ith); return Accessor<C    >( &CO, BASE::get_children()[ith] ); }
-		auto child(int ith) const { _check_child_index(ith); return Accessor<CONST>( &CO, BASE::get_children()[ith] ); }
+		auto child(int ith)       { _check_child_index(ith);
+				return Accessor<C    >( &CONT, BASE::get_children()[ith] ); }
+
+		auto child(int ith) const { _check_child_index(ith);
+				return Accessor<CONST>( &CONT, BASE::get_children()[ith] ); }
 
 		auto left()        { static_assert(N_Ary == 2); return child(0); }
 		auto left()  const { static_assert(N_Ary == 2); return child(0); }
@@ -196,15 +199,15 @@ struct Context {
 		auto right()       { static_assert(N_Ary == 2); return child(1); }
 		auto right() const { static_assert(N_Ary == 2); return child(1); }
 
-		auto parent()       { return Accessor<C    >( &CO, BASE::get_parent() ); }
-		auto parent() const { return Accessor<CONST>( &CO, BASE::get_parent() ); }
+		auto parent()       { return Accessor<C    >( &CONT, BASE::get_parent() ); }
+		auto parent() const { return Accessor<CONST>( &CONT, BASE::get_parent() ); }
 
 
 
 		bool is_ith_child(int ith) const {
 			auto par = BASE::get_parent(); DCHECK(par.valid());
 			parent()._check_child_index(ith);
-			return HA == _node(par).children[ith];
+			return HANDLE == _node(par).children[ith];
 		}
 
 		auto& is_which() const {
@@ -232,7 +235,7 @@ struct Context {
 		auto emplace_child(int ith, Args&&... args) {
 			static_assert(C == MUTAB, "called on CONST accessor");
 			DCHECK( !child(ith).exists() );
-			auto new_node = CO._alloc().construct( std::forward<Args>(args)... );
+			auto new_node = ALLOC.construct( std::forward<Args>(args)... );
 			link_child(ith, new_node);
 			return child(ith);
 		}
@@ -252,8 +255,8 @@ struct Context {
 			DCHECK( !child(ith).exists() ); // no child
 			DCHECK( !BASE::_container()(new_child).parent().exists() ); // new_child has no parent
 
-			_node().children[ith] = new_child;
-			_node(new_child).parent = HA;
+			NODE.children[ith] = new_child;
+			_node(new_child).parent = HANDLE;
 		}
 
 		void link_left (Handle new_child) { static_assert(N_Ary == 2); link_child(0, new_child); }
@@ -263,7 +266,7 @@ struct Context {
 		// automatically unlink things if needed (slower)
 		void relink_child(int ith, Handle new_child) {
 			if(_node(new_child).parent.valid()) BASE::_container()(new_child).unlink_parent();
-			if(_node().children[ith].valid()) unlink_child(ith);
+			if(NODE.children[ith].valid()) unlink_child(ith);
 
 			link_child(ith, new_child);
 		}
@@ -298,9 +301,9 @@ struct Context {
 	private:
 		void _unlink_parent_1way() {
 			DCHECK( exists() );
-			auto& par = _node( _node().parent );
-			DCHECK( std::find(par.children.begin(), par.children.end(), HA) != par.children.end() );
-			for(auto& ch : par.children) if(ch == HA) {
+			auto& par = _node( NODE.parent );
+			DCHECK( std::find(par.children.begin(), par.children.end(), HANDLE) != par.children.end() );
+			for(auto& ch : par.children) if(ch == HANDLE) {
 				ch.reset();
 				DCHECK_GT(N_Ary, 0) << "not implemented";
 				// TODO: don't leave holes when N_ARY==0 (dynamic)
@@ -322,16 +325,16 @@ struct Context {
 			static_assert(C == MUTAB, "called on CONST accessor");
 			DCHECK( exists() );
 			BASE::on_erase(); // cache links before removing this node
-			CO._alloc()(HA).destruct();
+			ALLOC( HANDLE ).destruct();
 		}
 
 	public:
 		void erase() {
 			static_assert(C == MUTAB, "called on CONST accessor");
 			DCHECK( exists() );
-			DCHECK(!_node().parent.valid()) << "can't erase, still has parent";
+			DCHECK( !NODE.parent.valid() ) << "can't erase, still has parent";
 
-			for(auto& ch : _node().children) DCHECK( !ch.valid() ) << "can't erase, still has child";
+			for(auto& ch : NODE.children) DCHECK( !ch.valid() ) << "can't erase, still has child";
 
 			_erase_unchecked();
 		}
@@ -341,10 +344,10 @@ struct Context {
 			DCHECK( exists() );
 
 			// unlink parent (if present)
-			if( _node().parent.valid() ) _unlink_parent_1way();
+			if( NODE.parent.valid() ) _unlink_parent_1way();
 
 			// unlink children
-			for(auto& ch : _node().children) {
+			for(auto& ch : NODE.children) {
 				if(ch.valid()) _unlink_child_1way(ch);
 			}
 
@@ -364,10 +367,8 @@ struct Context {
 		//}
 
 	private:
-		auto& _node()       { return CO._alloc()[HA]; }
-		auto& _node() const { return CO._alloc()[HA]; }
-		auto& _node(Handle h)       { return CO._alloc()[h]; }
-		auto& _node(Handle h) const { return CO._alloc()[h]; }
+		auto& _node(Handle h)       { return ALLOC[ h ]; }
+		auto& _node(Handle h) const { return ALLOC[ h ]; }
 	};
 
 
@@ -389,15 +390,15 @@ struct Context {
 		friend BASE;
 
 		void _increment() {
-			HA = ++ALLOC( HA ).iterator();
+			HANDLE = ++ALLOC( HANDLE ).iterator();
 		}
 
 		void _decrement() {
-			HA = --ALLOC( HA ).iterator();
+			HANDLE = --ALLOC( HANDLE ).iterator();
 		}
 
 	public:
-		bool operator!=(End_Iterator) const { return ALLOC(HA).iterator() != ALLOC.end(); }
+		bool operator!=(End_Iterator) const { return ALLOC( HANDLE ).iterator() != ALLOC.end(); }
 	};
 
 

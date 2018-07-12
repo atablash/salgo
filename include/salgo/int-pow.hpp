@@ -1,19 +1,21 @@
 #pragma once
 
 
+#include <glog/logging.h>
+
+
 namespace salgo {
 
 
 
 
 template<class T, class E, class OP>
-T int_pow(T a, E exp,
-		const OP& op = [](T& a, const T& b){ a *= b; },
-		const T& neutral = 1) {
+T int_pow(T a, E exp, const OP& op, const T& neutral) {
+	DCHECK(exp >= 0);
 
 	auto r = neutral;
-	while(exp) {
-		if(exp&1) {
+	while(exp != 0) {
+		if((exp & 1) != 0) {
 			op(r, a);
 			--exp;
 		}
@@ -27,7 +29,7 @@ T int_pow(T a, E exp,
 
 template<class T, class E>
 T int_pow(const T& a, const E& exp) {
-	auto lambda = [](T& a, const T& b){ a *= b; };
+	auto lambda = [](T& aa, const T& bb){ aa *= bb; };
 	return int_pow<T,E,decltype(lambda)>(a, exp, lambda, 1);
 }
 

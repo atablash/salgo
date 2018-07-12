@@ -6,10 +6,10 @@
 
 
 
-#include <type_traits> // To use 'std::integral_constant'.
-#include <iostream>	// To use 'std::cout'.
-#include <iomanip>	 // To use 'std::boolalpha'.
-
+#include <type_traits> // for `std::integral_constant`
+#include <iostream>	   // for `std::cout`
+#include <iomanip>	   // for `std::boolalpha`
+#include <algorithm>   // for `std::sort`
 
 
 
@@ -197,6 +197,14 @@ template<class TYPE, bool> struct Add_##member { \
 template<class TYPE> struct Add_##member<TYPE,false> {};
 
 
+
+
+
+
+
+// todo: replace std::sort maybe
+template<class CONT>
+void sort(CONT& cont) { std::sort(cont.begin(), cont.end()); }
 
 
 

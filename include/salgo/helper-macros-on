@@ -1,4 +1,5 @@
-#define CO BASE::_container()
-#define HA BASE::_handle()
-#define ALLOC BASE::_container()._alloc()
-#define NODE BASE::_container()._alloc()[ BASE::_handle() ]
+#define CONT   BASE::_container()
+#define HANDLE BASE::_handle()
+#define ALLOC  CONT._alloc()
+#define NODE   ALLOC[ HANDLE ]
+#define ACC    CONT ( HANDLE )

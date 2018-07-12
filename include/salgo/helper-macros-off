@@ -1,3 +1,5 @@
-#undef CO
-#undef HA
+#undef CONT
+#undef HANDLE
+#undef ALLOC
 #undef NODE
+#undef ACC

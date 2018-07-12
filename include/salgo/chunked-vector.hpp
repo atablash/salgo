@@ -198,26 +198,26 @@ struct Context {
 		void construct(ARGS&&... args) {
 			static_assert(Sparse);
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			CO._check_bounds( HA );
-			CO._blocks[ HA.a ]( HA.b ).construct( std::forward<ARGS>(args)... );
-			if constexpr(Count) ++CO.num_existing;
+			CONT._check_bounds( HANDLE );
+			CONT._blocks[ HANDLE.a ]( HANDLE.b ).construct( std::forward<ARGS>(args)... );
+			if constexpr(Count) ++CONT.num_existing;
 		}
 
 		void destruct() {
 			static_assert(Sparse);
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			CO._check_bounds( HA );
-			CO._blocks[ HA.a ]( HA.b ).destruct();
-			if constexpr(Count) --CO.num_existing;
+			CONT._check_bounds( HANDLE );
+			CONT._blocks[ HANDLE.a ]( HANDLE.b ).destruct();
+			if constexpr(Count) --CONT.num_existing;
 		}
 
 		void erase() { destruct(); } // alias
 
 
 		bool constructed() const {
-			CO._check_bounds( HA );
+			CONT._check_bounds( HANDLE );
 			if constexpr(Dense) return true;
-			if constexpr(Exists_Chunk_Bitset || Exists_Inplace) return CO._blocks[ HA.a ]( HA.b ).constructed();
+			if constexpr(Exists_Chunk_Bitset || Exists_Inplace) return CONT._blocks[ HANDLE.a ]( HANDLE.b ).constructed();
 			// TODO: global bitset
 		}
 
@@ -251,7 +251,7 @@ struct Context {
 		}
 
 		void _decrement() {
-			do --_handle(); while( !_container()( _handle() ).constructed() );
+			do --_handle(); while( !ACC.constructed() );
 		}
 	};
 
