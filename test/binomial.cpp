@@ -29,3 +29,4 @@ TEST(Binomial, modulo) {
 	EXPECT_EQ(15, b(6,4));
 	EXPECT_EQ(1, b(0,0));
 }
+

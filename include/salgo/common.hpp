@@ -115,12 +115,34 @@ constexpr X operator ~ (X x) \
 
 
 #define FORWARDING_CONSTRUCTOR(SELF,BASE) \
-  template<class... ARGS> \
-  SELF(ARGS&&... args) : BASE( std::forward<ARGS>(args)... )
+	template<class... ARGS> \
+	SELF(ARGS&&... args) : BASE( std::forward<ARGS>(args)... )
+
+#define FORWARDING_CONSTRUCTOR_1(SELF,BASE) \
+	template<class A> \
+	SELF(A&& a) : BASE( std::forward<A>(a) )
+
+#define FORWARDING_CONSTRUCTOR_2(SELF,BASE) \
+	template<class A, class B> \
+	SELF(A&& a, B&& b) : BASE( std::forward<A>(a), std::forward<B>(b) )
+
+
+
 
 #define FORWARDING_CONSTRUCTOR_BRACES(SELF,BASE) \
-  template<class... ARGS> \
-  SELF(ARGS&&... args) : BASE{ std::forward<ARGS>(args)... }
+	template<class... ARGS> \
+	SELF(ARGS&&... args) : BASE{ std::forward<ARGS>(args)... }
+
+#define FORWARDING_CONSTRUCTOR_1_BRACES(SELF,BASE) \
+	template<class A> \
+	SELF(A&& a) : BASE{ std::forward<A>(a) }
+
+#define FORWARDING_CONSTRUCTOR_2_BRACES(SELF,BASE) \
+	template<class A, class B> \
+	SELF(A&& a, B&& b) : BASE{ std::forward<A>(a), std::forward<B>(b) }
+
+
+
 
 
 #define FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(SELF,BASE) \
@@ -191,10 +213,24 @@ struct Last_Tag {};
 
 #define ADD_MEMBER(member) \
 template<class TYPE, bool> struct Add_##member { \
-	TYPE member; \
+	TYPE member = TYPE(); \
 	FORWARDING_CONSTRUCTOR_BRACES(Add_##member, member) {} \
 }; \
 template<class TYPE> struct Add_##member<TYPE,false> {};
+
+
+
+
+
+
+
+
+
+#define ADD_MEMBER_STORAGE(member) \
+template<class TYPE, bool> struct Add_Storage_##member { \
+	::salgo::Stack_Storage<TYPE> member; \
+}; \
+template<class TYPE> struct Add_Storage_##member<TYPE,false> {};
 
 
 

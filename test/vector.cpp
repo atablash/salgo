@@ -126,6 +126,43 @@ TEST(Dense_Vector, push_pop_resize) {
 
 
 
+
+
+
+namespace {
+	int g_constructed = 0;
+}
+
+TEST(Dense_Vector, constructors) {
+	struct S {
+		S()    { ++g_constructed; }
+		S(S&&) { ++g_constructed; }
+		~S()   { --g_constructed; }
+	};
+
+	g_constructed = 0;
+	{
+		Vector<S> v(10);
+		EXPECT_EQ(10, v.count());
+		EXPECT_EQ(10, g_constructed);
+
+		v.add();
+		EXPECT_EQ(11, v.count());
+		EXPECT_EQ(11, g_constructed);
+	}
+
+	EXPECT_EQ(0, g_constructed);
+}
+
+
+
+
+
+
+
+
+
+
 namespace {
 	int g_destructors = 0;
 	int g_constructors = 0;

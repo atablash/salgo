@@ -10,6 +10,7 @@
 
 
 #include "helper-macros-on"
+
 namespace salgo {
 
 
@@ -213,7 +214,7 @@ struct Context {
 		auto& is_which() const {
 			auto par = BASE::get_parent(); DCHECK(par.valid());
 			for(auto& ch : _node(par).children) {
-				if(ch == BASE::_handle()) return ch;
+				if(ch == BASE::HANDLE) return ch;
 			}
 			DCHECK(false);
 			return _node(par).children[0]; // just to supress warning
@@ -253,7 +254,7 @@ struct Context {
 			_check_child_index(ith);
 
 			DCHECK( !child(ith).exists() ); // no child
-			DCHECK( !BASE::_container()(new_child).parent().exists() ); // new_child has no parent
+			DCHECK( !CONT(new_child).parent().exists() ); // new_child has no parent
 
 			NODE.children[ith] = new_child;
 			_node(new_child).parent = HANDLE;
@@ -265,7 +266,7 @@ struct Context {
 
 		// automatically unlink things if needed (slower)
 		void relink_child(int ith, Handle new_child) {
-			if(_node(new_child).parent.valid()) BASE::_container()(new_child).unlink_parent();
+			if(_node(new_child).parent.valid()) BASE::CONT(new_child).unlink_parent();
 			if(NODE.children[ith].valid()) unlink_child(ith);
 
 			link_child(ith, new_child);
@@ -555,5 +556,6 @@ using Binary_Forest = Rooted_Forest<2, KEY_OR_VAL, VAL_OR_TAG>;
 
 
 } // salgo
+
 #include "helper-macros-off"
 

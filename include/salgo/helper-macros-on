@@ -1,4 +1,4 @@
-#define CONT   BASE::_container()
+#define CONT   BASE::container()
 #define HANDLE BASE::_handle()
 #define ALLOC  CONT._alloc()
 #define NODE   ALLOC[ HANDLE ]

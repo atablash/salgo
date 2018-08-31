@@ -9,6 +9,8 @@
 #include "memory-block.hpp"
 
 
+#include "helper-macros-on"
+
 
 namespace salgo {
 
@@ -83,7 +85,7 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 		friend Vector;
 
-		using BASE::_container;
+		using BASE::container;
 		using BASE::_handle;
 
 	public:
@@ -93,15 +95,15 @@ struct Context {
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
 			static_assert(Sparse);
-			_container()._check_bounds( _handle() );
-			_container()._mb( _handle() ).construct( std::forward<ARGS>(args)... );
+			CONT._check_bounds( _handle() );
+			CONT._mb( _handle() ).construct( std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
 			static_assert(Sparse);
-			_container()._check_bounds( _handle() );
-			_container()._mb( _handle() ).destruct();
+			CONT._check_bounds( _handle() );
+			CONT._mb( _handle() ).destruct();
 		}
 
 		void erase() {
@@ -110,14 +112,14 @@ struct Context {
 
 		// assumes element is in bounds
 		bool constructed() const {
-			_container()._check_bounds( _handle() );
+			CONT._check_bounds( _handle() );
 			if constexpr(Dense) return true;
-			else return _container()._mb( _handle() ).constructed();
+			else return CONT._mb( _handle() ).constructed();
 		}
 
 		// same as `constructed()`, but also checks bounds
 		bool exists_SLOW() const {
-			if(!_container()._is_in_bounds( _handle() )) return false;
+			if(!CONT._is_in_bounds( _handle() )) return false;
 			return constructed();
 		}
 
@@ -144,22 +146,22 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 		friend Vector;
 
-		using BASE::_container;
+		using BASE::container;
 		using BASE::_handle;
 
 	private:
 		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++_handle(); while( (int)_handle() != _container().domain() && !_container()( _handle() ).constructed() );
+			do ++_handle(); while( (int)_handle() != CONT.domain() && !CONT( _handle() ).constructed() );
 		}
 
 		void _decrement() {
-			do --_handle(); while( !_container( _handle() ).constructed() );
+			do --_handle(); while( !CONT( _handle() ).constructed() );
 		}
 
 	public:
-		bool operator!=(End_Iterator) { return _handle() < _container().domain(); }
+		bool operator!=(End_Iterator) { return HANDLE < CONT.domain(); }
 	};
 
 
@@ -542,4 +544,6 @@ using Vector = typename internal::Vector::Context<
 
 
 
-}
+} // namespace salgo
+
+#include "helper-macros-off"

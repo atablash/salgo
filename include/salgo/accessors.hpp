@@ -29,6 +29,10 @@ template<Const_Flag C, class CONTEXT> class Iterator_Base;
 
 
 
+
+
+
+
 template<Const_Flag C, class CONTEXT>
 class Reference_Base {
 public:
@@ -56,15 +60,14 @@ public:
 
 private:
 	void _check() const {
-		static_assert(sizeof(Accessor<C>) == sizeof(Reference<C>), "Accessors can't have any additional members");
-		static_assert(sizeof(Iterator<C>) == sizeof(Reference<C>), "Accessors can't have any additional members");
+		static_assert(sizeof(Accessor<C>) == sizeof(Reference<C>), "accessors can't have any additional members");
+		static_assert(sizeof(Iterator<C>) == sizeof(Reference<C>), "accessors can't have any additional members");
 	}
+
 
 protected:
 	auto& _handle()       { return __handle; }
 	auto& _handle() const { return __handle; }
-	auto& _container()       { return *__container; }
-	auto& _container() const { return *__container; }
 
 	auto& _val()       { return (*__container)[__handle]; }
 	auto& _val() const { return (*__container)[__handle]; }
@@ -79,6 +82,10 @@ public:
 	auto     handle() const { return _handle(); }
 	operator Handle() const { return handle(); }
 
+	// get container
+	auto& container()       { return *__container; }
+	auto& container() const { return *__container; }
+
 	// get value
 	auto& operator()()       { return _val(); }
 	auto& operator()() const { return _val(); }
@@ -89,6 +96,25 @@ public:
 	//explicit operator bool() const { return _handle().valid(); }
 	bool exists() const { return _handle().valid(); }
 };
+
+
+template<Const_Flag C, class CONTEXT>
+std::ostream& operator<<(std::ostream& s, const Reference_Base<C,CONTEXT>& r) {
+	return s << r.handle() << "@" << &r.container();
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -115,6 +141,17 @@ public:
 
 template<Const_Flag C, class CONTEXT>
 using Reference = _Reference< has_member__Reference<CONTEXT>, C, CONTEXT>;
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -148,12 +185,20 @@ public:
 	auto next() const { auto r = _self(); ++r.iterator(); return r; }
 	auto prev() const { auto r = _self(); --r.iterator(); return r; }
 
+
 private:
 	using BASE::accessor; // turn off
 
 public:
 	CRTP_COMMON( Iterator_Base, Accessor<C> )
 };
+
+
+
+
+
+
+
 
 
 

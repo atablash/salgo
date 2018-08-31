@@ -7,6 +7,7 @@
 #include "hash.hpp"
 #include "key-val.hpp"
 
+#include "helper-macros-on"
 
 namespace salgo {
 
@@ -102,14 +103,12 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Accessor,BASE) {}
 		friend Hash_Table;
 
-		using BASE::_container;
-		using BASE::_handle;
 		using BASE::_just_erased;
 
 	public:
 		// get key
-		auto& key()       { return _container().key( _handle() ); }
-		auto& key() const { return _container().key( _handle() ); }
+		auto& key()       { return CONT.key( HANDLE ); }
+		auto& key() const { return CONT.key( HANDLE ); }
 
 		// get val (explicit)
 		auto& val()       { return BASE::operator()(); }
@@ -118,12 +117,12 @@ struct Context {
 
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
-			_container().erase( _handle() );
+			CONT.erase( HANDLE );
 			_just_erased = true;
 		}
 
 		bool exists() const {
-			return _handle().valid();
+			return HANDLE.valid();
 		}
 	};
 
@@ -139,8 +138,6 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Iterator,BASE) {}
 		friend Hash_Table;
 
-		using BASE::_container;
-		using BASE::_handle;
 		using BASE::_just_erased;
 
 	private:
@@ -151,22 +148,22 @@ struct Context {
 				_just_erased = false;
 				return;
 			}
-			++_handle().b;
-			while(_handle().a < _container()._buckets.size() && (int)_handle().b == _container()._buckets[_handle().a].size()) {
-				_handle().b = 0;
-				++_handle().a;
+			++HANDLE.b;
+			while(HANDLE.a < CONT._buckets.size() && (int)HANDLE.b == CONT._buckets[HANDLE.a].size()) {
+				HANDLE.b = 0;
+				++HANDLE.a;
 			}
 		}
 
 		inline void _decrement() {
 			_just_erased = false;
-			if(_handle().b == 0) {
-				--_handle().a;
-				_handle().b = _container()._buckets[_handle().a].size() - 1;
+			if(HANDLE.b == 0) {
+				--HANDLE.a;
+				HANDLE.b = CONT._buckets[HANDLE.a].size() - 1;
 			}
 		}
 
-		auto _get_comparable() const { return std::make_pair(_handle().a, _handle().b); }
+		auto _get_comparable() const { return std::make_pair(HANDLE.a, HANDLE.b); }
 	};
 
 
@@ -470,3 +467,5 @@ using Hash_Table = typename internal::hash_table::Context<
 
 
 }
+
+#include "helper-macros-off"

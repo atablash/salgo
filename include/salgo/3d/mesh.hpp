@@ -776,11 +776,6 @@ namespace Mesh {
 				return _handle;
 			}
 
-			template<Const_Flag CC>
-			auto _will_compare_with(const I_Poly<CC>& o) const {
-				DCHECK_EQ(&_container, &o._container);
-			}
-
 
 		public:
 			// mutable version not needed - const iterators don't pass const'ness onto the object

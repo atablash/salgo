@@ -17,7 +17,7 @@ Multithreaded code: keep in mind that old objects can be moved when new objects 
 #include "memory-block.hpp"
 #include "accessors.hpp"
 
-
+#include "helper-macros-on"
 
 
 
@@ -91,7 +91,7 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor : public Accessor_Base<C,Context> {
 		using BASE = Accessor_Base<C,Context>;
-		using BASE::_container;
+		using BASE::container;
 		using BASE::_handle;
 
 	private:
@@ -101,21 +101,21 @@ struct Context {
 	public:
 		void construct() {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
-			_container().v( _handle() ).construct();
+			CONT.v( HANDLE ).construct();
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
-			_container().v( _handle() ).destruct();
+			CONT.v( HANDLE ).destruct();
 		}
 
 		void erase() { destruct(); } // alias
 
-		bool constructed() const { return _container().v( _handle() ).constructed(); }
+		bool constructed() const { return CONT.v( HANDLE ).constructed(); }
 
 		auto exists() const { return constructed(); } // alias
 
-		//bool exists_SLOW() const { return _container().v(h).exists_SLOW(); }
+		//bool exists_SLOW() const { return CONT.v(h).exists_SLOW(); }
 	};
 
 
@@ -131,8 +131,6 @@ struct Context {
 	template<Const_Flag C>
 	class Iterator : public Iterator_Base<C,Context> {
 		using BASE = Iterator_Base<C,Context>;
-		using BASE::_container;
-		using BASE::_handle;
 
 	private:
 		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
@@ -142,15 +140,15 @@ struct Context {
 		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++_handle(); while( *this != End_Iterator()  &&  !_container()( _handle() ).constructed() );
+			do ++HANDLE; while( *this != End_Iterator()  &&  !CONT( HANDLE ).constructed() );
 		}
 
 		void _decrement() {
-			do --_handle(); while( !_container().exists( _handle() ) );
+			do --HANDLE; while( !CONT().exists( HANDLE ) );
 		}
 
 	public:
-		bool operator!=(End_Iterator) const { return _handle() != _container().v.domain(); }
+		bool operator!=(End_Iterator) const { return HANDLE != CONT.v.domain(); }
 	};
 
 
@@ -324,7 +322,7 @@ using Vector_Allocator = typename internal::vector_allocator::Context<
 
 
 
-
+#include "helper-macros-off"
 
 
 

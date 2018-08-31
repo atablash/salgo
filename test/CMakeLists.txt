@@ -11,7 +11,7 @@ message("CMAKE_MODULE_PATH: " ${CMAKE_MODULE_PATH})
 find_package(GTest REQUIRED)
 if (GTEST_FOUND)
 	include_directories( ${GTEST_INCLUDE_DIRS} )
-    link_libraries( ${GTEST_LIBRARIES} )
+	link_libraries( ${GTEST_LIBRARIES} )
 	# link_libraries( ${GTEST_MAIN_LIBRARIES} )
 
 	# required by GTest
@@ -41,6 +41,7 @@ set(sources
 	graph.cpp
 	modulo.cpp
 	binomial.cpp
+	union-find.cpp
 	#3d/compute-normals.cpp
 	#3d/collapse-edges.cpp
 	#3d/cap-holes.cpp

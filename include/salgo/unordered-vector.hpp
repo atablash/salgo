@@ -7,6 +7,7 @@
 
 #include <glog/logging.h>
 
+#include "helper-macros-on"
 
 namespace salgo {
 
@@ -92,8 +93,6 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 		friend Unordered_Vector;
 
-		using BASE::_container;
-		using BASE::_handle;
 		using BASE::_just_erased;
 
 	public:
@@ -105,9 +104,9 @@ struct Context {
 		void erase() {
 			static_assert(C == MUTAB, "called erase() on CONST accessor");
 			DCHECK(!_just_erased);
-			_container()[_handle()].~Val();
-			new(&_container()[_handle()]) Val( std::move( _container().back()()) );
-			_container().pop_back();
+			CONT[HANDLE].~Val();
+			new(&CONT[HANDLE]) Val( std::move( CONT.back()()) );
+			CONT.pop_back();
 			_just_erased = true;
 		}
 	};
@@ -122,19 +121,17 @@ struct Context {
 		friend Unordered_Vector;
 		friend End_Iterator<C>;
 
-		using BASE::_container;
-		using BASE::_handle;
 		using BASE::_just_erased;
 
 	private:
 		friend Iterator_Base<C,Context>;
 
 		inline void _increment() {
-			if(!_just_erased) ++_handle();
+			if(!_just_erased) ++HANDLE;
 			_just_erased = false;
 		}
 		inline void _decrement() {
-			--_handle();
+			--HANDLE;
 			_just_erased = false;
 		}
 
@@ -143,7 +140,7 @@ struct Context {
 		//
 	public:
 		template<Const_Flag CC>
-		bool operator!=(const End_Iterator<CC>&) { return BASE::operator!=( _container().end() ); }
+		bool operator!=(const End_Iterator<CC>&) { return BASE::operator!=( CONT.end() ); }
 		using BASE::operator!=; // still use normal version too
 	};
 
@@ -308,3 +305,5 @@ using Unordered_Vector = typename internal::unordered_vector::Context<
 
 
 }
+
+#include "helper-macros-off"

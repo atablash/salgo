@@ -8,6 +8,7 @@
 
 #include <cstring> // memcpy
 
+#include "helper-macros-on"
 
 namespace salgo {
 
@@ -102,7 +103,7 @@ namespace salgo {
 				template<Const_Flag C>
 				class Accessor : public Accessor_Base<C,Context> {
 					using BASE = Accessor_Base<C,Context>;
-					using BASE::_container;
+					using BASE::container;
 					using BASE::_handle;
 
 				public:
@@ -121,10 +122,10 @@ namespace salgo {
 						_check_bounds();
 						if constexpr(Exists) {
 							DCHECK( !constructed() ) << "element already constructed";
-							_container()._set_exists(_handle(), true);
+							CONT._set_exists(_handle(), true);
 						}
 						_get().construct( std::forward<ARGS>(args)... );
-						if constexpr(Count) ++_container().num_existing;
+						if constexpr(Count) ++CONT.num_existing;
 
 						return *this;
 					}
@@ -136,10 +137,10 @@ namespace salgo {
 						_check_bounds();
 						if constexpr(Exists) {
 							DCHECK( constructed() ) << "erasing already erased element";
-							_container()._set_exists(_handle(), false);
+							CONT._set_exists(_handle(), false);
 						}
 						_get().destruct();
-						if constexpr(Count) --_container().num_existing;
+						if constexpr(Count) --CONT.num_existing;
 
 						return *this;
 					}
@@ -155,7 +156,7 @@ namespace salgo {
 						} else if constexpr(Exists_Inplace) {
 							return _get().exists;
 						} else if constexpr(Exists_Bitset) {
-							return _container().exists[ _handle() ];
+							return CONT.exists[ _handle() ];
 						}
 					}
 
@@ -167,15 +168,15 @@ namespace salgo {
 
 				private:
 					bool _is_in_bounds() const {
-						return _container()._is_in_bounds( _handle() );
+						return CONT._is_in_bounds( _handle() );
 					}
 
 					void _check_bounds() const {
-						_container()._check_bounds( _handle() );
+						CONT._check_bounds( _handle() );
 					}
 
-					auto& _get()       { return _container()._get( _handle() ); }
-					auto& _get() const { return _container()._get( _handle() ); }
+					auto& _get()       { return CONT._get( _handle() ); }
+					auto& _get() const { return CONT._get( _handle() ); }
 				};
 
 
@@ -191,7 +192,7 @@ namespace salgo {
 				template<Const_Flag C>
 				class Iterator : public Iterator_Base<C,Context> {
 					using BASE = Iterator_Base<C,Context>;
-					using BASE::_container;
+					using BASE::container;
 					using BASE::_handle;
 
 				public:
@@ -204,16 +205,16 @@ namespace salgo {
 
 					void _increment() {
 						if constexpr(Dense) ++_handle();
-						else do ++_handle(); while( (int)_handle() != _container().domain() && !BASE::accessor().constructed() );
+						else do ++HANDLE; while( (int)_handle() != CONT.domain() && !BASE::accessor().constructed() );
 					}
 
 					void _decrement() {
 						if constexpr(Dense) --_handle();
-						else do --_handle(); while( !BASE::accessor().constructed() );
+						else do --HANDLE; while( !BASE::accessor().constructed() );
 					}
 
 				public:
-					bool operator!=(const End_Iterator&) { return _handle() != _container().domain(); }
+					bool operator!=(const End_Iterator&) { return _handle() != CONT.domain(); }
 				};
 
 
@@ -732,4 +733,8 @@ namespace salgo {
 
 
 
-}
+} // namespace salgo
+
+
+#include "helper-macros-off"
+

@@ -4,6 +4,7 @@
 #include "vector-allocator.hpp"
 #include "vector.hpp"
 
+#include "helper-macros-on"
 
 namespace salgo {
 
@@ -258,28 +259,26 @@ namespace graph {
 			template<Const_Flag C>
 			class Accessor : public Accessor_Base<C,Verts_Context> {
 				using BASE = Accessor_Base<C,Verts_Context>;
-				using BASE::_container;
-				using BASE::_handle;
 
 			public:
 				FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 
 			public:
-				auto& graph()       { return _container; }
-				auto& graph() const { return _container; }
+				auto& graph()       { return CONT; }
+				auto& graph() const { return CONT; }
 
-				auto& data()       { return _container()._vs[ _handle() ].data; }
-				auto& data() const { return _container()._vs[ _handle() ].data; }
+				auto& data()       { return CONT._vs[ HANDLE ].data; }
+				auto& data() const { return CONT._vs[ HANDLE ].data; }
 
 				auto operator->()       { return &data(); }
 				auto operator->() const { return &data(); }
 
 
-				auto outs()       { return A_Vert_Edges<MUTAB,0>( _container(), _handle() ); }
-				auto outs() const { return A_Vert_Edges<CONST,0>( _container(), _handle() ); }
+				auto outs()       { return A_Vert_Edges<MUTAB,0>( CONT, HANDLE ); }
+				auto outs() const { return A_Vert_Edges<CONST,0>( CONT, HANDLE ); }
 
-				auto ins()       { return A_Vert_Edges<MUTAB,1>( _container(), _handle() ); }
-				auto ins() const { return A_Vert_Edges<CONST,1>( _container(), _handle() ); }
+				auto ins()       { return A_Vert_Edges<MUTAB,1>( CONT, HANDLE ); }
+				auto ins() const { return A_Vert_Edges<CONST,1>( CONT, HANDLE ); }
 
 				template<class X> auto out(const X& x)       { return outs()(x); }
 				template<class X> auto out(const X& x) const { return outs()(x); }
@@ -295,26 +294,26 @@ namespace graph {
 					// remove edges
 					if constexpr(Edges_Erasable != NON_ERASABLE) {
 						if constexpr(Outs_Link_Outs) {
-							for(auto& outt : _container()._vs[ _handle() ].outs()) {
-								_container()._vs[outt().link.a].outs()(outt().link.b).erase();
+							for(auto& outt : CONT._vs[ HANDLE ].outs()) {
+								CONT._vs[outt().link.a].outs()(outt().link.b).erase();
 							}
 						}
 						if constexpr(Outs_Link_Ins) {
-							for(auto& outt : _container()._vs[ _handle() ].outs()) {
-								_container()._vs[outt().link.a].ins()(outt().link.b).erase();
+							for(auto& outt : CONT._vs[ HANDLE ].outs()) {
+								CONT._vs[outt().link.a].ins()(outt().link.b).erase();
 							}
-							for(auto& outt : _container()._vs[ _handle() ].ins()) {
-								_container()._vs[outt().link.a].outs()(outt().link.b).erase();
+							for(auto& outt : CONT._vs[ HANDLE ].ins()) {
+								CONT._vs[outt().link.a].outs()(outt().link.b).erase();
 							}
 						}
 					}
 					else {
-						for( auto& outs : _container()._vs[_handle()].outs_ins ) {
+						for( auto& outs : CONT._vs[HANDLE].outs_ins ) {
 							DCHECK( outs.empty() ) << "removing this vert removes edges, so requires Edges_Erasable";
 						}
 					}
 
-					_container()._vs( _handle()).erase();
+					CONT._vs( HANDLE).erase();
 				}
 
 			}; // Accessor
@@ -326,8 +325,6 @@ namespace graph {
 			template<Const_Flag C>
 			class Iterator : public Iterator_Base<C,Verts_Context> {
 				using BASE = Iterator_Base<C,Verts_Context>;
-				using BASE::_container;
-				using BASE::_handle;
 
 			public:
 				FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
@@ -338,11 +335,11 @@ namespace graph {
 			private:
 				friend BASE;
 
-				void _increment() { _handle() = _container()._vs( _handle() ).next(); }
-				void _decrement() { _handle() = _container()._vs( _handle() ).prev(); }
+				void _increment() { HANDLE = CONT._vs( HANDLE ).next(); }
+				void _decrement() { HANDLE = CONT._vs( HANDLE ).prev(); }
 
 			public:
-				bool operator!=(End_Iterator) const { return _handle() < _container()._vs.domain(); }
+				bool operator!=(End_Iterator) const { return HANDLE < CONT._vs.domain(); }
 			}; // Iterator
 
 		}; // Verts_Context
@@ -369,18 +366,16 @@ namespace graph {
 			template<Const_Flag C>
 			class Accessor : public Accessor_Base<C,Edges_Context> {
 				using BASE = Accessor_Base<C,Edges_Context>;
-				using BASE::_container;
-				using BASE::_handle;
 
 			public:
 				FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 
 			public:
-				auto& graph()       {  return _container;  }
-				auto& graph() const {  return _container;  }
+				auto& graph()       {  return CONT;  }
+				auto& graph() const {  return CONT;  }
 
-				auto& data()       {  return _container()._es[ _handle() ].data;  }
-				auto& data() const {  return _container()._es[ _handle() ].data;  }
+				auto& data()       {  return CONT._es[ HANDLE ].data;  }
+				auto& data() const {  return CONT._es[ HANDLE ].data;  }
 
 				auto operator->()       { return &data(); }
 				auto operator->() const { return &data(); }
@@ -389,7 +384,7 @@ namespace graph {
 				// TODO:
 				//void erase() {
 				//	static_assert(C==MUTAB, "called erase() on CONST A_Vert accessor");
-				//	_container()._es.erase( _handle );
+				//	CONT._es.erase( _handle );
 				//}
 
 			}; // Accessor
@@ -401,8 +396,6 @@ namespace graph {
 			template<Const_Flag C>
 			class Iterator : public Iterator_Base<C,Edges_Context> {
 				using BASE = Iterator_Base<C,Edges_Context>;
-				using BASE::_container;
-				using BASE::_handle;
 
 			public:
 				FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
@@ -412,11 +405,11 @@ namespace graph {
 
 			private:
 				friend BASE;
-				void _increment() { _handle() = _container()._es( _handle() ).iterator().next(); }
-				void _decrement() { _handle() = _container()._es( _handle() ).iterator().prev(); }
+				void _increment() { HANDLE = CONT._es( HANDLE ).iterator().next(); }
+				void _decrement() { HANDLE = CONT._es( HANDLE ).iterator().prev(); }
 
 			public:
-				bool operator!=(End_Iterator) const { return _handle() < _container()._es.domain(); }
+				bool operator!=(End_Iterator) const { return HANDLE < CONT._es.domain(); }
 			}; // Iterator
 
 		}; // Verts_Context
@@ -443,15 +436,13 @@ namespace graph {
 			template<Const_Flag C>
 			class Accessor : public Accessor_Base<C,Vert_Edges_Context> {
 				using BASE = Accessor_Base<C,Vert_Edges_Context>;
-				using BASE::_container;
-				using BASE::_handle;
 
 			public:
 				FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 
 			public:
-				auto& graph()       {  return _container();  }
-				auto& graph() const {  return _container();  }
+				auto& graph()       {  return CONT;  }
+				auto& graph() const {  return CONT;  }
 
 
 				auto& data() {
@@ -467,24 +458,24 @@ namespace graph {
 				}
 
 
-				auto vert() { return _container().vert( _raw().vert() ); }
-				auto edge() { return _container().edge( _raw().edge ); }
+				auto vert() { return CONT.vert( _raw().vert() ); }
+				auto edge() { return CONT.edge( _raw().edge ); }
 
 
 				// TODO
 				//void erase() {
 				//	static_assert(C==MUTAB, "called erase() on CONST A_Vert accessor");
-				//	if constexpr(Outs_Link_Outs) _container()._vs[ _raw().link.a ].outs( _raw().link.b ).erase();
-				//	if constexpr(Outs_Link_Ins)  _container()._vs[ _raw().link.a ].ins( _raw().link.b ).erase();
-				//	_container()._vs[ _handle().a ].outs( _handle().b ).erase();
+				//	if constexpr(Outs_Link_Outs) CONT._vs[ _raw().link.a ].outs( _raw().link.b ).erase();
+				//	if constexpr(Outs_Link_Ins)  CONT._vs[ _raw().link.a ].ins( _raw().link.b ).erase();
+				//	CONT._vs[ HANDLE.a ].outs( HANDLE.b ).erase();
 				//}
 
 			private:
-				auto& _raw()       { return _raw_outs()[ _handle().b ]; }
-				auto& _raw() const { return _raw_outs()[ _handle().b ]; }
+				auto& _raw()       { return _raw_outs()[ HANDLE.b ]; }
+				auto& _raw() const { return _raw_outs()[ HANDLE.b ]; }
 
-				auto& _raw_outs()       { return _container()._vs[ _handle().a ].outs_ins[oi]; }
-				auto& _raw_outs() const { return _container()._vs[ _handle().a ].outs_ins[oi]; }
+				auto& _raw_outs()       { return CONT._vs[ HANDLE.a ].outs_ins[oi]; }
+				auto& _raw_outs() const { return CONT._vs[ HANDLE.a ].outs_ins[oi]; }
 			}; // Accessor
 
 
@@ -493,8 +484,6 @@ namespace graph {
 			template<Const_Flag C>
 			class Iterator : public Iterator_Base<C,Vert_Edges_Context> {
 				using BASE = Iterator_Base<C,Vert_Edges_Context>;
-				using BASE::_container;
-				using BASE::_handle;
 
 			public:
 				FORWARDING_CONSTRUCTOR( Iterator, BASE ) {}
@@ -504,15 +493,15 @@ namespace graph {
 
 			private:
 				friend BASE;
-				void _increment() {	_handle().b = _raw_outs()(_handle().b).next(); }
-				void _decrement() { _handle().b = _raw_outs()(_handle().b).prev(); }
+				void _increment() {	HANDLE.b = _raw_outs()(HANDLE.b).next(); }
+				void _decrement() { HANDLE.b = _raw_outs()(HANDLE.b).prev(); }
 
 			private:
-				auto& _raw_outs()       { return _container()._vs[ _handle().a ].outs_ins[oi]; }
-				auto& _raw_outs() const { return _container()._vs[ _handle().a ].outs_ins[oi]; }
+				auto& _raw_outs()       { return CONT._vs[ HANDLE.a ].outs_ins[oi]; }
+				auto& _raw_outs() const { return CONT._vs[ HANDLE.a ].outs_ins[oi]; }
 
 			public:
-				bool operator!=(End_Iterator) const { return _handle().b != _raw_outs().domain(); }
+				bool operator!=(End_Iterator) const { return HANDLE.b != _raw_outs().domain(); }
 			}; // Iterator
 
 		}; // Outs_Context
@@ -845,3 +834,7 @@ using Graph = internal::graph::Context<
 
 
 } // namespace salgo
+
+#include "helper-macros-off"
+
+

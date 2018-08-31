@@ -11,7 +11,15 @@ namespace salgo {
 
 
 
-template<int32_t MOD = (1u<<31)-1>
+#ifdef CONTEST_MODE
+	#define DEFAULT_MOD ((int)1e9 + 7)
+#else
+	#define DEFAULT_MOD ((1u<<31)-1)
+#endif
+
+
+
+template<int32_t MOD = DEFAULT_MOD, int32_t TOTIENT = MOD-1>
 class Modulo {
 public:
 	using H = uint32_t;
@@ -56,8 +64,8 @@ public:
 	Modulo& operator/=(const Modulo& o) {
 		_check(h); _check(o.h);
 		//ASS(millerRabin(MOD));
-		DCHECK_EQ(1, int_pow(o, MOD-2) * o);
-		*this *= int_pow(o, MOD-2);
+		//DCHECK_EQ(1, int_pow(o, MOD-2) * o);
+		*this *= int_pow(o, TOTIENT-1);
 		_check(h);
 		return *this;
 	}

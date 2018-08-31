@@ -19,7 +19,7 @@ namespace {
 
 
 
-TEST(Memory_block, stack_optim_inplace_nontrivial) {
+TEST(Memory_Block, stack_optim_inplace_nontrivial) {
 
 	struct S {
 		int val;
@@ -72,7 +72,7 @@ TEST(Memory_block, stack_optim_inplace_nontrivial) {
 
 
 
-TEST(Memory_block, destructors_called_exists) {
+TEST(Memory_Block, destructors_called_exists) {
 	struct S {
 		S()  { ++g_constructors; }
 		S(const S&) { ++g_constructors; }
@@ -96,7 +96,7 @@ TEST(Memory_block, destructors_called_exists) {
 
 
 
-TEST(Memory_block, destructors_called_dense) {
+TEST(Memory_Block, destructors_called_dense) {
 	struct S {
 		S()  { ++g_constructors; }
 		S(S&&) { ++g_constructors; }
@@ -117,7 +117,7 @@ TEST(Memory_block, destructors_called_dense) {
 }
 
 
-TEST(Memory_block, destructors_called_dense_resized) {
+TEST(Memory_Block, destructors_called_dense_shrunk) {
 	struct S {
 		S()  { ++g_constructors; }
 		S(S&&) { ++g_constructors; }
@@ -142,9 +142,32 @@ TEST(Memory_block, destructors_called_dense_resized) {
 
 
 
+TEST(Memory_Block, destructors_called_dense_grown) {
+	g_constructors = 0;
+	g_destructors = 0;
+	struct S {
+		S()  { ++g_constructors; }
+		~S() { ++g_destructors;  }
+	};
+
+	{
+		Memory_Block<int>::DENSE mb(10);
+		EXPECT_EQ(10, mb.count());
+		EXPECT_EQ(g_constructors, g_destructors);
+
+		mb.resize(20);
+		EXPECT_EQ(20, mb.count());
+		EXPECT_EQ(g_constructors, g_destructors);
+	}
+
+	EXPECT_EQ(g_constructors, g_destructors);
+}
 
 
-TEST(Memory_block, dense_constructor) {
+
+
+
+TEST(Memory_Block, dense_constructor) {
 	Memory_Block<int>::DENSE mb(10, 10);
 
 	int sum = 0;
@@ -157,7 +180,7 @@ TEST(Memory_block, dense_constructor) {
 
 
 
-TEST(Memory_block, copy_container_exists) {
+TEST(Memory_Block, copy_container_exists) {
 	struct S {
 		S()  { ++g_constructors; }
 		S(const S&) { ++g_constructors; }
@@ -177,7 +200,7 @@ TEST(Memory_block, copy_container_exists) {
 	EXPECT_EQ(g_constructors, g_destructors);
 }
 
-TEST(Memory_block, copy_container_dense) {
+TEST(Memory_Block, copy_container_dense) {
 	struct S {
 		S()  { ++g_constructors; }
 		S(const S&) { ++g_constructors; }
@@ -202,7 +225,7 @@ TEST(Memory_block, copy_container_dense) {
 
 
 
-TEST(Memory_block, move_container_exists) {
+TEST(Memory_Block, move_container_exists) {
 	struct S {
 		S()  { ++g_constructors; }
 		S(S&&) { ++g_constructors; }

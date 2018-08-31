@@ -15,6 +15,7 @@
 
 
 #include "helper-macros-on"
+
 namespace salgo {
 
 
@@ -82,10 +83,6 @@ struct Context {
 	class Reference : public Reference_Base<C,Context> {
 		using BASE = Reference_Base<C,Context>;
 
-	protected:
-		using BASE::_container;
-		using BASE::_handle;
-
 	public:
 		FORWARDING_CONSTRUCTOR(Reference, BASE) {}
 
@@ -98,8 +95,8 @@ struct Context {
 		bool just_erased() const { return _just_erased; }
 
 		void on_erase() {
-			_next = ALLOC[_handle()].next;
-			_prev = ALLOC[_handle()].prev;
+			_next = ALLOC[HANDLE].next;
+			_prev = ALLOC[HANDLE].prev;
 			_just_erased = true;
 		}
 
@@ -111,12 +108,12 @@ struct Context {
 
 		auto get_next() {
 			if(_just_erased) return _next;
-			else return ALLOC[ _handle() ].next;
+			else return ALLOC[ HANDLE ].next;
 		}
 
 		auto get_prev() {
 			if(_just_erased) return _prev;
-			else return ALLOC[ _handle() ].prev;
+			else return ALLOC[ HANDLE ].prev;
 		}
 	};
 
@@ -127,8 +124,6 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor : public Accessor_Base<C,Context> {
 		using BASE = Accessor_Base<C,Context>;
-		using BASE::_container;
-		using BASE::_handle;
 
 	public:
 		FORWARDING_CONSTRUCTOR(Accessor,BASE) {}
@@ -209,8 +204,6 @@ struct Context {
 	template<Const_Flag C>
 	class Iterator : public Iterator_Base<C,Context> {
 		using BASE = Iterator_Base<C,Context>;
-		using BASE::_container;
-		using BASE::_handle;
 
 	public:
 		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
@@ -219,19 +212,19 @@ struct Context {
 		friend BASE;
 
 		void _increment() {
-			DCHECK( _handle().valid() ) << "followed broken list link";
-			_handle() = BASE::get_next();
+			DCHECK( HANDLE.valid() ) << "followed broken list link";
+			HANDLE = BASE::get_next();
 			BASE::reset();
 		}
 
 		void _decrement() {
-			DCHECK( _handle().valid() ) << "followed broken list link";
-			_handle() = BASE::get_prev();
+			DCHECK( HANDLE.valid() ) << "followed broken list link";
+			HANDLE = BASE::get_prev();
 			BASE::reset();
 		}
 
 	public:
-		bool operator!=(End_Iterator) const { return _handle().valid(); }
+		bool operator!=(End_Iterator) const { return HANDLE.valid(); }
 	};
 
 
@@ -514,6 +507,7 @@ using List = typename internal::List::Context<
 
 
 } // namespace salgo
+
 #include "helper-macros-off"
 
 
