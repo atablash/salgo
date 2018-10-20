@@ -83,7 +83,7 @@ static void PUSH_BACK_reserved_std(State& state) {
 	srand(69); clear_cache();
 
 	std::vector<int> v;
-	v.reserve( state.iterations() );
+	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
 		v.emplace_back( rand() );
@@ -103,7 +103,7 @@ static void PUSH_BACK_reserved_salgo(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Vector<int> v;
-	v.reserve( state.iterations() );
+	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
 		v.emplace_back( rand() );
@@ -120,7 +120,7 @@ static void PUSH_BACK_reserved_salgo_chunked(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Chunked_Vector<int> v;
-	v.reserve( state.iterations() );
+	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
 		v.emplace_back( rand() );
@@ -144,7 +144,7 @@ BENCHMARK( PUSH_BACK_reserved_salgo_chunked )->MinTime(0.1);
 static void RANDOM_ACCESS_std(State& state) {
 	srand(69); clear_cache();
 
-	std::vector<int> v( state.iterations() );
+	std::vector<int> v( state.max_iterations );
 	for(auto& e : v) e = rand();
 
 	int sum = 0;
@@ -160,7 +160,7 @@ BENCHMARK( RANDOM_ACCESS_std )->MinTime(0.1);
 static void RANDOM_ACCESS_salgo(State& state) {
 	srand(69); clear_cache();
 
-	salgo::Vector<int> v( state.iterations() );
+	salgo::Vector<int> v( state.max_iterations );
 	for(auto& e : v) e = rand();
 
 	int sum = 0;
@@ -176,7 +176,7 @@ BENCHMARK( RANDOM_ACCESS_salgo )->MinTime(0.1);
 static void RANDOM_ACCESS_salgo_chunked(State& state) {
 	srand(69); clear_cache();
 
-	salgo::Chunked_Vector<int> v( state.iterations() );
+	salgo::Chunked_Vector<int> v( state.max_iterations );
 	for(auto& e : v) e = rand();
 
 	int sum = 0;

@@ -13,7 +13,7 @@ TEST(Union_Find, simple) {
 	auto v0 = uf.add();
 	auto v1 = uf.add();
 
-	EXPECT_NE( v0, v1 );
+	EXPECT_NE( v0.handle(), v1.handle() );
 
 	uf.merge(v0, v1);
 	EXPECT_EQ( v0, v1 );

@@ -452,7 +452,7 @@ using Hash_Table = typename internal::hash_table::Context<
 	KEY,
 	VAL,
 	Hash<KEY>, // HASH
-	salgo::Random_Allocator<int> :: SINGLETON, // ALLOCATOR (int will be rebound anyway), used only when not INPLACE
+	salgo::Vector_Allocator<int>, // ALLOCATOR (int will be rebound anyway), used only when not INPLACE
 	std::is_move_constructible_v<KEY> && (std::is_same_v<VAL,void> || std::is_move_constructible_v<VAL>) // INPLACE
 > :: With_Builder;
 

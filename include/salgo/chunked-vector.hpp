@@ -239,7 +239,7 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Iterator,BASE) {}
 		friend Chunked_Vector;
 
-		using BASE::_container;
+		using BASE::container;
 		using BASE::_handle;
 
 
@@ -247,7 +247,7 @@ struct Context {
 		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++_handle(); while( _handle() != _container().end().accessor() && !_container()( _handle() ).constructed() );
+			do ++_handle(); while( _handle() != container().end().accessor() && !container()( _handle() ).constructed() );
 		}
 
 		void _decrement() {

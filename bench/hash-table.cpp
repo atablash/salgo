@@ -127,7 +127,7 @@ BENCHMARK( INSERT__salgo )->MinTime(0.1);
 static void RESERVED_INSERT__std(State& state) {
 	srand(69); clear_cache();
 
-	const int N = state.iterations();
+	const int N = state.max_iterations;
 
 	std::unordered_multiset<int> s;
 	s.rehash( N + 10 );
@@ -145,7 +145,7 @@ BENCHMARK( RESERVED_INSERT__std )->MinTime(0.1);
 static void RESERVED_INSERT__salgo(State& state) {
 	srand(69); clear_cache();
 
-	const int N = state.iterations();
+	const int N = state.max_iterations;
 
 	Hash_Table<int> s;
 	s.rehash( N + 10 );
@@ -168,7 +168,7 @@ BENCHMARK( RESERVED_INSERT__salgo )->MinTime(0.1);
 static void FIND__std(State& state) {
 	srand(69); clear_cache();
 
-	const int N = state.iterations();
+	const int N = state.max_iterations;
 
 	std::unordered_multiset<int> s;
 	s.rehash( N + 10 );
@@ -191,7 +191,7 @@ BENCHMARK( FIND__std )->MinTime(0.1);
 static void FIND__salgo(State& state) {
 	srand(69); clear_cache();
 
-	const int N = state.iterations();
+	const int N = state.max_iterations;
 
 	salgo::Hash_Table<int> s;
 	s.rehash( N + 10 );
@@ -219,7 +219,7 @@ BENCHMARK( FIND__salgo )->MinTime(0.1);
 static void FIND_ERASE__std(State& state) {
 	srand(69); clear_cache();
 
-	const int N = state.iterations();
+	const int N = state.max_iterations;
 
 	std::unordered_multiset<int> s;
 	s.rehash( N + 10 );
@@ -242,7 +242,7 @@ BENCHMARK( FIND_ERASE__std )->MinTime(0.1);
 static void FIND_ERASE__salgo(State& state) {
 	srand(69); clear_cache();
 
-	const int N = state.iterations();
+	const int N = state.max_iterations;
 
 	salgo::Hash_Table<int> s;
 	s.rehash( N + 10 );
@@ -273,7 +273,7 @@ BENCHMARK( FIND_ERASE__salgo )->MinTime(0.1);
 static void ITERATE__std(State& state) {
 	srand(69); clear_cache();
 
-	const int N = state.iterations();
+	const int N = state.max_iterations;
 
 	std::unordered_multiset<int> s;
 	s.rehash( N + 10 );
@@ -295,7 +295,7 @@ BENCHMARK( ITERATE__std )->MinTime(0.1);
 static void ITERATE__salgo(State& state) {
 	srand(69); clear_cache();
 
-	const int N = state.iterations();
+	const int N = state.max_iterations;
 
 	salgo::Hash_Table<int> s;
 	s.rehash( N + 10 );

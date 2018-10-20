@@ -75,10 +75,11 @@ TEST(Hash_Table, key_val) {
 		test.emplace(std::pair(e.key(), e.val()));
 	}
 	EXPECT_EQ(4, (int)test.size());
-	EXPECT_EQ("twelve", test[12]);
-	EXPECT_EQ("six", test[6]);
-	EXPECT_EQ("three", test[3]);
-	EXPECT_EQ("twenty", test[20]);
-
+	EXPECT_EQ(test[12], "twelve");
+	EXPECT_EQ(test[6],  "six");
+	EXPECT_EQ(test[3],  "three");
+	EXPECT_EQ(test[20], "twenty");
 }
 
+
+// TODO: add tests for non-movable, non-copyable types

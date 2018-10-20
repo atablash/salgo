@@ -24,7 +24,7 @@ static void SEQUENTIAL_std(State& state) {
 	Alloc alloc;
 
 	Vector<Alloc::Handle> v;
-	v.reserve( state.iterations() );
+	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
 		auto h = alloc.construct().handle();
@@ -38,7 +38,6 @@ BENCHMARK( SEQUENTIAL_std )->MinTime(0.1);
 
 
 
-
 static void SEQUENTIAL_salgo_crude(State& state) {
 	srand(69); clear_cache();
 
@@ -46,7 +45,7 @@ static void SEQUENTIAL_salgo_crude(State& state) {
 	Alloc alloc;
 
 	Vector<Alloc::Handle> v;
-	v.reserve( state.iterations() );
+	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
 		auto h = alloc.construct().handle();
@@ -67,7 +66,7 @@ static void SEQUENTIAL_salgo_random(State& state) {
 	Alloc alloc;
 
 	Vector<Alloc::Handle> v;
-	v.reserve( state.iterations() );
+	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
 		auto h = alloc.construct().handle();
@@ -88,7 +87,7 @@ static void SEQUENTIAL_salgo_vector(State& state) {
 	Alloc alloc;
 
 	Vector<Alloc::Handle> v;
-	v.reserve( state.iterations() );
+	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
 		auto h = alloc.construct().handle();
@@ -122,7 +121,7 @@ static void QUEUE_std(State& state) {
 	Alloc alloc;
 
 	// crude queue implementation
-	Memory_Block<Alloc::Handle> ::DENSE v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::DENSE v(state.max_iterations/10 + 10);
 	int fst = 0;
 	int lst = 0;
 	auto is_empty = [&](){ return fst == lst; };
@@ -161,7 +160,7 @@ static void QUEUE_salgo_crude(State& state) {
 	Alloc alloc;
 
 	// crude queue implementation
-	Memory_Block<Alloc::Handle> ::DENSE v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::DENSE v(state.max_iterations/10 + 10);
 	int fst = 0;
 	int lst = 0;
 	auto is_empty = [&](){ return fst == lst; };
@@ -200,7 +199,7 @@ static void QUEUE_salgo_random(State& state) {
 	Alloc alloc;
 
 	// crude queue implementation
-	Memory_Block<Alloc::Handle> ::DENSE v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::DENSE v(state.max_iterations/10 + 10);
 	int fst = 0;
 	int lst = 0;
 	auto is_empty = [&](){ return fst == lst; };
@@ -239,7 +238,7 @@ static void QUEUE_salgo_vector(State& state) {
 	Alloc alloc;
 
 	// crude queue implementation
-	Memory_Block<Alloc::Handle> ::DENSE v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::DENSE v(state.max_iterations/10 + 10);
 	int fst = 0;
 	int lst = 0;
 	auto is_empty = [&](){ return fst == lst; };
@@ -288,7 +287,7 @@ static void RANDOM_std(State& state) {
 	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
 	Alloc alloc;
 
-	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.max_iterations/10 + 10);
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
@@ -319,7 +318,7 @@ static void RANDOM_salgo_crude(State& state) {
 	using Alloc = salgo::Crude_Allocator<int>;
 	Alloc alloc;
 
-	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.max_iterations/10 + 10);
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
@@ -350,7 +349,7 @@ static void RANDOM_salgo_random(State& state) {
 	using Alloc = salgo::Random_Allocator<int>;
 	Alloc alloc;
 
-	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.max_iterations/10 + 10);
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
@@ -381,7 +380,7 @@ static void RANDOM_salgo_vector(State& state) {
 	using Alloc = salgo::Vector_Allocator<int>;
 	Alloc alloc;
 
-	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.iterations()/10 + 10);
+	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.max_iterations/10 + 10);
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();

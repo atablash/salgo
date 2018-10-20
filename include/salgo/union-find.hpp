@@ -205,12 +205,13 @@ struct Context {
 
 
 	public:
-		auto& operator[](Index handle)       {
+		auto& operator[](Index handle)       { (void)handle; // suppress unused warning
+			//static_assert(Has_Data);
 			if constexpr(Has_Data) return _alloc()[ _find(handle) ].data.get();
 			else return *this; // never reached
 		}
 
-		auto& operator[](Index handle) const {
+		auto& operator[](Index handle) const { (void)handle; // suppress unused warning
 			if constexpr(Has_Data) return _alloc()[ _find(handle) ].data.get();
 			else return *this; // never reached
 		}
