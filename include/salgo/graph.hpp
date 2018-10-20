@@ -4,6 +4,8 @@
 #include "vector-allocator.hpp"
 #include "vector.hpp"
 
+#include <array>
+
 #include "helper-macros-on"
 
 namespace salgo {

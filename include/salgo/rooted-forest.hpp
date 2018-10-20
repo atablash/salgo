@@ -6,6 +6,7 @@
 #include "vector-allocator.hpp"
 #include "key-val.hpp"
 
+#include <array>
 
 
 
