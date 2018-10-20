@@ -2,8 +2,7 @@
 
 #include "memory-block.hpp"
 #include "unordered-vector.hpp"
-#include "crude-allocator.hpp"
-#include "random-allocator.hpp"
+#include "vector-allocator.hpp"
 #include "hash.hpp"
 #include "key-val.hpp"
 
