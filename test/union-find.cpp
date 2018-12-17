@@ -67,7 +67,7 @@ TEST(Union_Find, data_destruct_and_count) {
 	};
 
 	{
-		Union_Find::DATA<S>::COUNTABLE uf(10);
+		Union_Find ::DATA<S> ::COUNTABLE uf(10);
 		EXPECT_EQ(10, uf.count());
 		EXPECT_EQ(10, g_constructed);
 
