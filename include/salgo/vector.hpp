@@ -369,6 +369,10 @@ struct Context {
 			return Accessor<MUTAB>( this, Index(_size++) );
 		}
 
+		Accessor<MUTAB> push_back(const Val& val) {
+			return emplace_back(val);
+		}
+
 		template<class... ARGS>
 		auto add(ARGS&&... args) {
 			return emplace_back( std::forward<ARGS>(args)... );

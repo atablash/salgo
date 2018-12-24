@@ -22,7 +22,7 @@ TEST(Binomial, simple) {
 
 
 TEST(Binomial, modulo) {
-	Binomial<Modulo<1'000'000'000 + 7>> b;
+	Binomial<Modulo ::MOD<1'000'000'000 + 7>> b;
 
 	EXPECT_EQ(538992043, b(100, 50));
 	EXPECT_EQ(645441863, b(90, 80));

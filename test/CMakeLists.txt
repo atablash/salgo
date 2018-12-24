@@ -42,6 +42,9 @@ set(sources
 	modulo.cpp
 	binomial.cpp
 	union-find.cpp
+
+	miller-rabin.cpp
+	
 	#3d/compute-normals.cpp
 	#3d/collapse-edges.cpp
 	#3d/cap-holes.cpp
@@ -61,7 +64,9 @@ include_directories( # SYSTEM
 )
 
 
-add_executable(	all-tests ${sources} )
-add_test( all-tests all-tests )
+add_executable(	unit-tests ${sources} )
+add_test( unit-tests unit-tests )
 
+
+add_subdirectory( problems )
 

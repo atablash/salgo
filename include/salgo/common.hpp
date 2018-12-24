@@ -115,8 +115,8 @@ constexpr X operator ~ (X x) \
 
 
 #define FORWARDING_CONSTRUCTOR(SELF,BASE) \
-	template<class... ARGS> \
-	SELF(ARGS&&... args) : BASE( std::forward<ARGS>(args)... )
+	template<class... _ARGS> \
+	SELF(_ARGS&&... args) : BASE( std::forward<_ARGS>(args)... )
 
 #define FORWARDING_CONSTRUCTOR_1(SELF,BASE) \
 	template<class A> \
@@ -165,7 +165,7 @@ constexpr X operator ~ (X x) \
 
 
 
-
+#define FORWARDING_ASSIGNMENT(BASE) template<class X> auto& operator=(X&& x) { return BASE::operator=( std::forward<X>(x) ); }
 
 
 
@@ -241,6 +241,27 @@ template<class TYPE> struct Add_Storage_##member<TYPE,false> {};
 // todo: replace std::sort maybe
 template<class CONT>
 void sort(CONT& cont) { std::sort(cont.begin(), cont.end()); }
+
+
+
+
+
+
+
+// TODO: add template with enable_if is_integral
+inline bool is_power_of_2(unsigned int x) {
+	return (x&(x-1)) == 0;
+}
+
+inline bool is_power_of_2(unsigned long long x) {
+	return (x&(x-1)) == 0;
+}
+
+
+
+
+
+
 
 
 
