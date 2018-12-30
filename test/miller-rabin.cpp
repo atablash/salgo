@@ -20,7 +20,7 @@ TEST(Miller_Rabin, signed_int) {
 	EXPECT_TRUE(  is_prime(1000000007) );
 	EXPECT_TRUE(  is_prime(100000007) );
 
-	EXPECT_TRUE(  is_prime((1<<31) - 1) ); // mersenne prime
+	EXPECT_TRUE(  is_prime((1u<<31) - 1) ); // mersenne prime
 
 	EXPECT_FALSE( is_prime(100000009) );
 }
