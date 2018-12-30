@@ -132,25 +132,47 @@ private:
 		//else static_assert(false, "invalid template parameters combination");
 	}
 
+private:
+	// regular modulo, but try to avoid modulo if it's not too far from [0,MOD) range
+	template<class T>
+	H _fix_range(T x) const {
+		if constexpr( ARGS::mod > 0 ) static_assert(ARGS::mod <= std::numeric_limits<T>::max());
+		DCHECK_LE( MOD(), std::numeric_limits<T>::max() );
+		T mod = MOD();
+		if(x >= mod) {
+			x -= mod;
+			if(x < mod) return x;
+			else return x % mod;
+		}
+		else if(x < 0) {
+			x += mod;
+			if(x >= 0) return x;
+			else {
+				H r = x % mod;
+				return r ? mod+r : 0;
+			}
+		}
+		else return x;
+	}
+
 public:
 	Modulo() = default;
 
 	template<class = std::enable_if_t<ARGS::type != Type::LOCAL  &&  ARGS::type != Type::LOCAL_WITH_TOTIENT>>
-	Modulo(const H& x) : h( x % MOD() ) {}
+	Modulo(const H& x) : h( _fix_range(x) ) {}
 
-	Modulo(const H& x, const H& m) : BASE_MOD(m), h( x % MOD()) { static_assert(ARGS::type == Type::LOCAL); }
-	Modulo(const H& x, const H& m, const H& t) : BASE_MOD(m), BASE_TOTIENT(t), h( x % MOD()) { static_assert(ARGS::type == Type::LOCAL_WITH_TOTIENT); }
+	Modulo(const H& x, const H& m) : BASE_MOD(m), h( _fix_range(x)) { static_assert(ARGS::type == Type::LOCAL); }
+	Modulo(const H& x, const H& m, const H& t) : BASE_MOD(m), BASE_TOTIENT(t), h( _fix_range(x)) { static_assert(ARGS::type == Type::LOCAL_WITH_TOTIENT); }
 
 	// construct from `x`, but use MOD and TOTIENT same as `o` is using - useful for ::LOCAL and ::LOCAL_WITH_TOTIENT
-	Modulo(const H& x, const Modulo& o) : BASE_MOD(o), BASE_TOTIENT(o), h( x % MOD() ) {}
+	Modulo(const H& x, const Modulo& o) : BASE_MOD(o), BASE_TOTIENT(o), h( _fix_range(x) ) {}
 
 
 	Modulo& operator=(const Modulo&) = default;
 
 	template<class T, class = std::enable_if_t<std::numeric_limits<T>::is_integer>>
 	Modulo& operator=(const T& o) {
-		DCHECK_GE(o, 0) << "as an optimization, no negative numbers allowed. it would require a branch to make % work correctly";
-		h = o % MOD();
+		h = _fix_range(o);
 		return *this;
 	}
 
@@ -180,7 +202,24 @@ public:
 
 	Modulo& operator*=(const Modulo& o) {
 		_check(h); _check(o.h);
-		h = (1ULL * h * o.h) % MOD();
+		if constexpr(ARGS::mod < (1u<<31)  &&  ARGS::mod > (1u<<30)) {
+			// optimization for large MOD
+			uint64_t r = 1ULL * h * o.h;
+			const uint64_t HI = 0xff'ff'ff'ff'80'00'00'00ULL;
+			const uint64_t LO = 0x00'00'00'00'7f'ff'ff'ffULL;
+			for(;;) {
+				auto hi = r & HI;
+				if(!hi) break;
+				r = ((r & HI) >> 31) * ((1<<31) - MOD()) + (r & LO);
+			}
+			DCHECK_LT(r, 2*MOD());
+			h = r;
+			if(h >= MOD()) h -= MOD();
+		}
+		else {
+			// TODO: maybe add branch if LARGE_MOD_OPTIMIZATION is enabled for dynamic MODs too
+			h = (1ULL * h * o.h) % MOD();
+		}
 		_check(h);
 		return *this;
 	}
@@ -189,7 +228,7 @@ public:
 		_check(h); _check(o.h);
 		if constexpr(ARGS::type == Type::STATIC) {
 			if constexpr(is_prime(ARGS::mod)) static_assert(ARGS::totient == ARGS::mod-1);
-			else static_assert(ARGS::totient < ARGS::mod-1, "you must provide a valid Euler's totient");
+			else static_assert(ARGS::totient < ARGS::mod-1 && ARGS::totient > 0, "you must provide a valid Euler's totient");
 		}
 		else {
 			if(is_prime(MOD())) DCHECK_EQ(TOTIENT(), MOD()-1);
