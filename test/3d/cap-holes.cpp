@@ -33,13 +33,9 @@ TEST(Cap_holes, sphere_holes_ply) {
 	EXPECT_TRUE( has_valid_edge_links(mesh) );
 	EXPECT_TRUE( has_all_edge_links(mesh) );
 
-	save_ply(mesh, "temp.ply");
-
 	//EXPECT_TRUE( has_valid_vert_poly_links(mesh) );
 
 	EXPECT_TRUE( is_solid(mesh) );
-
-	// save_ply(mesh, "sphere-holes-done.ply");
 }
 
 
@@ -63,8 +59,6 @@ TEST(Cap_holes, bunny_holes_ply) {
 	//EXPECT_TRUE( has_valid_vert_poly_links(mesh) );
 
 	EXPECT_TRUE( is_solid(mesh) );
-
-	// save_ply(mesh, "bunny-holes-done.ply");
 }
 
 

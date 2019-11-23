@@ -162,7 +162,7 @@ script:
   - make VERBOSE=1
 
   # run tests
-  - GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 test/all-tests
+  - GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 make test
 
   # run benchmarks
   - if [[ $BUILD_TYPE = Release ]]; then    bench/allocator &&    bench/vector &&    bench/list --benchmark_min_time=0.1 &&    bench/hash-table; fi
