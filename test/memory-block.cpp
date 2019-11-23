@@ -21,8 +21,19 @@ namespace {
 struct Movable {
 	Movable(int xx = 0) : x(xx) { ++g_constructors; }
 	Movable(const Movable&) = delete;
-	Movable(Movable&& o) { x = o.x; o.x = -10; ++g_constructors; }
+	Movable(Movable&& o) : x(o.x) { o.x = -10; ++g_constructors; }
 	~Movable() { x = -100; ++g_destructors;  }
+
+	int x = -1;
+	operator int() const { return x; }
+};
+
+
+struct Copyable {
+	Copyable(int xx = 0) : x(xx) { ++g_constructors; }
+	Copyable(const Copyable& o) : x(o.x) { ++g_constructors; }
+	Copyable(Copyable&& o) = delete;
+	~Copyable() { x = -100; ++g_destructors;  }
 
 	int x = -1;
 	operator int() const { return x; }
@@ -153,17 +164,11 @@ TEST(Memory_Block, dense_constructor) {
 
 
 TEST(Memory_Block, copy_container_exists) {
-	struct S {
-		S()  { ++g_constructors; }
-		S(const S&) { ++g_constructors; }
-		~S() { ++g_destructors;  }
-	};
-
 	g_destructors = 0;
 	g_constructors = 0;
 
 	{
-		Memory_Block<S> ::CONSTRUCTED_FLAGS block(10);
+		Memory_Block<Copyable> ::CONSTRUCTED_FLAGS block(10);
 		block.construct_all();
 
 		auto block2 = block;
@@ -174,17 +179,11 @@ TEST(Memory_Block, copy_container_exists) {
 }
 
 TEST(Memory_Block, copy_container_dense) {
-	struct S {
-		S()  { ++g_constructors; }
-		S(const S&) { ++g_constructors; }
-		~S() { ++g_destructors;  }
-	};
-
 	g_destructors = 0;
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::DENSE block(10);
+		Memory_Block<Copyable>::DENSE block(10);
 		//block.construct_all();
 
 		auto block2 = block;
@@ -200,17 +199,11 @@ TEST(Memory_Block, copy_container_dense) {
 
 
 TEST(Memory_Block, move_container_exists) {
-	struct S {
-		S()  { ++g_constructors; }
-		S(S&&) { ++g_constructors; }
-		~S() { ++g_destructors;  }
-	};
-
 	g_destructors = 0;
 	g_constructors = 0;
 
 	{
-		Memory_Block<S> ::CONSTRUCTED_FLAGS ::INPLACE_BUFFER<2> block(10);
+		Memory_Block<Movable> ::CONSTRUCTED_FLAGS ::INPLACE_BUFFER<2> block(10);
 		block.construct_all();
 
 		auto block2 = std::move(block);
