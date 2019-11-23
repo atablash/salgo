@@ -690,8 +690,8 @@ namespace graph {
 			auto operator()(H_Vert handle)       {  return A_Vert<MUTAB>( this, handle );  }
 			auto operator()(H_Vert handle) const {  return A_Vert<CONST>( this, handle );  }
 
-			auto& operator[](H_Vert handle)       {  return raw(*this, handle).data;  }
-			auto& operator[](H_Vert handle) const {  return raw(*this, handle).data;  }
+			auto& operator[](H_Vert handle)       {  return A_Vert<MUTAB>( this, handle ).data();  }
+			auto& operator[](H_Vert handle) const {  return A_Vert<MUTAB>( this, handle ).data();  }
 
 
 			auto operator()(H_Edge handle)       {  return A_Edge<MUTAB>( this, handle );  }

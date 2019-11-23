@@ -115,8 +115,12 @@ constexpr X operator ~ (X x) \
 
 
 #define FORWARDING_CONSTRUCTOR(SELF,BASE) \
-	template<class... _ARGS> \
+	template<class... _ARGS, class = decltype(BASE(std::declval<_ARGS>()...))> \
 	SELF(_ARGS&&... args) : BASE( std::forward<_ARGS>(args)... )
+
+#define FORWARDING_CONSTRUCTOR_VAR(SELF,VAR) \
+	template<class... _ARGS, class = decltype(decltype(VAR)(std::declval<_ARGS>()...))> \
+	SELF(_ARGS&&... args) : VAR( std::forward<_ARGS>(args)... )
 
 #define FORWARDING_CONSTRUCTOR_1(SELF,BASE) \
 	template<class A> \
@@ -261,6 +265,50 @@ inline bool is_power_of_2(unsigned long long x) {
 
 
 struct Invalid_Type {};
+
+
+
+
+
+
+
+
+
+// https://akrzemi1.wordpress.com/2016/07/07/the-cost-of-stdinitializer_list/
+
+// 1. Implementing a variadic logical AND
+template <bool...> struct bool_sequence {};
+
+template <bool... Bs>
+using bool_and = std::is_same<bool_sequence<Bs...>, bool_sequence<(Bs || true)...>>;
+
+// 2. Helper function to test implicit conversion 
+template <typename T> std::true_type create(T v);
+
+// 3a. Test for conversion and non-narrowing
+template <typename T, typename U>
+decltype(create<U>({std::declval<T>()})) // <- braces
+	test_nonnarow_conv(int);
+
+// 3b. Fallback function if sfinae fails on 3a
+template <typename T, typename U>
+std::false_type test_nonnarow_conv(long);
+
+// 3c. Single-argument conversion trait
+template <typename T, typename U>
+using is_no_narrow_convertible = decltype(test_nonnarow_conv<T, U>(0));
+
+// 4. Our multi-argument trait
+template <class T, class... Ts>
+using no_narrow_convertible = bool_and<is_no_narrow_convertible<Ts, T>::value...>;
+
+template< class T, class... Args>
+using is_constructible = bool_and<std::is_constructible_v<T,Args>...>;
+
+
+
+# define REQUIRES(...)    class = std::enable_if_t<(__VA_ARGS__)>
+
 
 
 

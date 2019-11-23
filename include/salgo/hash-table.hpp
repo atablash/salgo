@@ -214,11 +214,27 @@ struct Context {
 			for(auto&& e : il) emplace( std::move(e) );
 		}
 
+		template<class... LIST,
+			REQUIRES( is_constructible<Key_Val, LIST...>::value )
+		>
+		Hash_Table(LIST&&... list) : _buckets( sizeof...(list) ) {
+			_list_init( std::forward<LIST>(list)... );
+		}
+
+	private:
+		template<class EL, class... LIST>
+		void _list_init(EL&& el, LIST&&... list) {
+			emplace( std::forward<EL>(el) );
+			_list_init(std::forward<LIST>(list)...);
+		}
+		void _list_init() {}
+
+	public:
 		~Hash_Table() {
 			if constexpr(!Inplace) {
 				for(auto e : *this) {
 					auto handle = e.handle();
-					_alloc().destruct( _buckets[handle.a][handle.b] );
+					_alloc()( _buckets[handle.a][handle.b] ).destruct();
 				}
 			}
 		}
@@ -226,7 +242,7 @@ struct Context {
 		Hash_Table(const Hash_Table&) = default;
 		Hash_Table(Hash_Table&&) = default;
 
-		Hash_Table& operator=(const Hash_Table&) = delete;
+		Hash_Table& operator=(const Hash_Table&) = default;
 		Hash_Table& operator=(Hash_Table&&) = default;
 
 
@@ -331,11 +347,22 @@ struct Context {
 		}
 
 	public:
+		void reserve(int want_elements) {
+			int want_buckets = _want_buckets_for_count( want_elements );
+			rehash(want_buckets);
+		}
+	
+	private:
+		int _want_buckets_for_count(int count) {
+			return count + 1;
+		}
+
+	public:
 		template<class K, class... V>
 		auto emplace(K&& k, V&&... v) {
 
 			// re-bucket
-			int want_buckets = _count + 1;
+			int want_buckets = _want_buckets_for_count( _count );
 			if(_buckets.size()*3/2 < want_buckets) {
 				rehash(want_buckets);
 			}
@@ -421,11 +448,7 @@ struct Context {
 
 
 	struct With_Builder : Hash_Table {
-		FORWARDING_CONSTRUCTOR(With_Builder, Hash_Table) {}
-
-		With_Builder(std::initializer_list<Key_Val>&& il) : Hash_Table( std::move(il) ) {}
-
-		//FORWARDING_INITIALIZER_LIST_CONSTRUCTOR(With_Builder, Hash_Table) {}
+		using Hash_Table::Hash_Table;
 
 		template<class NEW_HASH>
 		using HASH = typename Context<Key, Val, NEW_HASH, Allocator, Inplace> :: With_Builder;

@@ -145,7 +145,8 @@ class _Reference : public CONTEXT::template Reference<C> {
 	using BASE = typename CONTEXT::template Reference<C>;
 
 public:
-	FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
+	using BASE::BASE;
+	//FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
 };
 
 
@@ -155,7 +156,8 @@ class _Reference<false,C,CONTEXT> : public Reference_Base<C, CONTEXT> {
 	using BASE = Reference_Base<C, CONTEXT>;
 
 public:
-	FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
+	using BASE::BASE;
+	//FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
 };
 
 
@@ -188,7 +190,8 @@ public:
 	static constexpr bool Is_Const = C == CONST;
 
 public:
-	FORWARDING_CONSTRUCTOR(Accessor_Base, BASE) {}
+	using BASE::BASE;
+	//FORWARDING_CONSTRUCTOR(Accessor_Base, BASE) {}
 
 	template<class VAL>
 	auto& operator=(VAL&& val) { BASE::operator()() = std::forward<VAL>(val); return _self(); }
@@ -257,7 +260,8 @@ public:
 	template<Const_Flag CC>	using Iterator = typename BASE::template Iterator<CC>;
 
 public:
-	FORWARDING_CONSTRUCTOR(Iterator_Base, BASE) {}
+	using BASE::BASE;
+	//FORWARDING_CONSTRUCTOR(Iterator_Base, BASE) {}
 
 
 //

@@ -244,7 +244,7 @@ struct Context {
 	struct Node {
 		Val val;
 
-		FORWARDING_CONSTRUCTOR(Node, val) {}
+		FORWARDING_CONSTRUCTOR_VAR(Node, val) {}
 
 		Handle_Small next;
 		Handle_Small prev;

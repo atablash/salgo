@@ -127,39 +127,92 @@ TEST(Hash_Table, key_val) {
 }
 
 
+
+
+namespace {
+	int g_constructors = 0;
+	int g_destructors = 0;
+}
+
+struct Copyable {
+	Copyable(int xx) : x(xx) { ++g_constructors; }
+	Copyable(const Copyable& o) { x = o.x; ++g_constructors; }
+	Copyable(Copyable&&) = delete;
+	~Copyable() { ++g_destructors; }
+
+	int x = -1;
+	operator int() const { return x; }
+	auto hash() const { return x; }
+};
+
+struct Movable {
+	Movable(int xx) : x(xx) { ++g_constructors; }
+	Movable(const Movable&) = delete;
+	Movable(Movable&& o) { x = o.x; o.x = 0; ++g_constructors; }
+	~Movable() { ++g_destructors; }
+
+	int x = -1;
+	operator int() const { return x; }
+	auto hash() const { return x; }
+};
+
+
+
+
 TEST(Hash_Table, copy) {
-	Hash_Table<int> _ht = {1, 100, 10000};
-	auto ht = _ht;
+	g_constructors = 0;
+	g_destructors = 0;
 
 	{
-		int sum = 0;
-		for(auto& e : ht) sum += e;
-		EXPECT_EQ(10101, sum);
+		Hash_Table<Copyable> _ht = {1, 100, 10000};
+		auto ht = _ht;
+
+		{
+			int sum = 0;
+			for(auto& e : ht) sum += e();
+			EXPECT_EQ(10101, sum);
+		}
+
+		{
+			int sum = 0;
+			for(auto& e : _ht) sum += e();
+			EXPECT_EQ(10101, sum);
+		}
 	}
 
-	{
-		int sum = 0;
-		for(auto& e : _ht) sum += e;
-		EXPECT_EQ(10101, sum);
-	}
+	EXPECT_EQ(g_constructors, g_destructors);
 }
 
 TEST(Hash_Table, move) {
-	Hash_Table<int> _ht = {1, 100, 10000};
-	auto ht = std::move(_ht);
+	g_constructors = 0;
+	g_destructors = 0;
 
 	{
-		int sum = 0;
-		for(auto& e : ht) sum += e;
-		EXPECT_EQ(10101, sum);
+		// note: initializer_list version won't work here, because it doesn't work with move-only types
+		// ...but we also have the variadic template constructor
+		Hash_Table<Movable> _ht(1, 100, 10000);
+
+		auto ht = std::move(_ht);
+
+		{
+			int sum = 0;
+			for(auto& e : ht) sum += e();
+			EXPECT_EQ(10101, sum);
+		}
+
+		{
+			int sum = 0;
+			for(auto& e : _ht) sum += e();
+			EXPECT_EQ(0, sum);
+		}
 	}
 
-	{
-		int sum = 0;
-		for(auto& e : _ht) sum += e;
-		EXPECT_EQ(0, sum);
-	}
+	EXPECT_EQ(g_constructors, g_destructors);
 }
+
+
+
+
 
 
 // TODO: add tests for non-movable, non-copyable types
