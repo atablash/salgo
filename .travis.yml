@@ -59,23 +59,17 @@ matrix:
 
 
     # g++-7  +  libstdc++
-    - compiler: g++-7
+    - compiler: g++
       env:
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
 
       addons:
         apt:
-          sources:
-            # FOR G++-7 BUILDS:
-            - ubuntu-toolchain-r-test
           packages:
             # FOR ALL BUILDS:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
-
-            # FOR G++-7 BUILDS:
-            - g++-7
 
 
 
@@ -84,21 +78,16 @@ matrix:
     - compiler: clang++
       addons:
         apt:
-          sources:
-            - ubuntu-toolchain-r-test # default libstdc++ in Ubuntu 14.04 is too old
-
           packages:
             # FOR ALL BUILDS:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
 
-            - libstdc++-7-dev # default libstdc++ in Ubuntu 14.04 is too old
-
 
 
     # g++-7  +  libc++
-    - compiler: g++-7
+    - compiler: g++
       env:
         - USE_LIBCXX=ON
         - COMPILER_OVERRIDE="export CC=gcc-7 && export CXX=g++-7"
@@ -106,17 +95,11 @@ matrix:
 
       addons:
         apt:
-          sources:
-            # FOR G++-7 BUILDS:
-            - ubuntu-toolchain-r-test
           packages:
             # FOR ALL BUILDS:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
-
-            # FOR G++-7 BUILDS:
-            - g++-7
 
 
 
@@ -126,6 +109,13 @@ matrix:
       env:
         - USE_LIBCXX=ON
 
+      addons:
+        apt:
+          packages:
+            # FOR ALL BUILDS:
+            - libgoogle-glog-dev
+            - libgflags-dev
+            - libeigen3-dev
 
 
 
@@ -135,16 +125,11 @@ matrix:
         - BUILD_TYPE=Debug
       addons:
         apt:
-          sources:
-            - ubuntu-toolchain-r-test # default libstdc++ in Ubuntu 14.04 is too old
-
           packages:
             # FOR ALL BUILDS:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
-
-            - libstdc++-7-dev # default libstdc++ in Ubuntu 14.04 is too old
 
 
 
