@@ -16,8 +16,9 @@ endif(NOT CMAKE_BUILD_TYPE)
 #===============================================================================
 # BUILD OPTIONS
 #===============================================================================
-option(SALGO_BUILD_TESTS "Build salgo tests" ON) # TODO: set to off
-option(SALGO_BUILD_BENCHMARKS "Build salgo benchmarks" ON) # TODO: set to off
+option(SALGO_BUILD_TESTS "Build salgo tests" OFF)
+option(SALGO_BUILD_BENCHMARKS "Build salgo benchmarks" OFF)
+option(SALGO_BUILD_SAMPLES "Build salgo samples" OFF)
 option(SALGO_USE_LIBCXX "Link with libc++ (instead of default, usually libstdc++)" OFF) # TODO: set to off
 
 
@@ -120,9 +121,20 @@ endif(SALGO_BUILD_TESTS)
 # benchmarking
 #===============================================================================
 if(SALGO_BUILD_BENCHMARKS)
-	#enable_testing()
 	add_subdirectory(bench)
 endif(SALGO_BUILD_BENCHMARKS)
+
+
+
+
+
+
+#===============================================================================
+# samples
+#===============================================================================
+if(SALGO_BUILD_SAMPLES)
+	add_subdirectory(samples)
+endif(SALGO_BUILD_SAMPLES)
 
 
 

@@ -70,7 +70,6 @@ matrix:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
-            - libbenchmark-dev
 
 
 
@@ -84,7 +83,6 @@ matrix:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
-            - libbenchmark-dev
 
 
 
@@ -102,7 +100,6 @@ matrix:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
-            - libbenchmark-dev
 
 
 
@@ -119,7 +116,6 @@ matrix:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
-            - libbenchmark-dev
 
 
 
@@ -135,7 +131,6 @@ matrix:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
-            - libbenchmark-dev
       
       after_success:
         - gcov $(find test -name *.cpp | xargs)
@@ -157,22 +152,25 @@ install:
   # print libstdc++ and libc++ versions
   - /sbin/ldconfig -p | grep -E "libc\+\+|libstdc\+\+"
 
-  # google benchmark
+  # google benchmark (version from ubuntu 18.04 repo too old)
   # (links with std c++ lib)
-  #- (git clone https://github.com/google/benchmark.git inst-benchmark --depth 1    && cd inst-benchmark    && cmake . -DBENCHMARK_ENABLE_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DBENCHMARK_USE_LIBCXX=$USE_LIBCXX -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS"    && make -j2    && make install)
+  - (git clone https://github.com/google/benchmark.git inst-benchmark --branch v1.5.0 --depth 1    && cd inst-benchmark    && cmake . -DBENCHMARK_ENABLE_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DBENCHMARK_USE_LIBCXX=$USE_LIBCXX -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS"    && make -j2    && make install)
 
   # gtest (the version from ubuntu repos is not compiled, only source)
   # (links with std c++ lib)
-  - (git clone https://github.com/google/googletest.git inst-gtest --depth 1    && cd inst-gtest    && cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS $LD_FLAGS_LIBCXX"   && make -j2    && make install)
+  - (git clone https://github.com/google/googletest.git inst-gtest --branch release-1.10.0 --depth 1    && cd inst-gtest    && cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS $LD_FLAGS_LIBCXX"   && make -j2    && make install)
 
 
 script:
   # build
-  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" .
+  - cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -D SALGO_BUILD_TESTS=ON -D SALGO_BUILD_BENCHMARKS=ON -D SALGO_BUILD_SAMPLES=ON -D SALGO_USE_LIBCXX=$USE_LIBCXX -DCMAKE_CXX_FLAGS="$CXX_FLAGS" -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" .
   - make VERBOSE=1
 
   # run tests
-  - GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 make test
+  - cd test && GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 make test
+
+  # run samples
+  - if [[ $BUILD_TYPE = Release ]]; then    cd samples && GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 make test; fi
 
   # run benchmarks
   - if [[ $BUILD_TYPE = Release ]]; then    bench/allocator &&    bench/vector &&    bench/list --benchmark_min_time=0.1 &&    bench/hash-table; fi

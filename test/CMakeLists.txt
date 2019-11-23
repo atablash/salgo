@@ -61,6 +61,4 @@ add_executable(	unit-tests ${sources} )
 add_test( unit-tests unit-tests )
 
 
-add_subdirectory( problems )
-
 add_subdirectory( 3d )
