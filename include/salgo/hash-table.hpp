@@ -210,8 +210,9 @@ struct Context {
 		// template<class H>
 		// Hash_Table(H&& hash) : Hash( std::forward<H>(hash) ) {}
 
-		Hash_Table(std::initializer_list<Key_Val>&& il) {
-			for(auto&& e : il) emplace( std::move(e) );
+		template<class KV = Key_Val, REQUIRES(std::is_move_constructible_v<KV>)>
+		Hash_Table(std::initializer_list<KV> il) {
+			for(auto& e : il) emplace( e );
 		}
 
 		template<class... LIST,

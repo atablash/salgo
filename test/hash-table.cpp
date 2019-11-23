@@ -188,9 +188,9 @@ TEST(Hash_Table, move) {
 	g_destructors = 0;
 
 	{
-		// note: initializer_list version won't work here, because it doesn't work with move-only types
+		// NOTE: initializer_list version won't work here, because it doesn't work with move-only types
 		// ...but we also have the variadic template constructor
-		Hash_Table<Movable> _ht(1, 100, 10000);
+		Hash_Table<Movable> _ht = {1, 100, 10000};
 
 		auto ht = std::move(_ht);
 
