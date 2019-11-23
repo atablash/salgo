@@ -18,6 +18,7 @@ namespace {
 
 
 
+namespace {
 struct Movable {
 	Movable(int xx = 0) : x(xx) { ++g_constructors; }
 	Movable(const Movable&) = delete;
@@ -38,6 +39,7 @@ struct Copyable {
 	int x = -1;
 	operator int() const { return x; }
 };
+}
 
 
 

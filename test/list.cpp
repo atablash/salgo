@@ -12,7 +12,6 @@ using namespace std::chrono;
 
 
 
-DECLARE_int32(perf);
 
 
 TEST(List, simple) {
@@ -51,25 +50,43 @@ TEST(List, count) {
 
 
 
+namespace {
+	struct Movable {
+		static int& constructors() {
+			static int constructors = 0;
+			return constructors;
+		}
+		
+		static int& destructors() {
+			static int destructors = 0;
+			return destructors;
+		}
+
+		static void reset() {
+			constructors() = 0;
+			destructors() = 0;
+		}
+
+		Movable(int xx) : x(xx) { ++constructors(); }
+		Movable(const Movable&) = delete;
+		Movable(Movable&& o) : x(o.x) { o.x = 0; ++constructors(); }
+		~Movable() { ++destructors(); }
+
+		int x = -1;
+		operator int() const { return x; }
+		auto hash() const { return x; }
+	};
+}
 
 
-static int g_constructors = 0;
-static int g_destructors = 0;
+
 
 TEST(List, count_nontrivial) {
-
-	struct S {
-		int val;
-
-		S(int i) : val(i) { ++g_constructors; }
-		S(S&& o) { ++g_constructors; val = o.val; }
-		~S() { ++g_destructors; }
-
-		operator int() const { return val; }
-	};
+	using T = Movable;
+	T::reset();
 
 	{
-		List<S> ::COUNTABLE m;
+		List<T> ::COUNTABLE m;
 		m.emplace_back(3);
 		m.emplace_back(4);
 		m.emplace_back(5);
@@ -85,7 +102,8 @@ TEST(List, count_nontrivial) {
 	}
 
 	// destructors called?
-	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
 }
 
 
@@ -127,6 +145,41 @@ TEST(List, no_invalidation) {
 }
 
 
+
+
+
+
+TEST(List, std_alloc) {
+	using T = Movable;
+	T::reset();
+
+	{
+		T asdf(123);
+		using Alloc = Salgo_From_Std_Allocator< std::allocator<T> >;
+		salgo::List<T> ::COUNTABLE ::ALLOCATOR<Alloc> li;
+
+		for(int i=0; i<10; ++i) {
+			li.emplace_back( rand() );
+			li.emplace_front( rand() );
+		}
+
+		for(int i=0; i<10; ++i) {
+			int ith = 0;
+			for(auto& e : li) {
+
+				if(ith%2) {
+					e.erase();
+					li.emplace_front( rand() );
+				}
+
+				++ith;
+			}
+		}
+	}
+
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
+}
 
 
 

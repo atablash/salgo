@@ -34,7 +34,7 @@ STORAGE concept:
 
 
 namespace internal {
-namespace Salgo_From_Std_Allocator {
+namespace salgo_from_std_allocator {
 
 
 
@@ -190,7 +190,7 @@ struct Context {
 
 
 template< class ALLOCATOR >
-using Salgo_From_Std_Allocator = typename internal::Salgo_From_Std_Allocator::Context<
+using Salgo_From_Std_Allocator = typename internal::salgo_from_std_allocator::Context<
 	ALLOCATOR
 >::With_Builder;
 

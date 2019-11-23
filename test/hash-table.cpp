@@ -134,6 +134,7 @@ namespace {
 	int g_destructors = 0;
 }
 
+namespace {
 struct Copyable {
 	Copyable(int xx) : x(xx) { ++g_constructors; }
 	Copyable(const Copyable& o) { x = o.x; ++g_constructors; }
@@ -155,6 +156,7 @@ struct Movable {
 	operator int() const { return x; }
 	auto hash() const { return x; }
 };
+}
 
 
 
