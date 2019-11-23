@@ -68,12 +68,13 @@ if (SALGO_USE_LIBCXX)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
 		message("libc++ header path must be manually specified using CMAKE_CXX_FLAGS")
 
-		# to be added to CMAKE_<TYPE>_LINKER_FLAGS as last entries
-		list(APPEND SALGO_CXX_LINKER_FLAGS -nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc -lgcc_s -lpthread)
+		link_libraries( -nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc -lgcc_s -lpthread )
 	else()
 		message(FATAL "-DSALGO_USE_LIBCXX:BOOL=ON is not supported for this compiler")
 	endif()
 endif(SALGO_USE_LIBCXX)
+
+
 
 
 

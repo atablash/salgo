@@ -22,8 +22,6 @@ endif()
 
 
 
-link_libraries( ${SALGO_CXX_LINKER_FLAGS} )
-
 
 
 set(sources

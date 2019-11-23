@@ -16,10 +16,6 @@ endif()
 
 
 
-link_libraries( ${SALGO_CXX_LINKER_FLAGS} )
-
-
-
 # make #include <salgo/...> work
 include_directories( # SYSTEM
 	../include
