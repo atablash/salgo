@@ -1,3 +1,4 @@
 ignore:
   - third-party
   - samples
+  - bench

@@ -167,12 +167,12 @@ script:
   - make VERBOSE=1
 
   # run tests
-  - cd test && GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 make test
+  - (cd test && GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 make test)
 
-  # run samples
-  - if [[ $BUILD_TYPE = Release ]]; then    cd samples && GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 make test; fi
+  # run samples (Release only)
+  - if [[ $BUILD_TYPE = Release ]]; then    (cd samples && GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 make test); fi
 
-  # run benchmarks
+  # run benchmarks (Release only)
   - if [[ $BUILD_TYPE = Release ]]; then    bench/allocator &&    bench/vector &&    bench/list --benchmark_min_time=0.1 &&    bench/hash-table; fi
 
 
