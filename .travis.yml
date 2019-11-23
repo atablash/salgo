@@ -133,16 +133,19 @@ matrix:
             - libeigen3-dev
       
       after_success:
+        # codecov
         - gcov $(find test -name *.cpp | xargs)
         - bash <(curl -s https://codecov.io/bash)
 
+        # coveralls
+        - pip install --user cpp-coveralls
+        - coveralls --exclude third-party --exclude samples --exclude bench --gcov-options '\-lp'
 
 
 
 
 
-
-# before_install:
+before_install:
 #   - eval $COMPILER_OVERRIDE
 
 
