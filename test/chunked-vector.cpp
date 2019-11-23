@@ -89,6 +89,7 @@ TEST(Chunked_Vector, destructors_called) {
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_NE(g_constructors, 0);
 }
 
 
@@ -113,6 +114,7 @@ TEST(Chunked_Vector, destructors_called_sparse) {
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_NE(g_constructors, 0);
 }
 
 

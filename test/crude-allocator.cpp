@@ -8,9 +8,11 @@ using namespace salgo;
 
 
 
+namespace {
+	int g_constructors = 0;
+	int g_destructors = 0;
+}
 
-int g_constructors = 0;
-int g_destructors = 0;
 
 struct S;
 
