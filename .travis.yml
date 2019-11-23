@@ -138,7 +138,9 @@ matrix:
         - bash <(curl -s https://codecov.io/bash)
 
         # codacy
-        - CODACY_PROJECT_TOKEN=66907648526b42228da1f90f35066c3a bash <(curl -Ls https://coverage.codacy.com/get.sh)
+        - curl -Ls -o codacy-coverage-reporter "$(curl -Ls https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | contains("codacy-coverage-reporter-linux"))) | .[0].browser_download_url')"
+        - chmod +x codacy-coverage-reporter
+        - ./codacy-coverage-reporter report
 
         # coveralls
         - pip install --user cpp-coveralls
