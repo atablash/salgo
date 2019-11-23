@@ -68,6 +68,7 @@ TEST(Memory_Block, stack_optim_inplace_nontrivial) {
 
 
 	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_NE(g_constructors, 0);
 }
 
 
@@ -91,7 +92,7 @@ TEST(Memory_Block, destructors_called_exists) {
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
-
+	EXPECT_NE(g_constructors, 0);
 }
 
 
@@ -107,28 +108,30 @@ TEST(Memory_Block, destructors_called_dense) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::DENSE block(10);
+		Memory_Block<S> ::DENSE  block(10);
 
 		EXPECT_EQ(10, block.domain());
 		EXPECT_EQ(10, block.count());
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_NE(g_constructors, 0);
 }
 
 
 TEST(Memory_Block, destructors_called_dense_shrunk) {
-	struct S {
-		S()  { ++g_constructors; }
-		S(S&&) { ++g_constructors; }
-		~S() { ++g_destructors;  }
+	struct Obj {
+		Obj()  { ++g_constructors; }
+		Obj(const Obj&) = delete;
+		Obj(Obj&&) { ++g_constructors; }
+		~Obj() { ++g_destructors;  }
 	};
 
-	g_destructors = 0;
 	g_constructors = 0;
+	g_destructors = 0;
 
 	{
-		Memory_Block<S>::DENSE block;
+		Memory_Block<Obj> ::DENSE  block;
 		EXPECT_EQ(0, block.domain());
 		EXPECT_EQ(0, block.count());
 		block.resize(1);
@@ -138,6 +141,7 @@ TEST(Memory_Block, destructors_called_dense_shrunk) {
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_NE(g_constructors, 0);
 }
 
 
@@ -151,7 +155,7 @@ TEST(Memory_Block, destructors_called_dense_grown) {
 	};
 
 	{
-		Memory_Block<int>::DENSE mb(10);
+		Memory_Block<int> ::DENSE  mb(10);
 		EXPECT_EQ(10, mb.count());
 		EXPECT_EQ(g_constructors, g_destructors);
 
@@ -161,6 +165,7 @@ TEST(Memory_Block, destructors_called_dense_grown) {
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_NE(g_constructors, 0);
 }
 
 
@@ -168,7 +173,7 @@ TEST(Memory_Block, destructors_called_dense_grown) {
 
 
 TEST(Memory_Block, dense_constructor) {
-	Memory_Block<int>::DENSE mb(10, 10);
+	Memory_Block<int> ::DENSE  mb(10, 10);
 
 	int sum = 0;
 	for(auto& e : mb) sum += e;
@@ -198,6 +203,7 @@ TEST(Memory_Block, copy_container_exists) {
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_NE(g_constructors, 0);
 }
 
 TEST(Memory_Block, copy_container_dense) {
@@ -219,6 +225,7 @@ TEST(Memory_Block, copy_container_dense) {
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_NE(g_constructors, 0);
 }
 
 
@@ -247,6 +254,7 @@ TEST(Memory_Block, move_container_exists) {
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_NE(g_constructors, 0);
 }
 
 
