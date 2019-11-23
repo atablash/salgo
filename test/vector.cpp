@@ -217,6 +217,13 @@ TEST(Dense_Vector, assignment_operator) {
 
 
 
+TEST(Dense_Vector, access_last) {
+	const Vector<int> vec = {11, 22};
+	EXPECT_EQ(vec[LAST], 22);
+}
+
+
+
 
 TEST(Accessor, print_to_ostream) {
 	Vector<int> v(1);

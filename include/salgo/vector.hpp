@@ -340,8 +340,26 @@ struct Context {
 		auto& operator[](First_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator[]( Index(0) ); }
 		auto& operator[](First_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator[]( Index(0) ); }
 
-		auto& operator[](Last_Tag)       { static_assert(Dense, "todo: implement for sparse"); return operator[]( Index(_size-1) ); }
-		auto& operator[](Last_Tag) const { static_assert(Dense, "todo: implement for sparse"); return operator[]( Index(_size-1) ); }
+
+		auto& operator[](Last_Tag)       {
+			if constexpr(Dense) return operator[]( Index(_size-1) );
+			else {
+				DCHECK_GT(_mb.count(), 0);
+				auto it = Iterator<CONST>(this, Index(_size-1));
+				if(!it->constructed()) --it;
+				return it.value();
+			}
+		}
+
+		auto& operator[](Last_Tag) const {
+			if constexpr(Dense) return operator[]( Index(_size-1) );
+			else {
+				DCHECK_GT(_mb.count(), 0);
+				auto it = Iterator<CONST>(this, Index(_size-1));
+				if(!it->constructed()) --it;
+				return it.value();
+			}
+		}
 
 
 
