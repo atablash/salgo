@@ -120,3 +120,16 @@ TEST(Chunked_Vector, destructors_called_sparse) {
 
 
 
+TEST(Handles, print_pair_handle) {
+	Chunked_Vector<int> v;
+	v.emplace_back();
+
+	std::ostringstream os, os_want;
+	os << v(0);
+
+	os_want << "{0,0} @" << &v;
+
+	EXPECT_EQ(os.str(), os_want.str());
+}
+
+

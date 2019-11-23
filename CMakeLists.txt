@@ -81,6 +81,31 @@ endif()
 
 
 
+#===============================================================================
+# switch from default (libstdc++?) to libc++
+#===============================================================================
+if (SALGO_USE_LIBCXX)
+
+	# CLANG
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+
+	# GCC (or Intel?)
+	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+	        "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
+		message("libc++ header path must be manually specified using CMAKE_CXX_FLAGS")
+
+		link_libraries( -nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc -lgcc_s -lpthread )
+	else()
+		message(FATAL "-DSALGO_USE_LIBCXX:BOOL=ON is not supported for this compiler")
+	endif()
+endif(SALGO_USE_LIBCXX)
+
+
+
+
 
 
 
@@ -122,27 +147,6 @@ endif(SALGO_BUILD_SAMPLES)
 
 
 
-#===============================================================================
-# switch from default (libstdc++?) to libc++
-#===============================================================================
-if (SALGO_USE_LIBCXX)
-
-	# CLANG
-	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-
-	# GCC (or Intel?)
-	elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-	        "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -nostdinc++")
-		message("libc++ header path must be manually specified using CMAKE_CXX_FLAGS")
-
-		link_libraries( -nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc -lgcc_s -lpthread )
-	else()
-		message(FATAL "-DSALGO_USE_LIBCXX:BOOL=ON is not supported for this compiler")
-	endif()
-endif(SALGO_USE_LIBCXX)
 
 
 
