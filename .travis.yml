@@ -139,7 +139,7 @@ matrix:
 
         # coveralls
         - pip install --user cpp-coveralls
-        - coveralls --exclude third-party --exclude samples --exclude bench --gcov-options '\-lp'
+        - coveralls --exclude third-party --exclude samples --exclude bench --exclude CMakeFiles --exclude INSTALL_ROOT --exclude inst-gtest --exclude inst-benchmark --gcov-options '\-lp'
 
 
 
