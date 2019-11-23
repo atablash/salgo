@@ -101,7 +101,7 @@ public:
 template<>
 class Modulo_Hash<0> {
 protected:
-    static constexpr uint32_t mod = 1u<<31;
+    static constexpr uint32_t mod = (1u<<31) - 1;
 
 public:
     Modulo_Hash() = default;
