@@ -10,7 +10,7 @@ using namespace salgo;
 
 TEST(Mult_and_mod, long_long) {
 	unsigned long long big = -15;
-	EXPECT_EQ( mult_and_mod(big+1, big+1, big), 1 );
+	EXPECT_EQ( mult_and_mod(big+1, big+1, big), 1u );
 }
 
 
