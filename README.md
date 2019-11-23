@@ -95,11 +95,13 @@ As you can see in the above example, accessors are implicitly convertible to the
 If you need to make this explicit, use `operator()`, i.e. call `e()` instead of `e`:
 
 ```cpp
-	struct S {
+	struct Obj {
 		int foo;
+
+		Obj(int x) : foo(x) {}
 	};
 
-	Vector<S> v = {S{6}, S{24}, S{35}, S{46}, S{57}};
+	Vector<Obj> v = {6, 24, 35, 46, 57};
 
 	for(const auto& e : v) cout << e().foo << endl;
 ```

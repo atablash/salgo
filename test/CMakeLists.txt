@@ -56,12 +56,12 @@ include_directories( # SYSTEM
 
 
 
-link_libraries( ${SALGO_CXX_LINKER_FLAGS} )
 
 
 
 add_executable(	unit-tests ${sources} )
 add_test( unit-tests unit-tests )
 
+link_libraries( ${SALGO_CXX_LINKER_FLAGS} )
 
 add_subdirectory( 3d )
