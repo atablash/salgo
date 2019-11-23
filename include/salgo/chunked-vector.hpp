@@ -575,16 +575,16 @@ struct Context {
 
 		// also enable CONSTRUCTED_FLAGS by default
 		using SPARSE =
-			typename Context< Val, true, Count, Memory_Block > :: With_Builder :: CONSTRUCTED_FLAGS;
+			typename Context< Val, true, Count, Memory_Block > ::With_Builder ::CONSTRUCTED_FLAGS;
 
 
 		// just enable SPARSE, but no CONSTRUCTED_FLAGS
 		using SPARSE_NO_CONSTRUCTED_FLAGS =
-			typename Context< Val, true, Count, Memory_Block > :: With_Builder;
+			typename Context< Val, true, Count, Memory_Block > ::With_Builder;
 
 
 		using COUNT =
-			typename Context< Val, Sparse, true, Memory_Block > :: With_Builder :: CONSTRUCTED_FLAGS;
+			typename Context< Val, Sparse, true, Memory_Block > ::With_Builder ::CONSTRUCTED_FLAGS;
 	};
 
 

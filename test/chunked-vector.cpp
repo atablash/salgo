@@ -51,35 +51,36 @@ TEST(Chunked_Vector, clear) {
 
 
 namespace {
-	int g_destructors = 0;
 	int g_constructors = 0;
+	int g_destructors = 0;
 }
 
-struct S {
-	S() { ++g_constructors; }
-	S(const S&) = delete;
-	S(S&&) = delete;
+struct Simple {
+	Simple() { ++g_constructors; }
+	Simple(const Simple&) = delete;
+	Simple(Simple&&) = delete;
 
-	S& operator=(const S&) = delete;
-	S& operator=(S&&) = delete;
+	Simple& operator=(const Simple&) = delete;
+	Simple& operator=(Simple&&) = delete;
 
-	~S() { ++g_destructors; }
+	~Simple() { ++g_destructors; }
 };
 
 
+
 TEST(Chunked_Vector, non_movable_type_compiles) {
-	Chunked_Vector<S> v;
+	Chunked_Vector<Simple> v;
 	v.emplace_back();
 	v.pop_back();
 }
 
 
 TEST(Chunked_Vector, destructors_called) {
-	g_destructors = 0;
 	g_constructors = 0;
+	g_destructors = 0;
 
 	{
-		Chunked_Vector<S> v;
+		Chunked_Vector<Simple> v;
 		for(int i=0; i<10; ++i) v.emplace_back();
 		// have 10 elements
 		v.resize(15);
@@ -98,7 +99,7 @@ TEST(Chunked_Vector, destructors_called_sparse) {
 	g_constructors = 0;
 
 	{
-		Chunked_Vector<S> ::SPARSE v;
+		Chunked_Vector<Simple> ::SPARSE v;
 		for(int i=0; i<6; ++i) v.emplace_back();
 		v.resize(10);
 		// have 10 elements
