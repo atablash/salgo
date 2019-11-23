@@ -262,7 +262,21 @@ struct Context {
 		}
 
 
-		Vector(const Vector&) = default;
+		Vector(const Vector& o) {
+			if constexpr(Sparse) {
+				// same as default
+				_mb = o._mb;
+				_size = o._size;
+			}
+			else {
+				reserve( o._mb.domain() );
+				_size = o._size;
+				for(int i=0; i<_size; ++i) {
+					_mb(i).construct( o._mb[i] );
+				}
+			}
+		}
+
 		Vector(Vector&& o) {
 			_mb = std::move(o._mb);
 			_size = o._size;

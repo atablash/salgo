@@ -13,6 +13,11 @@ using namespace std::chrono;
 
 
 
+TEST(Dense_Vector, copy) {
+	Vector<int> v = {1, 2, 3, 4, 5};
+	auto other = v;
+}
+
 
 
 
@@ -116,7 +121,6 @@ static void push_pop_resize_common(MB& m) {
 
 
 TEST(Dense_Vector, push_pop_resize) {
-
 	Vector<int> m;
 	push_pop_resize_common(m);
 }

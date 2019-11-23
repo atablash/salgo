@@ -127,4 +127,39 @@ TEST(Hash_Table, key_val) {
 }
 
 
+TEST(Hash_Table, copy) {
+	Hash_Table<int> _ht = {1, 100, 10000};
+	auto ht = _ht;
+
+	{
+		int sum = 0;
+		for(auto& e : ht) sum += e;
+		EXPECT_EQ(10101, sum);
+	}
+
+	{
+		int sum = 0;
+		for(auto& e : _ht) sum += e;
+		EXPECT_EQ(10101, sum);
+	}
+}
+
+TEST(Hash_Table, move) {
+	Hash_Table<int> _ht = {1, 100, 10000};
+	auto ht = std::move(_ht);
+
+	{
+		int sum = 0;
+		for(auto& e : ht) sum += e;
+		EXPECT_EQ(10101, sum);
+	}
+
+	{
+		int sum = 0;
+		for(auto& e : _ht) sum += e;
+		EXPECT_EQ(0, sum);
+	}
+}
+
+
 // TODO: add tests for non-movable, non-copyable types

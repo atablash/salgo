@@ -328,7 +328,7 @@ namespace salgo {
 						for(int i=0; i<_size; ++i) {
 							std::allocator_traits<Allocator>::construct(_allocator(), _data+i);
 							if( o(i).constructed() ) {
-								_get(i).construct( o._get(i) );
+								_get(i).construct( o[i] );
 							}
 						}
 					}
@@ -536,13 +536,13 @@ namespace salgo {
 					Val& operator[](Index key) {
 						_check_bounds(key);
 						if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element with key " << key;
-						return _get(key);
+						return _get(key).get();
 					}
 
 					const Val& operator[](Index key) const {
 						_check_bounds(key);
 						if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element with key " << key;
-						return _get(key);
+						return _get(key).get();
 					}
 
 

@@ -284,6 +284,9 @@ namespace mesh {
 
 			template<class... ARGS>
 			Vert(ARGS&&... args) : pos( std::forward<ARGS>(args)... ) {}
+
+			Vert(const Vert&) = default;
+			Vert(Vert&&) = default;
 		};
 
 

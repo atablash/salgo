@@ -207,8 +207,8 @@ struct Context {
 	public:
 		Hash_Table() = default;
 
-		template<class H>
-		Hash_Table(H&& hash) : Hash( std::forward<H>(hash) ) {}
+		// template<class H>
+		// Hash_Table(H&& hash) : Hash( std::forward<H>(hash) ) {}
 
 		Hash_Table(std::initializer_list<Key_Val>&& il) {
 			for(auto&& e : il) emplace( std::move(e) );
@@ -223,10 +223,10 @@ struct Context {
 			}
 		}
 
-		Hash_Table(const Hash_Table&) = delete; // todo
+		Hash_Table(const Hash_Table&) = default;
 		Hash_Table(Hash_Table&&) = default;
 
-		Hash_Table& operator=(const Hash_Table&) = delete; // todo
+		Hash_Table& operator=(const Hash_Table&) = delete;
 		Hash_Table& operator=(Hash_Table&&) = default;
 
 
