@@ -121,7 +121,7 @@ public:
 
 template<Const_Flag C, class CONTEXT>
 std::ostream& operator<<(std::ostream& s, const Reference_Base<C,CONTEXT>& r) {
-	return s << r.handle() << "@" << &r.container();
+	return s << r.handle() << " @" << &r.container();
 };
 
 

@@ -206,4 +206,15 @@ TEST(Dense_Vector, push_delete_compact_inplace_nontrivial) {
 
 
 
+TEST(Accessor, print_to_ostream) {
+	Vector<int> v(1);
+
+	std::ostringstream os, os_want;
+	os << v(0);
+
+	os_want << "0 @" << &v;
+
+	EXPECT_EQ(os.str(), os_want.str());
+}
+
 
