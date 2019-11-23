@@ -20,7 +20,35 @@ namespace salgo {
 
 
 namespace internal {
-namespace Vector {
+namespace vector {
+
+
+
+
+
+
+
+using Handle_Int_Type = int;
+
+
+template<class CTX>
+struct Handle : Int_Handle_Base<Handle<CTX>, Handle_Int_Type> {
+	using BASE = Int_Handle_Base<Handle<CTX>, Handle_Int_Type>;
+	EXPLICIT_FORWARDING_CONSTRUCTOR(Handle, BASE) {}
+};
+
+template<class CTX>
+using Handle_Small = Handle<CTX>;
+
+// same as Handle, but allow creation from `int`
+template<class CTX>
+struct Index : Handle<CTX> {
+	FORWARDING_CONSTRUCTOR(Index, Handle<CTX>) {}
+};
+
+
+
+
 
 
 
@@ -56,18 +84,10 @@ struct Context {
 
 
 
-
-	struct Handle : Int_Handle_Base<Handle,int> {
-		using BASE = Int_Handle_Base<Handle,int>;
-		EXPLICIT_FORWARDING_CONSTRUCTOR(Handle, BASE) {}
-	};
-
-	using Handle_Small = Handle;
-
-	// same as Handle, but allow creation from `int`
-	struct Index : Handle {
-		FORWARDING_CONSTRUCTOR(Index, Handle) {}
-	};
+	
+	using Handle       = vector::Handle<Context>;
+	using Handle_Small = vector::Handle_Small<Context>;
+	using Index        = vector::Index<Context>;
 
 
 
@@ -532,7 +552,7 @@ struct Context {
 
 
 template< class T >
-using Vector = typename internal::Vector::Context<
+using Vector = typename internal::vector::Context<
 	T,
 	false, // SPARSE
 	Memory_Block<T>
@@ -551,3 +571,18 @@ using Vector = typename internal::Vector::Context<
 } // namespace salgo
 
 #include "helper-macros-off"
+
+
+
+
+
+template<class X>
+struct std::hash<salgo::internal::vector::Handle<X>> {
+	size_t operator()(const salgo::internal::vector::Handle<X>& h) const {
+		return std::hash<salgo::internal::vector::Handle_Int_Type>()(
+			salgo::internal::vector::Handle_Int_Type(h)
+		);
+	}
+};
+
+

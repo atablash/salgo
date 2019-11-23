@@ -242,6 +242,12 @@ struct Context {
 			}
 		}
 
+		void reserve(int reserve_size) {
+			if(reserve_size <= v.domain()) return;
+
+			v.resize( reserve_size );
+		}
+
 
 	public:
 		auto& operator[]( Index h )       { return v[h]; }
@@ -265,7 +271,6 @@ struct Context {
 		auto  operator()( Last_Tag ) const { return Accessor<CONST>(this, v(LAST)); }
 
 
-
 		auto count() const { return v.count(); }
 		auto empty() const { return v.empty(); }
 
@@ -273,9 +278,8 @@ struct Context {
 
 	public:
 		auto begin()       { return Iterator<MUTAB>(this, v.begin()); }
-		auto begin() const { return Iterator<MUTAB>(this, v.begin()); }
+		auto begin() const { return Iterator<CONST>(this, v.begin()); }
 
-		auto end()       { return End_Iterator(); }
 		auto end() const { return End_Iterator(); }
 	};
 

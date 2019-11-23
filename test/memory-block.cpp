@@ -191,7 +191,7 @@ TEST(Memory_Block, copy_container_exists) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::CONSTRUCTED_FLAGS block(10);
+		Memory_Block<S> ::CONSTRUCTED_FLAGS block(10);
 		block.construct_all();
 
 		auto block2 = block;
@@ -236,7 +236,7 @@ TEST(Memory_Block, move_container_exists) {
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::CONSTRUCTED_FLAGS::INPLACE_BUFFER<2> block(10);
+		Memory_Block<S> ::CONSTRUCTED_FLAGS ::INPLACE_BUFFER<2> block(10);
 		block.construct_all();
 
 		auto block2 = std::move(block);
@@ -251,3 +251,14 @@ TEST(Memory_Block, move_container_exists) {
 
 
 
+TEST(Memory_Block, begin_returns_first_existing) {
+	Memory_Block<int> ::CONSTRUCTED_FLAGS block(10);
+
+	block(0).construct(12);
+	block(0).destruct();
+	
+	block(3).construct(123);
+
+	EXPECT_TRUE( block.begin()->exists() );
+	EXPECT_EQ( 123, block.begin()->value() );
+}

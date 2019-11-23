@@ -1,4 +1,3 @@
-#include <bits/stdc++.h>
 #include <salgo/all>
 
 #include "../../common.hpp" // competitive programming macros, etc.

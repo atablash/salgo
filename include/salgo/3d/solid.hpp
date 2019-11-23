@@ -3,7 +3,7 @@
 #include "../common.hpp"
 #include "edge-links.hpp"
 #include "vert-poly-links.hpp"
-
+#include "mesh-utils.hpp"
 
 
 
@@ -17,9 +17,9 @@ namespace salgo {
 
 template<class MESH>
 bool has_degenerate_polys(const MESH& mesh) {
-	for(auto p : mesh.polys()) {
-		for(auto pv : p.poly_verts()) {
-			if(pv.vert().handle() == pv.next().vert().handle()) return true;
+	for(auto& p : mesh.polys()) {
+		for(auto& v : p.verts()) {
+			if(v == v.next()) return true;
 		}
 	}
 	return false;
@@ -37,7 +37,8 @@ struct Check_Solid_Result {
 		SUCCESS = 0,
 		DEGENERATE_POLYS,
 		INVALID_EDGE_LINKS,
-		INVALID_VERT_POLY_LINKS
+		INVALID_VERT_POLY_LINKS,
+		ISOLATED_VERTS
 	};
 
 	bool is_solid = false;
@@ -95,6 +96,11 @@ auto check_solid(const MESH& mesh, Check_Solid_Flags flags = Check_Solid_Flags::
 		}
 	}
 
+	if(has_isolated_verts(mesh)) {
+		r.failure = Check_Solid_Result::Failure::ISOLATED_VERTS;
+		return r;
+	}
+
 	(void)flags; // suppress unused warning
 
 	r.is_solid = true;
@@ -105,7 +111,9 @@ auto check_solid(const MESH& mesh, Check_Solid_Flags flags = Check_Solid_Flags::
 
 template <class MESH>
 auto is_solid(const MESH& mesh, Check_Solid_Flags flags = Check_Solid_Flags::NONE) {
-	return check_solid(mesh, flags).is_solid;
+	auto r = check_solid(mesh, flags);
+	// std::cout << "check_solid_result " << (int)r.failure << std::endl;
+	return r.is_solid;
 }
 
 

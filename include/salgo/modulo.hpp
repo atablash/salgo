@@ -120,7 +120,7 @@ private:
 			// both MOD and TOTIENT should have same source
 			static_assert(ARGS::mod == 0);
 			DCHECK(!g_contexts.empty()) << "you must create Modulo_Context first!";
-			return g_contexts[LAST].mod;
+			return g_contexts[LAST].totient;
 		}
 		else if constexpr(ARGS::type == Type::LOCAL) {
 			DCHECK(is_prime(MOD())) << "MOD is not prime and TOTIENT requested, but not provided. use ::LOCAL_WITH_TOTIENT instead of ::LOCAL";
@@ -231,7 +231,7 @@ public:
 			else static_assert(ARGS::totient < ARGS::mod-1 && ARGS::totient > 0, "you must provide a valid Euler's totient");
 		}
 		else {
-			if(is_prime(MOD())) DCHECK_EQ(TOTIENT(), MOD()-1);
+			if(is_prime(MOD())) DCHECK_EQ(TOTIENT(), MOD()-1) << MOD() << " is prime, so totient should be " << MOD()-1;
 			else DCHECK_LT(TOTIENT(), MOD()-1);
 		}
 		//ASS(millerRabin(MOD));

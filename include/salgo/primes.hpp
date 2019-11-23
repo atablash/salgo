@@ -2,6 +2,8 @@
 
 #include "modulo-utils.hpp"
 
+#include <array>
+
 namespace salgo {
 
 
@@ -81,14 +83,14 @@ constexpr bool miller_rabin(const T& p, const ARR& test_primes) {
 
 // miller rabin for p_max == 4,759,123,141 ( > 2^32)
 constexpr bool is_prime(const unsigned int p) {
-    return miller_rabin(p, std::array{2, 7, 61});
+    return miller_rabin(p, std::array<unsigned int, 3>{2, 7, 61});
 }
 
 constexpr bool is_prime(const int p) { if(p < 0) return false; return is_prime((unsigned int)p); }
 
 // if n < 318,665,857,834,031,151,167,461 (>2^64), it is enough to test a = 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, and 37.
 constexpr bool is_prime(const unsigned long long p) {
-	return miller_rabin(p, std::array{2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37});
+	return miller_rabin(p, std::array<unsigned long long, 12>{2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37});
 }
 
 constexpr bool is_prime(const long long p) { if(p < 0) return false; return is_prime((unsigned long long)p); }

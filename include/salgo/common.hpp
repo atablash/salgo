@@ -260,6 +260,7 @@ inline bool is_power_of_2(unsigned long long x) {
 
 
 
+struct Invalid_Type {};
 
 
 

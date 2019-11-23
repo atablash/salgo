@@ -127,6 +127,7 @@ struct Context {
 
 
 
+	struct End_Iterator {};
 
 	//
 	// iterator
@@ -142,7 +143,10 @@ struct Context {
 	private:
 		friend Iterator_Base<C,Context>;
 
-		inline void _increment() {
+		// note:
+		// _increment and _decrement are swapped so that elements can be erased externally inside for(auto& e : ht)
+
+		inline void _decrement() {
 			if(_just_erased) {
 				_just_erased = false;
 				return;
@@ -154,15 +158,20 @@ struct Context {
 			}
 		}
 
-		inline void _decrement() {
+		inline void _increment() {
 			_just_erased = false;
-			if(HANDLE.b == 0) {
+			--HANDLE.b;
+			while(HANDLE.b == (typename List::Handle)(-1)) {
 				--HANDLE.a;
-				HANDLE.b = CONT._buckets[HANDLE.a].size() - 1;
+				HANDLE.b = 0;
+				if(HANDLE.a >= 0) HANDLE.b = CONT._buckets[HANDLE.a].size() - 1;
 			}
 		}
 
 		auto _get_comparable() const { return std::make_pair(HANDLE.a, HANDLE.b); }
+
+	public:
+		bool operator!=(End_Iterator) const { return HANDLE.a >= 0; }
 	};
 
 
@@ -350,6 +359,10 @@ struct Context {
 			return _count;
 		}
 
+		bool empty() const {
+			return _count == 0;
+		}
+
 		void rehash(int want_buckets) {
 			Buckets new_buckets(want_buckets);
 
@@ -387,25 +400,17 @@ struct Context {
 
 	public:
 		auto begin() {
-			Handle h = {0,0};
-			while(h.a < _buckets.size() && _buckets[h.a].empty()) ++h.a;
-			return Accessor<MUTAB>(this, h).iterator();
+			Handle h = {_buckets.size(), 0};
+			return Iterator<MUTAB>(this, h).next();
 		}
 
 		auto begin() const {
-			Handle h = {0,0};
-			while(h.a < _buckets.size() && _buckets[h.a].empty()) ++h.a;
-			return Accessor<CONST>(this, h).iterator();
+			Handle h = {_buckets.size(), 0};
+			return Iterator<CONST>(this, h).next();
 		}
 
 
-		auto end() {
-			return Accessor<MUTAB>(this, Handle{_buckets.size(), 0}).iterator();
-		}
-
-		auto end() const {
-			return Accessor<CONST>(this, Handle{_buckets.size(), 0}).iterator();
-		}
+		auto end() const { return End_Iterator(); }
 
 	};
 

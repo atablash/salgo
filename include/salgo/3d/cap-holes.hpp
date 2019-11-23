@@ -70,7 +70,7 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 		++next;
 		if(next == perimeter.end()) next = perimeter.begin();
 
-		DCHECK( m(*it).next_vert() == m(*next).prev_vert()) << "edges not adjacent";
+		DCHECK_EQ( m(*it).next_vert().handle(), m(*next).prev_vert().handle() ) << "edges not adjacent";
 
 		auto cands_it = cands.insert({get_score(m(*it), m(*next)), it});
 		where_cands.emplace(*it, cands_it);
@@ -118,13 +118,13 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 		auto next = curr; ++next;
 		if(next == perimeter.end()) next = perimeter.begin();
 
-		DCHECK( m(*curr).next_vert() == m(*next).prev_vert()) << "edges not adjacent";
+		DCHECK_EQ( m(*curr).next_vert().handle(), m(*next).prev_vert().handle() ) << "edges not adjacent";
 
 		auto i0 = m(*curr).prev_vert().handle();
 		auto i1 = m(*next).next_vert().handle();
 		auto i2 = m(*curr).next_vert().handle();
 		// add cand, cand+1 poly
-		auto p = m.polys_add(i0, i1, i2);
+		auto p = m.polys().add(i0, i1, i2);
 
 		++r.num_polys_created;
 
@@ -188,8 +188,8 @@ template<class MESH>
 Cap_Holes_Result cap_holes(MESH& mesh) {
 	Cap_Holes_Result r;
 
-	for(auto p : mesh.polys()) {
-		for(auto pe : p.poly_edges()) {
+	for(auto& p : mesh.polys()) {
+		for(auto& pe : p.poly_edges()) {
 			if(!pe.has_link()) {
 				auto lr = cap_hole(pe);
 				++r.num_holes_capped;

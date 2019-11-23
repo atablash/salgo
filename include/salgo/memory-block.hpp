@@ -18,7 +18,7 @@ namespace salgo {
 
 
 	namespace internal {
-		namespace Memory_Block {
+		namespace memory_block {
 
 
 			template<bool> struct Add_num_existing { int num_existing = 0; };
@@ -33,6 +33,37 @@ namespace salgo {
 				std::vector<bool> exists; // TODO: don't store size and capacity here
 			};
 			template<> struct Add_exists_bitset<false> {};
+
+
+
+
+
+			using Handle_Int_Type = int;
+
+
+			template<class X>
+			struct Handle : Int_Handle_Base<Handle<X>, Handle_Int_Type> {
+				using BASE = Int_Handle_Base<Handle<X>, Handle_Int_Type>;
+				EXPLICIT_FORWARDING_CONSTRUCTOR( Handle, BASE ) {} // explicit, because we don't want automatic creation from `int`
+
+				//Handle() = default;
+				//explicit Handle(int val) : BASE(val) {}
+			};
+
+			template<class X>
+			using Handle_Small = Handle<X>;
+
+
+			// same as Handle, but allow creation from `int`
+			template<class X>
+			struct Index : Handle<X> {
+				FORWARDING_CONSTRUCTOR(Index, Handle<X>) {}
+			};
+
+
+
+
+
 
 
 
@@ -71,22 +102,11 @@ namespace salgo {
 
 
 
-
-				struct Handle : Int_Handle_Base<Handle,int> {
-					using BASE = Int_Handle_Base<Handle,int>;
-					EXPLICIT_FORWARDING_CONSTRUCTOR( Handle, BASE ) {} // explicit, because we don't want automatic creation from `int`
-
-					//Handle() = default;
-					//explicit Handle(int val) : BASE(val) {}
-				};
-
-				using Handle_Small = Handle;
+				using Handle       = memory_block::Handle<Context>;
+				using Handle_Small = memory_block::Handle_Small<Context>;
+				using Index        = memory_block::Index<Context>;
 
 
-				// same as Handle, but allow creation from `int`
-				struct Index : Handle {
-					FORWARDING_CONSTRUCTOR(Index, Handle) {}
-				};
 
 
 
@@ -515,13 +535,13 @@ namespace salgo {
 				public:
 					Val& operator[](Index key) {
 						_check_bounds(key);
-						if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element";
+						if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element with key " << key;
 						return _get(key);
 					}
 
 					const Val& operator[](Index key) const {
 						_check_bounds(key);
-						if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element";
+						if constexpr(Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element with key " << key;
 						return _get(key);
 					}
 
@@ -713,7 +733,7 @@ namespace salgo {
 	template<
 			class T
 	>
-	using Memory_Block = typename internal::Memory_Block::Context<
+	using Memory_Block = typename internal::memory_block::Context<
 			T,
 			std::allocator<T>, // ALLCOATOR
 			0, // STACK_BUFFER
@@ -737,4 +757,16 @@ namespace salgo {
 
 
 #include "helper-macros-off"
+
+
+
+
+template<class X>
+struct std::hash<salgo::internal::memory_block::Handle<X>> {
+	size_t operator()(const salgo::internal::memory_block::Handle<X>& h) const {
+		return std::hash<salgo::internal::memory_block::Handle_Int_Type>()(
+			salgo::internal::memory_block::Handle_Int_Type(h)
+		);
+	}
+};
 

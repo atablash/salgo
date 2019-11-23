@@ -19,12 +19,12 @@ void fast_compute_vert_normals( MESH& mesh,
 	std::vector<int> nums( mesh.verts().domain() );
 
 	for(auto v : mesh.verts()) {
-		LOG(INFO) << "v";
+		// DLOG(INFO) << "v";
 		get_v_normal( v.handle() ) = {0,0,0};
 	}
 
 	for(auto p : mesh.polys()) {
-		LOG(INFO) << "p";
+		// DLOG(INFO) << "p";
 		auto v01 = p.vert(1).pos() - p.vert(0).pos();
 		auto v02 = p.vert(2).pos() - p.vert(0).pos();
 		auto normal = v01.cross(v02);
@@ -48,7 +48,7 @@ void fast_compute_vert_normals( MESH& mesh,
 
 template<class MESH>
 void fast_compute_vert_normals( MESH& mesh ) {
-	fast_compute_vert_normals( mesh, [&mesh](int iv) -> auto& { return mesh.vert(iv).props().normal; } );
+	fast_compute_vert_normals( mesh, [&mesh](int iv) -> auto& { return mesh.vert(iv).data().normal; } );
 }
 
 
@@ -75,7 +75,7 @@ template< class MESH, class GET_V_NORMAL >
 void compute_vert_normals( MESH& mesh,
 		const GET_V_NORMAL& get_v_normal ) {
 
-	std::vector<typename MESH::Scalar> weights( mesh.verts_domain() );
+	std::vector<typename MESH::Scalar> weights( mesh.verts().domain() );
 
 	for(auto v : mesh.verts()) {
 		get_v_normal( v.handle() ) = {0,0,0};
@@ -103,7 +103,7 @@ void compute_vert_normals( MESH& mesh,
 
 template<class MESH>
 void compute_vert_normals( MESH& mesh ) {
-	compute_vert_normals( mesh, [&mesh](int iv) -> auto& { return mesh.vert(iv).props().normal; } );
+	compute_vert_normals( mesh, [&mesh](int iv) -> auto& { return mesh.vert(iv).data().normal; } );
 }
 
 

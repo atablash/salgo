@@ -97,9 +97,6 @@ endif()
 
 
 
-# TODO: remove tinyply dependency
-set(sources ${sources} ../third-party/tinyply/source/tinyply.cpp)
-#add_definitions(-Wno-unused-parameter)
 
 
 

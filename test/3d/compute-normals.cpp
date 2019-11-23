@@ -2,6 +2,7 @@
 
 #include <salgo/3d/mesh.hpp>
 #include <salgo/3d/compute-normals.hpp>
+#include <salgo/3d/io.hpp>
 
 #include <gtest/gtest.h>
 
@@ -11,12 +12,12 @@ using namespace salgo;
 
 
 
-struct Vert_Props_normal {
+struct Vert_Data_normal {
 	Eigen::Matrix<double,3,1> normal;
 };
 
 
-using M = Mesh<double> :: VERT_PROPS<Vert_Props_normal>;
+using M = Mesh<double> ::VERT_DATA<Vert_Data_normal>;
 
 
 TEST(Fast_compute_vert_normals, cube) {
@@ -30,14 +31,14 @@ TEST(Fast_compute_vert_normals, cube) {
 			for(int z=0; z<2; ++z) {
 				int idx = x*4 + y*2 + z;
 
-				if(x == 0) EXPECT_LT(mesh.vert(idx).props().normal[0], -0.1);
-				else EXPECT_GT(mesh.vert(idx).props().normal[0], 0.1);
+				if(x == 0) EXPECT_LT(mesh.vert(idx).data().normal[0], -0.1);
+				else EXPECT_GT(mesh.vert(idx).data().normal[0], 0.1);
 
-				if(y == 0) EXPECT_LT(mesh.vert(idx).props().normal[1], -0.1);
-				else EXPECT_GT(mesh.vert(idx).props().normal[1], 0.1);
+				if(y == 0) EXPECT_LT(mesh.vert(idx).data().normal[1], -0.1);
+				else EXPECT_GT(mesh.vert(idx).data().normal[1], 0.1);
 
-				if(z == 0) EXPECT_LT(mesh.vert(idx).props().normal[2], -0.1);
-				else EXPECT_GT(mesh.vert(idx).props().normal[2], 0.1);
+				if(z == 0) EXPECT_LT(mesh.vert(idx).data().normal[2], -0.1);
+				else EXPECT_GT(mesh.vert(idx).data().normal[2], 0.1);
 			}
 		}
 	}
@@ -58,14 +59,14 @@ TEST(Compute_vert_normals, cube) {
 			for(int z=0; z<2; ++z) {
 				int idx = x*4 + y*2 + z;
 
-				if(x == 0) EXPECT_DOUBLE_EQ(-s, mesh.vert(idx).props().normal[0]);
-				else EXPECT_DOUBLE_EQ(s, mesh.vert(idx).props().normal[0]);
+				if(x == 0) EXPECT_DOUBLE_EQ(-s, mesh.vert(idx).data().normal[0]);
+				else EXPECT_DOUBLE_EQ(s, mesh.vert(idx).data().normal[0]);
 
-				if(y == 0) EXPECT_DOUBLE_EQ(-s, mesh.vert(idx).props().normal[1]);
-				else EXPECT_DOUBLE_EQ(s, mesh.vert(idx).props().normal[1]);
+				if(y == 0) EXPECT_DOUBLE_EQ(-s, mesh.vert(idx).data().normal[1]);
+				else EXPECT_DOUBLE_EQ(s, mesh.vert(idx).data().normal[1]);
 
-				if(z == 0) EXPECT_DOUBLE_EQ(-s, mesh.vert(idx).props().normal[2]);
-				else EXPECT_DOUBLE_EQ(s, mesh.vert(idx).props().normal[2]);
+				if(z == 0) EXPECT_DOUBLE_EQ(-s, mesh.vert(idx).data().normal[2]);
+				else EXPECT_DOUBLE_EQ(s, mesh.vert(idx).data().normal[2]);
 			}
 		}
 	}
@@ -80,7 +81,7 @@ TEST(Compute_vert_normals, cube_external) {
 	
 	const auto mesh = get_cube_mesh<M>();
 
-	std::vector<Eigen::Matrix<double,3,1>> normals( mesh.verts_domain() );
+	std::vector<Eigen::Matrix<double,3,1>> normals( mesh.verts().domain() );
 
 	compute_vert_normals(mesh, [&normals](int i) -> auto& { return normals[i]; });
 

@@ -44,13 +44,6 @@ set(sources
 	union-find.cpp
 
 	miller-rabin.cpp
-	
-	#3d/compute-normals.cpp
-	#3d/collapse-edges.cpp
-	#3d/cap-holes.cpp
-	#3d/links.cpp
-	#3d/const.cpp
-	#../third-party/tinyply.cpp
 )
 
 
@@ -70,3 +63,4 @@ add_test( unit-tests unit-tests )
 
 add_subdirectory( problems )
 
+add_subdirectory( 3d )

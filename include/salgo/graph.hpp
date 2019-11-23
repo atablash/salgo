@@ -8,6 +8,7 @@
 
 #include "helper-macros-on"
 
+
 namespace salgo {
 
 
@@ -28,12 +29,12 @@ namespace graph {
 
 
 	enum class Erasable {
-		NON_ERASABLE = 0,
+		NOT_ERASABLE = 0,
 		ERASABLE_HOLES,
 		ERASABLE_REORDER
 	};
 	namespace {
-		constexpr auto NON_ERASABLE     = Erasable:: NON_ERASABLE;
+		constexpr auto NOT_ERASABLE     = Erasable:: NOT_ERASABLE;
 		constexpr auto ERASABLE_HOLES   = Erasable:: ERASABLE_HOLES;
 		constexpr auto ERASABLE_REORDER = Erasable:: ERASABLE_REORDER;
 	}
@@ -92,32 +93,6 @@ namespace graph {
 		static constexpr bool Has_Ins = Directed && Backlinks;
 
 
-
-		#define GRAPH_FRIENDS \
-			friend A_Vert<MUTAB>; \
-			friend A_Vert<CONST>; \
-			friend I_Vert<MUTAB>; \
-			friend I_Vert<CONST>; \
-			friend A_Edge<MUTAB>; \
-			friend A_Edge<CONST>; \
-			friend I_Edge<MUTAB>; \
-			friend I_Edge<CONST>; \
-			friend A_Vert_Edge<MUTAB,0>; \
-			friend A_Vert_Edge<CONST,0>; \
-			friend A_Vert_Edge<MUTAB,1>; \
-			friend A_Vert_Edge<CONST,1>; \
-			friend I_Vert_Edge<MUTAB,0>; \
-			friend I_Vert_Edge<CONST,0>; \
-			friend I_Vert_Edge<MUTAB,1>; \
-			friend I_Vert_Edge<CONST,1>; \
-			friend A_Verts<MUTAB>; \
-			friend A_Verts<CONST>; \
-			friend A_Edges<MUTAB>; \
-			friend A_Edges<CONST>; \
-			friend A_Vert_Edges<MUTAB,0>; \
-			friend A_Vert_Edges<CONST,0>; \
-			friend A_Vert_Edges<MUTAB,1>; \
-			friend A_Vert_Edges<CONST,1>;
 
 
 		class Graph;
@@ -219,6 +194,14 @@ namespace graph {
 
 
 
+		static auto& raw_vs(      Graph& g) {  return g._vs;  }
+		static auto& raw_vs(const Graph& g) {  return g._vs;  }
+
+		static auto& raw(      Graph& g, H_Vert h) {  return g._vs[h];  }
+		static auto& raw(const Graph& g, H_Vert h) {  return g._vs[h];  }
+
+
+
 
 		struct Verts_Context;
 		struct Edges_Context;
@@ -276,10 +259,10 @@ namespace graph {
 				auto operator->() const { return &data(); }
 
 
-				auto outs()       { return A_Vert_Edges<MUTAB,0>( CONT, HANDLE ); }
+				auto outs()       { return A_Vert_Edges<C    ,0>( CONT, HANDLE ); }
 				auto outs() const { return A_Vert_Edges<CONST,0>( CONT, HANDLE ); }
 
-				auto ins()       { return A_Vert_Edges<MUTAB,1>( CONT, HANDLE ); }
+				auto ins()       { return A_Vert_Edges<C    ,1>( CONT, HANDLE ); }
 				auto ins() const { return A_Vert_Edges<CONST,1>( CONT, HANDLE ); }
 
 				template<class X> auto out(const X& x)       { return outs()(x); }
@@ -290,11 +273,11 @@ namespace graph {
 
 
 				void erase() {
+					static_assert(Verts_Erasable != NOT_ERASABLE, "called erase() on non-verts-erasable graph");
 					static_assert(C==MUTAB, "called erase() on CONST A_Vert accessor");
-					static_assert(Verts_Erasable != NON_ERASABLE, "called erase() on non-verts-erasable graph");
 
 					// remove edges
-					if constexpr(Edges_Erasable != NON_ERASABLE) {
+					if constexpr(Edges_Erasable != NOT_ERASABLE) {
 						if constexpr(Outs_Link_Outs) {
 							for(auto& outt : CONT._vs[ HANDLE ].outs()) {
 								CONT._vs[outt().link.a].outs()(outt().link.b).erase();
@@ -315,7 +298,7 @@ namespace graph {
 						}
 					}
 
-					CONT._vs( HANDLE).erase();
+					CONT._vs( HANDLE ).erase();
 				}
 
 			}; // Accessor
@@ -332,13 +315,10 @@ namespace graph {
 				FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 
 			private:
-				GRAPH_FRIENDS
-
-			private:
 				friend BASE;
 
-				void _increment() { HANDLE = CONT._vs( HANDLE ).next(); }
-				void _decrement() { HANDLE = CONT._vs( HANDLE ).prev(); }
+				void _increment() { HANDLE = CONT._vs( HANDLE ).iterator().next(); }
+				void _decrement() { HANDLE = CONT._vs( HANDLE ).iterator().prev(); }
 
 			public:
 				bool operator!=(End_Iterator) const { return HANDLE < CONT._vs.domain(); }
@@ -399,11 +379,8 @@ namespace graph {
 			class Iterator : public Iterator_Base<C,Edges_Context> {
 				using BASE = Iterator_Base<C,Edges_Context>;
 
-			public:
-				FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
-
 			private:
-				GRAPH_FRIENDS
+				FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 
 			private:
 				friend BASE;
@@ -491,12 +468,9 @@ namespace graph {
 				FORWARDING_CONSTRUCTOR( Iterator, BASE ) {}
 
 			private:
-				GRAPH_FRIENDS
-
-			private:
 				friend BASE;
-				void _increment() {	HANDLE.b = _raw_outs()(HANDLE.b).next(); }
-				void _decrement() { HANDLE.b = _raw_outs()(HANDLE.b).prev(); }
+				void _increment() {	HANDLE.b = _raw_outs()(HANDLE.b).iterator().next(); }
+				void _decrement() { HANDLE.b = _raw_outs()(HANDLE.b).iterator().prev(); }
 
 			private:
 				auto& _raw_outs()       { return CONT._vs[ HANDLE.a ].outs_ins[oi]; }
@@ -526,13 +500,13 @@ namespace graph {
 		template<Const_Flag C>
 		class A_Verts {
 		public:
-			auto domain() const {  return _graph.vs.domain();  }
+			auto domain() const {  return raw_vs(_graph).domain();  }
 
-			auto empty() const {  return _graph._vs.empty();  }
-			auto count() const {  return _graph._vs.count();  }
+			auto empty() const {  return raw_vs(_graph).empty();  }
+			auto count() const {  return raw_vs(_graph).count();  }
 
 			void resize(int new_size) {
-				if constexpr(Verts_Erasable != NON_ERASABLE) {
+				if constexpr(Verts_Erasable != NOT_ERASABLE) {
 					for(int i=_graph._vs.domain()-1; i>=new_size; --i) {
 						if(_graph.vert(i).exists()) _graph.vert(i).erase();
 					}
@@ -547,14 +521,12 @@ namespace graph {
 			auto begin()       {  return I_Vert<C>    (&_graph, IDX_Vert(0));  }
 			auto begin() const {  return I_Vert<CONST>(&_graph, IDX_Vert(0));  }
 
-			auto end()       {  return typename Verts_Context::End_Iterator(); }
 			auto end() const {  return typename Verts_Context::End_Iterator(); }
 
 
 		private:
 			A_Verts(Const<Graph,C>& graph) : _graph(graph) {}
 			friend Graph;
-			GRAPH_FRIENDS
 
 		private:
 			Const<Graph,C>& _graph;
@@ -611,14 +583,11 @@ namespace graph {
 			auto begin()       {  return I_Edge<C>    (&_graph, 0);  }
 			auto begin() const {  return I_Edge<CONST>(&_graph, 0);  }
 
-			auto end()       {  return Edges_Context::End_Iterator(); }
 			auto end() const {  return Edges_Context::End_Iterator(); }
 
 
-		private:
+		public:
 			A_Edges(Const<Graph,C>& graph) : _graph(graph) {}
-			friend Graph;
-			GRAPH_FRIENDS
 
 		private:
 			Const<Graph,C>& _graph;
@@ -652,7 +621,6 @@ namespace graph {
 			auto begin()       { return I_Vert_Edge<C,oi>(&_graph, H_Vert_Edge_Base{_vert, _raw().begin()}); }
 			auto begin() const { return I_Vert_Edge<C,oi>(&_graph, H_Vert_Edge_Base{_vert, _raw().begin()}); }
 
-			auto end()         { return typename Vert_Edges_Context<oi>::End_Iterator(); }
 			auto end() const   { return typename Vert_Edges_Context<oi>::End_Iterator(); }
 
 
@@ -660,9 +628,8 @@ namespace graph {
 			auto& _raw()       { return _graph._vs[_vert].outs_ins[oi]; }
 			auto& _raw() const { return _graph._vs[_vert].outs_ins[oi]; }
 
-		private:
+		public:
 			A_Vert_Edges(Const<Graph,C>& graph, H_Vert vert) : _graph(graph), _vert(vert) {}
-			GRAPH_FRIENDS
 
 		private:
 			Const<Graph,C>& _graph;
@@ -688,6 +655,7 @@ namespace graph {
 
 		private:
 			Verts _vs;
+			friend Context;
 
 		public:
 			Graph() {}
@@ -722,8 +690,8 @@ namespace graph {
 			auto operator()(H_Vert handle)       {  return A_Vert<MUTAB>( this, handle );  }
 			auto operator()(H_Vert handle) const {  return A_Vert<CONST>( this, handle );  }
 
-			auto& operator[](H_Vert handle)       {  return A_Vert<MUTAB>( this, handle ).data();  }
-			auto& operator[](H_Vert handle) const {  return A_Vert<CONST>( this, handle ).data();  }
+			auto& operator[](H_Vert handle)       {  return raw(*this, handle).data;  }
+			auto& operator[](H_Vert handle) const {  return raw(*this, handle).data;  }
 
 
 			auto operator()(H_Edge handle)       {  return A_Edge<MUTAB>( this, handle );  }
@@ -737,7 +705,7 @@ namespace graph {
 			auto operator()(H_Out handle) const {  return A_Vert_Edge<CONST,0>( this, handle );  }
 
 			auto& operator[](H_Out handle)       {  return A_Vert_Edge<MUTAB,0>( this, handle ).data();  }
-			auto& operator[](H_Out handle) const {  return A_Vert_Edge<CONST,0>( this, handle ).data();  }
+			auto& operator[](H_Out handle) const {  return A_Vert_Edge<MUTAB,0>( this, handle ).data();  }
 
 
 			auto operator()(H_In handle)       {  return A_Vert_Edge<MUTAB,1>( this, handle );  }
@@ -753,9 +721,6 @@ namespace graph {
 
 			auto edges()       {  return A_Edges<MUTAB>( *this );  }
 			auto edges() const {  return A_Edges<CONST>( *this );  }
-
-		private:
-			GRAPH_FRIENDS
 		};
 
 
@@ -826,8 +791,8 @@ using Graph = internal::graph::Context<
 	void, // vert data
 	void, // edge data
 	void, // vert-edge data
-	internal::graph::NON_ERASABLE, // verts erasable
-	internal::graph::NON_ERASABLE, // edges erasable
+	internal::graph::NOT_ERASABLE, // verts erasable
+	internal::graph::NOT_ERASABLE, // edges erasable
 	false // edges_global
 > ::With_Builder;
 
@@ -838,5 +803,3 @@ using Graph = internal::graph::Context<
 } // namespace salgo
 
 #include "helper-macros-off"
-
-

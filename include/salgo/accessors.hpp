@@ -12,6 +12,8 @@ namespace salgo {
 namespace internal {
 
 GENERATE_HAS_MEMBER(Reference)
+GENERATE_HAS_MEMBER(Has_Data)
+GENERATE_HAS_MEMBER(Comparable)
 
 template<bool, Const_Flag C, class CONTEXT>
 class _Reference;
@@ -86,11 +88,30 @@ public:
 	auto& container()       { return *__container; }
 	auto& container() const { return *__container; }
 
+
 	// get value
 	auto& operator()()       { return _val(); }
 	auto& operator()() const { return _val(); }
-	operator       auto&()       { return operator()(); }
-	operator const auto&() const { return operator()(); }
+
+	auto& value()       { return _val(); }
+	auto& value() const { return _val(); }
+
+
+	operator       auto&()       {
+		if constexpr(has_member__Has_Data<CONTEXT>) {
+			if constexpr(!CONTEXT::Has_Data) return *(Invalid_Type*)(1);
+			else return operator()();
+		}
+		else return operator()();
+	}
+
+	operator const auto&() const {
+		if constexpr(has_member__Has_Data<CONTEXT>) {
+			if constexpr(!CONTEXT::Has_Data) return *(Invalid_Type*)(1);
+			else return operator()();
+		}
+		else return operator()();
+	}
 
 	// is handle non-null
 	//explicit operator bool() const { return _handle().valid(); }
@@ -164,6 +185,8 @@ public:
 	using Handle = typename BASE::Handle;
 	template<Const_Flag CC>	using Accessor = typename BASE::template Accessor<CC>;
 
+	static constexpr bool Is_Const = C == CONST;
+
 public:
 	FORWARDING_CONSTRUCTOR(Accessor_Base, BASE) {}
 
@@ -181,10 +204,25 @@ public:
 	//template<class T> Accessor<C>& operator+=(T&& t) { operator()()+=std::forward<T>(t); return _self(); }
 	//template<class T> Accessor<C>& operator-=(T&& t) { operator()()-=std::forward<T>(t); return _self(); }
 
-public:
-	auto next() const { auto r = _self(); ++r.iterator(); return r; }
-	auto prev() const { auto r = _self(); --r.iterator(); return r; }
+// public:
+// 	auto next() const { auto r = _self(); ++r.iterator(); return r; }
+// 	auto prev() const { auto r = _self(); --r.iterator(); return r; }
 
+	template<Const_Flag CC>
+	bool operator==(const Accessor<CC>& o) const {
+		static_assert(!has_member__Comparable<Accessor<C>>,
+			"Accessors are not comparable by default - you need to turn on comparisons using Context::Accessor::Comparable");
+
+		if constexpr(has_member__Comparable<Accessor<C>>) static_assert(Accessor<C>::Comparable,
+			"Accessors are not comparable by default - you need to turn on comparisons using Context::Accessor::Comparable");
+		
+		return _self().handle() == o.handle();
+	}
+
+	template<Const_Flag CC>
+	bool operator!=(const Accessor<CC>& o) const {
+		return !operator==(o);
+	}
 
 private:
 	using BASE::accessor; // turn off
@@ -243,6 +281,10 @@ public:
 
 	auto operator++(int) { auto old = _self(); _self()._increment(); return old; }
 	auto operator--(int) { auto old = _self(); _self()._decrement(); return old; }
+
+public:
+	auto next() const { auto r = _self(); ++r; return r; }
+	auto prev() const { auto r = _self(); --r; return r; }
 
 public:
 	Iterator<C>& operator+=(int n) {
@@ -340,114 +382,6 @@ private:
 	using BASE::iterator; // turn off
 
 public:
-	CRTP_COMMON( Iterator_Base, Iterator<C> )
-};
-
-
-
-
-
-
-
-
-
-
-template<Const_Flag C, template<Const_Flag> class Iterator>
-class Iterator_Base_Old {
-
-public:
-	Iterator_Base_Old() = default;
-	Iterator_Base_Old(const Iterator_Base_Old&) = delete;
-	Iterator_Base_Old(Iterator_Base_Old&&) = default;
-	Iterator_Base_Old& operator=(const Iterator_Base_Old&) = delete;
-	Iterator_Base_Old& operator=(Iterator_Base_Old&&) = delete;
-
-//
-// required to be std::iterator-like
-//
-public:
-	using difference_type = ptrdiff_t;
-	using value_type = char;
-	using pointer = value_type*;
-	using reference = value_type&;
-	using iterator_category = std::bidirectional_iterator_tag;
-
-
-public:
-	auto& operator++() {
-		_self()._increment();
-		return _self(); }
-
-	auto operator++(int) {
-		auto old = _self();
-		_self()._increment();
-		return old; }
-
-	auto& operator--() {
-		_self()._decrement();
-		return _self(); }
-
-	auto operator--(int) {
-		auto old = _self();
-		_self()._decrement();
-		return old; }
-
-public:
-	template<Const_Flag CC>
-	bool operator==(const Iterator<CC>& o) const {
-		_will_compare_with_base(o);
-		return _self()._get_comparable() == o._get_comparable();
-	}
-
-	template<Const_Flag CC>
-	bool operator!=(const Iterator<CC>& o) const {
-		_will_compare_with_base(o);
-		return _self()._get_comparable() != o._get_comparable();
-	}
-
-	template<Const_Flag CC>
-	bool operator<(const Iterator<CC>& o) const {
-		_will_compare_with_base(o);
-		return _self()._get_comparable() < o._get_comparable();
-	}
-
-	template<Const_Flag CC>
-	bool operator>(const Iterator<CC>& o) const {
-		_will_compare_with_base(o);
-		return _self()._get_comparable() > o._get_comparable();
-	}
-
-	template<Const_Flag CC>
-	bool operator<=(const Iterator<CC>& o) const {
-		_will_compare_with_base(o);
-		return _self()._get_comparable() <= o._get_comparable();
-	}
-
-	template<Const_Flag CC>
-	bool operator>=(const Iterator<CC>& o) const {
-		_will_compare_with_base(o);
-		return _self()._get_comparable() >= o._get_comparable();
-	}
-
-
-private:
-	template<Const_Flag CC>
-	void _will_compare_with_base(const Iterator<CC>& o) const {
-		if constexpr(has_member___will_compare_with< Iterator<C> >) {
-			_self()._will_compare_with(o);
-		}
-	}
-
-
-
-public:
-
-	auto& operator*()       { return *this; }
-	auto& operator*() const { return *this; }
-
-
-
-
 	CRTP_COMMON( Iterator_Base, Iterator<C> )
 };
 

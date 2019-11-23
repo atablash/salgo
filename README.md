@@ -156,6 +156,16 @@ Handles are meant for storage. Don't try storing accessors, they're usually big 
 
 
 
+Indexes
+-------
+Some structures also expose `Index` type, which is usually same as `Handle`, but can be implicitly created from `int`.
+
+For example, `Vector_Allocator` is natually indexed by `int`, so it exposes functions that accept `Index` type instead of `Handle`.
+This way, these functions happily accept `int` parameters, while still accepting `Handle`, which is implicitly convertible to `Index`.
+
+
+
+
 Iterators
 ---------
 

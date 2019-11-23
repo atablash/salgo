@@ -60,6 +60,51 @@ TEST(Hash_Table, erase) {
 }
 
 
+TEST(Hash_Table, external_erase_1) {
+	Hash_Table<int> ht;
+	ht.emplace(1);
+	ht.emplace(30);
+	ht.emplace(100);
+	ht.emplace(3000);
+	ht.emplace(10000);
+	ht.emplace(100000);
+
+	int sum1 = 0;
+	for(auto& e : ht) {
+		if(e % 3 == 0) ht( e.handle() ).erase();
+		else sum1 += e;
+	}
+
+	int sum2 = 0;
+	for(auto& e : ht) sum2 += e;
+
+	EXPECT_EQ(110101, sum1);
+	EXPECT_EQ(110101, sum2);
+}
+
+TEST(Hash_Table, external_erase_2) {
+	Hash_Table<int> ht;
+	ht.emplace(1);
+	ht.emplace(30);
+	ht.emplace(100);
+	ht.emplace(3000);
+	ht.emplace(10000);
+	ht.emplace(100000);
+
+	int sum1 = 0;
+	for(auto& e : ht) {
+		if(e % 3 != 0) ht( e.handle() ).erase();
+		else sum1 += e;
+	}
+
+	int sum2 = 0;
+	for(auto& e : ht) sum2 += e;
+
+	EXPECT_EQ(3030, sum1);
+	EXPECT_EQ(3030, sum2);
+}
+
+
 TEST(Hash_Table, initializer_list) {
 	Hash_Table<int> ht = {1, 10, 10000, 1000, 100};
 	int sum = 0;

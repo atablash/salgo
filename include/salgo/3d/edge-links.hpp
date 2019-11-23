@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include <unordered_map>
 
 
 
@@ -19,13 +19,13 @@
 template< class MESH >
 bool has_valid_edge_links( const MESH& mesh ) {
 
-	for( auto p : mesh.polys() ) {
-		for( auto pe : p.poly_edges() ) {
+	for( auto& p : mesh.polys() ) {
+		for( auto& pe : p.poly_edges() ) {
 			if( !pe.has_link() ) continue;
 
 			if( !pe.linked_edge().has_link() ) return false;
 
-			if( pe.linked_edge().linked_edge() != pe ) return false;
+			if( pe.linked_edge().linked_edge().handle() != pe.handle() ) return false;
 		}
 	}
 
@@ -95,12 +95,14 @@ template<class MESH>
 auto fast_compute_edge_links(MESH& mesh) {
 
 	Fast_Compute_Edge_Links_Result result;
+	
+	std::unordered_multimap<
+		std::pair<typename MESH::H_Vert, typename MESH::H_Vert>,
+		typename MESH::H_Poly_Edge
+	> open_edges;
 
-	using namespace std;
-	unordered_multimap< pair<int,int>, typename MESH::H_Poly_Edge > open_edges;
-
-	for(auto p : mesh.polys()) {
-		for(auto pe : p.poly_edges()) {
+	for(auto& p : mesh.polys()) {
+		for(auto& pe : p.poly_edges()) {
 			auto edge_key = std::pair(pe.prev_vert().handle(), pe.next_vert().handle());
 
 			auto rev_edge_key = edge_key;

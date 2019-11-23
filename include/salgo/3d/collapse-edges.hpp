@@ -1,6 +1,12 @@
 #pragma once
 
 
+#include <salgo/3d/solid.hpp>
+
+
+namespace salgo {
+
+
 
 
 /*
@@ -18,53 +24,55 @@
 // if links are present, this effectively collapses edge (if present)
 //
 template<class VERT>
-void merge_verts(VERT a, VERT b, const typename VERT::Mesh::Scalar& alpha) {
+void merge_verts(VERT _a, VERT _b, const typename VERT::Mesh::Scalar& alpha) {
+	static_assert(VERT::Mesh::Polys_Erasable, "merge_verts requires POLYS_ERASABLE");
+	static_assert(VERT::Mesh::Has_Vert_Poly_Links, "merge_verts requires VERT_POLY_LINKS");
 
-	// LOG(INFO) << "merge_verts(" << a.idx << ", " << b.idx << ", alpha:" << alpha << ")";
+	// make sure we access verts directly (not e.g. via `poly_verts()`)
+	auto a = _a.vert();
+	auto b = _b.vert();
+
+	// this is optimization, as well as bugfix - without it program will crash in some cases,
+	// because 'a' could become isolated and deleted while this function is still running
+	if constexpr(VERT::Mesh::Has_Vert_Poly_Links) {
+		if(a.vert_polys().count() < b.vert_polys().count()) {
+			merge_verts(b, a, 1.0 - alpha);
+			return;
+		}
+	}
+
+	// LOG(INFO) << "merge_verts(" << a.handle() << ", " << b.handle() << ", alpha:" << alpha << ")";
 
 	a.pos() = a.pos() * (1-alpha)  +  b.pos() * alpha;
 
-	if constexpr(VERT::Mesh::Has_Vert_Props) {
-		a.props() = a.props() * (1-alpha)  +  b.props() * alpha;
+	if constexpr(VERT::Mesh::Has_Vert_Data) {
+		a.data() = a.data() * (1-alpha)  +  b.data() * alpha;
 	}
 
 	// update polygons containing 'b': replace 'b'->'a'
 	if constexpr(VERT::Mesh::Has_Vert_Poly_Links) {
 
-		// here, keep an eye for iterator invalidation!
-		for(auto pv : b.poly_verts()) {
-			pv.change_vert( a );
-		}
+		// std::cout << "have " << b.vert_polys().count() << " polygons to change vertex " << b.handle() << "->" << a.handle() << std::endl;
+		// for(auto& vp : b.vert_polys()) {
+		// 	std::cout << "-> " << vp.poly().handle() << std::endl;
+		// }
 
-		for(auto pv : b.poly_verts()) {
+		for(auto& vp : b.vert_polys()) {
+			//std::cout << "--> " << vp.poly().handle() << std::endl;
+			auto p = vp.poly();
+			vp.change_vert( a ); // invalidates `vp`
 
-			// we got degenerate triangle
-			if(pv.vert() == pv.next().vert()) {
-				if(pv.prev_poly_edge().has_link() && pv.prev_poly_edge().prev().has_link()) {
-					auto e0 = pv.prev_poly_edge().linked_edge();
-					auto e1 = pv.prev_poly_edge().prev().linked_edge();
-					e0.unlink();
-					e1.unlink();
-					if(e0.poly() != e1.poly()) e0.link(e1);
-				}
-
-				pv.poly().erase();
-			}
-			else if(pv.vert() == pv.prev().vert()) {
-				if(pv.next_poly_edge().has_link() && pv.next_poly_edge().next().has_link()) {
-					auto e0 = pv.next_poly_edge().linked_edge();
-					auto e1 = pv.next_poly_edge().next().linked_edge();
-					e0.unlink();
-					e1.unlink();
-					if(e0.poly() != e1.poly()) e0.link(e1);
-				}
-
-				pv.poly().erase();
-			}
+			remove_if_degenerate( p ); // will delete vertices that become isolated
 		}
 	}
 
-	b.erase();
+	b.fast_erase();
+
+	// auto r = check_solid(a.mesh(), Check_Solid_Flags::ALLOW_HOLES);
+	// if(!r.is_solid) {
+	// 	std::cout << "error " << (int)r.failure << std::endl;
+	// 	exit(1);
+	// }
 }
 
 
@@ -98,7 +106,6 @@ auto clean_flat_surfaces_on_edges(MESH& mesh) {
 	bool change = true;
 
 	while(change) {
-
 		++r.num_passes;
 		change = false;
 
@@ -108,14 +115,15 @@ auto clean_flat_surfaces_on_edges(MESH& mesh) {
 
 				auto ba = ab.linked_edge();
 
-				if(ba.next_poly_vert().next().vert() == ab.next_poly_vert().next().vert()) {
+				// C == D
+				if(ba.next_vert().next().handle() == ab.next_vert().next().handle()) {
 
 					if(ab.next().has_link() && ba.prev().has_link()) {
 
 						auto cb = ab.next().linked_edge();
 						auto bd = ba.prev().linked_edge();
 
-						if(ba.poly() != cb.poly()) {
+						if(ba.poly().handle() != cb.poly().handle()) {
 							cb.unlink();
 							bd.unlink();
 
@@ -136,8 +144,8 @@ auto clean_flat_surfaces_on_edges(MESH& mesh) {
 						}
 					}
 
-					ab.poly().erase();
-					ba.poly().erase();
+					ab.poly().erase({ .unlink_edge_links = false, .remove_isolated_verts = true }); // we handle edge-links ourselves
+					ba.poly().erase({ .unlink_edge_links = false, .remove_isolated_verts = true });
 					r.num_polys_removed += 2;
 					change = true;
 					break; // skip the rest edges of this poly (it's removed and invalid now)
@@ -164,32 +172,44 @@ struct Fast_Collapse_Edges_Result {
 //
 template<class MESH, class GET_V_WEIGHT>
 auto fast_collapse_edges(MESH& mesh, const typename MESH::Scalar& max_edge_length, const GET_V_WEIGHT& get_v_weight) {
+	static_assert(MESH::Polys_Erasable, "merge_verts requires POLYS_ERASABLE");
+	static_assert(MESH::Verts_Erasable, "merge_verts requires VERTS_ERASABLE");
+	static_assert(MESH::Has_Vert_Poly_Links, "merge_verts requires VERT_POLY_LINKS");
+
 	Fast_Collapse_Edges_Result r;
 
 	bool change = true;
+
+	// int brk = 0;
 
 	while(change) {
 		change = false;
 		++r.num_passes;
 
-		for(auto p : mesh.polys()) {
-			for(auto pe : p.poly_edges()) {
+		for(auto& p : mesh.polys()) {
+			//if(brk++ >= 0) break;
+			// std::cout << "brk " << brk << std::endl;
+
+			// std::cout << "process poly " << p.handle() << std::endl;
+
+			for(auto& pe : p.poly_edges()) {
 				if(pe.segment().trace().squaredNorm() <= max_edge_length * max_edge_length) {
+					// std::cout << "collapsing edge with length " << pe.segment().trace().norm() << std::endl;
 
-					auto weight_sum = get_v_weight( pe.prev_vert().handle() ) + get_v_weight( pe.next_vert().handle() );
+					auto a = pe.prev_vert().vert();
+					auto b = pe.next_vert().vert();
 
-					merge_verts(pe.prev_vert(), pe.next_vert(),
-						(typename MESH::Scalar)get_v_weight(pe.next_vert().handle()) / weight_sum);
+					auto weight_sum = get_v_weight( a ) + get_v_weight( b );
+
+					merge_verts(a, b, (typename MESH::Scalar) get_v_weight(a) / weight_sum);
 					++r.num_edges_collapsed;
+
+					// poly does not exist anymore - watch out!
 
 					// if weights can be modified
 					if constexpr(std::is_lvalue_reference_v<decltype(get_v_weight(0))>) {
-						get_v_weight( pe.prev_vert().handle() ) += get_v_weight( pe.next_vert().handle() );
+						get_v_weight( a ) += get_v_weight( b );
 					}
-
-					//if(r.num_edges_collapsed >= Dupa::get()) {
-					//	return r;
-					//}
 
 					change = true;
 					break; // this poly does not exist now, so break!
@@ -204,12 +224,14 @@ auto fast_collapse_edges(MESH& mesh, const typename MESH::Scalar& max_edge_lengt
 
 template<class MESH>
 auto fast_collapse_edges(MESH& mesh, const typename MESH::Scalar& max_edge_length) {
-	std::vector<int32_t> weights(mesh.verts_domain(), 1);
-	return fast_collapse_edges(mesh, max_edge_length, [&weights](auto i) -> auto& { return weights[i]; });
+	std::vector<int32_t> weights(mesh.verts().domain(), 1);
+	return fast_collapse_edges(mesh, max_edge_length, [&weights](auto i) -> auto& { return weights[(typename MESH::H_Vert) i]; });
 }
 
 
 
+
+} // namespace salgo
 
 
 

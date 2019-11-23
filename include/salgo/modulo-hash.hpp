@@ -2,8 +2,6 @@
 
 #include "primes.hpp"
 
-#include <bits/stdc++.h>
-
 namespace salgo {
 namespace internal {
 namespace modulo_hash {

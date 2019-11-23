@@ -2,9 +2,11 @@
 
 
 
-
+#include "../common.hpp"
 
 #include <tinyply.h>
+
+#include <glog/logging.h>
 
 #include <fstream>
 #include <chrono>
@@ -38,21 +40,27 @@ inline void save_ply(const MESH& mesh, FILE_NAME&& filename, bool binary = true)
 
 	::tinyply::PlyFile myFile;
 
+	std::vector<int> v_remap(mesh.verts().domain());
+
 	std::vector<float> verts;
-	verts.reserve( mesh.verts_domain() * 3);
-	for(auto v : mesh.verts()) {
-		verts.push_back( v.pos()[0] );
-		verts.push_back( v.pos()[1] );
-		verts.push_back( v.pos()[2] );
+	verts.reserve( mesh.verts().domain() * 3);
+	{
+		int ith_vert = 0;
+		for(auto& v : mesh.verts()) {
+			verts.push_back( v.pos()[0] );
+			verts.push_back( v.pos()[1] );
+			verts.push_back( v.pos()[2] );
+
+			v_remap[v.handle()] = ith_vert++;
+		}
 	}
 
-
 	std::vector<int32_t> vertexIndicies;
-	vertexIndicies.reserve( mesh.polys_domain() * 3);
+	vertexIndicies.reserve( mesh.polys().domain() * 3);
 	for(auto& p : mesh.polys()) {
-		vertexIndicies.push_back( p.vert(0).handle() );
-		vertexIndicies.push_back( p.vert(1).handle() );
-		vertexIndicies.push_back( p.vert(2).handle() );
+		vertexIndicies.push_back( v_remap[ p.vert(0).handle() ] );
+		vertexIndicies.push_back( v_remap[ p.vert(1).handle() ] );
+		vertexIndicies.push_back( v_remap[ p.vert(2).handle() ] );
 	}
 
 	//std::vector<float> faceTexcoords;
@@ -159,31 +167,37 @@ MESH load_ply(FILE_NAME&& file_name) {
 	
 	MESH mesh;
 	
-	mesh.verts_reserve(verts_count);
+	mesh.verts().reserve(verts_count);
 	for(int i=0; i<(int)verts_count; ++i){
-		auto v = mesh.verts_add(verts[i*3 + 0], verts[i*3 + 1], verts[i*3 + 2]);
+		auto v = mesh.verts().add(verts[i*3 + 0], verts[i*3 + 1], verts[i*3 + 2]);
+		(void)v;
 
-		if constexpr(has_member__normal<typename MESH::Vert_Props>) if(v_normals_count) {
-			v.props().normal = { v_normals[i*3 + 0], v_normals[i*3 + 1], v_normals[i*3 + 2] };
+		if constexpr(has_member__normal<typename MESH::Vert_Data>) if(v_normals_count) {
+			v.data().normal = { v_normals[i*3 + 0], v_normals[i*3 + 1], v_normals[i*3 + 2] };
 		}
 
-		if constexpr(has_member__color<typename MESH::Vert_Props>) if(v_colors_count) {
-			v.props().color = { v_colors[i*4 + 0], v_colors[i*4 + 1], v_colors[i*4 + 2], v_colors[i*4 + 3] };
-		}
-	}
-	
-	mesh.polys_reserve(polys_count);
-	for(int i=0; i<(int)polys_count; ++i){
-		auto p = mesh.polys_add(polys[i*3 + 0], polys[i*3 + 1], polys[i*3 + 2]);
-
-		if constexpr(has_member__texcoords<typename MESH::Poly_Vert_Props>) if(p_texcoords_count) {
-			p.poly_vert(0).props().texcoords = { p_texcoords[i*6 + 0], p_texcoords[i*6 + 1] };
-			p.poly_vert(1).props().texcoords = { p_texcoords[i*6 + 2], p_texcoords[i*6 + 3] };
-			p.poly_vert(2).props().texcoords = { p_texcoords[i*6 + 4], p_texcoords[i*6 + 5] };
+		if constexpr(has_member__color<typename MESH::Vert_Data>) if(v_colors_count) {
+			v.data().color = { v_colors[i*4 + 0], v_colors[i*4 + 1], v_colors[i*4 + 2], v_colors[i*4 + 3] };
 		}
 	}
 	
-	LOG(INFO) << "loaded " << file_name << "   verts: " << mesh.verts_domain() << "   polys: " << mesh.polys_domain();
+	mesh.polys().reserve(polys_count);
+	for(int i=0; i<(int)polys_count; ++i) {
+		auto p = mesh.polys().add(
+			polys[i*3 + 0],
+			polys[i*3 + 1],
+			polys[i*3 + 2]
+		);
+		(void)p;
+
+		if constexpr(has_member__texcoords<typename MESH::Poly_Vert_Data>) if(p_texcoords_count) {
+			p.poly_vert(0).data().texcoords = { p_texcoords[i*6 + 0], p_texcoords[i*6 + 1] };
+			p.poly_vert(1).data().texcoords = { p_texcoords[i*6 + 2], p_texcoords[i*6 + 3] };
+			p.poly_vert(2).data().texcoords = { p_texcoords[i*6 + 4], p_texcoords[i*6 + 5] };
+		}
+	}
+	
+	LOG(INFO) << "loaded " << file_name << "   verts: " << mesh.verts().domain() << "   polys: " << mesh.polys().domain();
 	
 	return mesh;
 }

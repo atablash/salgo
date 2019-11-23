@@ -59,6 +59,16 @@ Allocator used to construct elements. Used only if `::EXTERNAL`.
 
 
 
+Safety
+------
+Scoped `for` (`for(auto& e : c)`):
+* Erase current element via iterator: yes
+* Erase current element externally: yes
+* Erase other element: no
+
+
+
+
 Performance (x86_64)
 --------------------
 Check Travis builds for full benchmarks using gcc/clang and libstdc++/libc++.
