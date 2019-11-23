@@ -18,32 +18,24 @@ namespace {
 
 
 
+struct Movable {
+	Movable(int xx = 0) : x(xx) { ++g_constructors; }
+	Movable(const Movable&) = delete;
+	Movable(Movable&& o) { x = o.x; o.x = -10; ++g_constructors; }
+	~Movable() { x = -100; ++g_destructors;  }
+
+	int x = -1;
+	operator int() const { return x; }
+};
+
+
 
 TEST(Memory_Block, stack_optim_inplace_nontrivial) {
-
-	struct S {
-		int val;
-
-		S(int v) : val(v) {
-			++g_constructors;
-		}
-		
-		operator int() const {return val;}
-
-		~S() {
-			++g_destructors;
-		}
-
-		S(S&& o) : val(o.val) {
-			++g_constructors;
-		}
-	};
-
 	g_destructors = 0;
 	g_constructors = 0;
 
 	{
-		Memory_Block<S> ::CONSTRUCTED_FLAGS_INPLACE ::COUNT ::INPLACE_BUFFER<2> m(1);
+		Memory_Block<Movable> ::CONSTRUCTED_FLAGS_INPLACE ::COUNT ::INPLACE_BUFFER<2> m(1);
 		m(0).construct(1);
 		m.resize(2);
 		m(1).construct(2);
@@ -74,17 +66,11 @@ TEST(Memory_Block, stack_optim_inplace_nontrivial) {
 
 
 TEST(Memory_Block, destructors_called_exists) {
-	struct S {
-		S()  { ++g_constructors; }
-		S(const S&) { ++g_constructors; }
-		~S() { ++g_destructors;  }
-	};
-
 	g_destructors = 0;
 	g_constructors = 0;
 
 	{
-		Memory_Block<S>::CONSTRUCTED_FLAGS::COUNT block(10);
+		Memory_Block<Movable>::CONSTRUCTED_FLAGS::COUNT block(10);
 		block.construct_all();
 
 		EXPECT_EQ(10, block.domain());
@@ -98,17 +84,11 @@ TEST(Memory_Block, destructors_called_exists) {
 
 
 TEST(Memory_Block, destructors_called_dense) {
-	struct S {
-		S()  { ++g_constructors; }
-		S(S&&) { ++g_constructors; }
-		~S() { ++g_destructors;  }
-	};
-
 	g_destructors = 0;
 	g_constructors = 0;
 
 	{
-		Memory_Block<S> ::DENSE  block(10);
+		Memory_Block<Movable> ::DENSE  block(10);
 
 		EXPECT_EQ(10, block.domain());
 		EXPECT_EQ(10, block.count());
@@ -120,18 +100,11 @@ TEST(Memory_Block, destructors_called_dense) {
 
 
 TEST(Memory_Block, destructors_called_dense_shrunk) {
-	struct Obj {
-		Obj()  { ++g_constructors; }
-		Obj(const Obj&) = delete;
-		Obj(Obj&&) { ++g_constructors; }
-		~Obj() { ++g_destructors;  }
-	};
-
 	g_constructors = 0;
 	g_destructors = 0;
 
 	{
-		Memory_Block<Obj> ::DENSE  block;
+		Memory_Block<Movable> ::DENSE  block;
 		EXPECT_EQ(0, block.domain());
 		EXPECT_EQ(0, block.count());
 		block.resize(1);
@@ -149,19 +122,13 @@ TEST(Memory_Block, destructors_called_dense_shrunk) {
 TEST(Memory_Block, destructors_called_dense_grown) {
 	g_constructors = 0;
 	g_destructors = 0;
-	struct S {
-		S()  { ++g_constructors; }
-		~S() { ++g_destructors;  }
-	};
 
 	{
-		Memory_Block<int> ::DENSE  mb(10);
+		Memory_Block<Movable> ::DENSE  mb(10);
 		EXPECT_EQ(10, mb.count());
-		EXPECT_EQ(g_constructors, g_destructors);
 
 		mb.resize(20);
 		EXPECT_EQ(20, mb.count());
-		EXPECT_EQ(g_constructors, g_destructors);
 	}
 
 	EXPECT_EQ(g_constructors, g_destructors);
