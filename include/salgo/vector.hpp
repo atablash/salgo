@@ -277,9 +277,9 @@ struct Context {
 			}
 		}
 
-		Vector(Vector&& o) {
-			_mb = std::move(o._mb);
-			_size = o._size;
+		Vector(Vector&& o) :
+				_mb  (std::move(o._mb)),
+				_size(std::move(o._size)) {
 			o._size = 0;
 		}
 
