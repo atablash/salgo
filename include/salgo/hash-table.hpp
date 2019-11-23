@@ -210,11 +210,13 @@ struct Context {
 		// template<class H>
 		// Hash_Table(H&& hash) : Hash( std::forward<H>(hash) ) {}
 
-		template<class KV = Key_Val, REQUIRES(std::is_move_constructible_v<KV>)>
+		// trivially templating this function makes both gcc and clang inteligently select between initializer_list and variadic template constructor
+		template<class KV = Key_Val> // REQUIRES( !std::is_move_constructible_v<KV> )
 		Hash_Table(std::initializer_list<KV> il) {
 			for(auto& e : il) emplace( e );
 		}
 
+		// variadic template constructor - an alternative to initializer_list that works with move-only types
 		template<class... LIST,
 			REQUIRES( is_constructible<Key_Val, LIST...>::value )
 		>
