@@ -137,9 +137,13 @@ matrix:
         - gcov $(find test -name *.cpp | xargs)
         - bash <(curl -s https://codecov.io/bash)
 
+        # codacy
+        - bash <(curl -Ls https://coverage.codacy.com/get.sh)
+        
         # coveralls
         - pip install --user cpp-coveralls
         - coveralls --exclude third-party --exclude samples --exclude bench --exclude CMakeFiles --exclude INSTALL_ROOT --exclude inst-gtest --exclude inst-benchmark --gcov-options '\-lp'
+
 
 
 

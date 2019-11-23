@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.org/atablash/salgo.svg?branch=master)](https://travis-ci.org/atablash/salgo)
+[![codecov](https://codecov.io/gh/atablash/salgo/branch/master/graph/badge.svg)](https://codecov.io/gh/atablash/salgo)
+[![Coverage Status](https://coveralls.io/repos/github/atablash/salgo/badge.svg?branch=master)](https://coveralls.io/github/atablash/salgo?branch=master)
 
 Salgo
 =====
