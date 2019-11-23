@@ -138,7 +138,7 @@ matrix:
         - bash <(curl -s https://codecov.io/bash)
 
         # codacy
-        - bash <(curl -s https://coverage.codacy.com/get.sh)
+        - CODACY_PROJECT_TOKEN=66907648526b42228da1f90f35066c3a bash <(curl -Ls https://coverage.codacy.com/get.sh)
 
         # coveralls
         - pip install --user cpp-coveralls
