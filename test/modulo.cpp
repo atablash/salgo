@@ -46,19 +46,19 @@ uint32_t big_prime() {
 TEST(Modulo, big_prime_0) {
 	const uint32_t prime = (1u<<31)-1;
 	auto r = big_prime<prime>();
-	EXPECT_EQ(r, 1'680'054'514);
+	EXPECT_EQ(r, 1'680'054'514u);
 }
 
 TEST(Modulo, big_prime_1) {
 	const uint32_t prime = 2'147'483'629u;
 	auto r = big_prime<prime>();
-	EXPECT_EQ(r, 671'583'893);
+	EXPECT_EQ(r, 671'583'893u);
 }
 
 TEST(Modulo, big_prime_2) {
 	const uint32_t prime = 2'147'483'587u;
 	auto r = big_prime<prime>();
-	EXPECT_EQ(r, 234'611'898);
+	EXPECT_EQ(r, 234'611'898u);
 }
 
 
