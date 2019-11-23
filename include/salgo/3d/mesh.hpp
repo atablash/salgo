@@ -1385,7 +1385,6 @@ namespace mesh {
 				typename Context<Scalar, Vert_Data, Subvert_Data,
 					Poly_Data, Poly_Vert_Data, Poly_Edge_Data, ERASABLE_HOLES, ERASABLE_HOLES,
 					true, true> :: With_Builder;
-
 		};
 
 

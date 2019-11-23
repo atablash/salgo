@@ -89,8 +89,7 @@ def compare_lines(line_a, line_b):
 	for a,b in zip(aa,bb):
 		i += 1
 		if a != b:
-
-			if args.tolerance != 0 and a != b:
+			if args.tolerance != 0:
 				given = Decimal(a)
 				expected = Decimal(b)
 				error = (expected - given) / max(expected, 1)
@@ -208,7 +207,7 @@ for test in tests:
 						stdout.write('(missing output, expected: ' + next_line + ')')
 						stdout.flush()
 						err = True
-			except:
+			except Exception:
 				pass
 		
 	process.wait()

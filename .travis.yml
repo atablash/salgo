@@ -131,16 +131,16 @@ matrix:
             - libgoogle-glog-dev
             - libgflags-dev
             - libeigen3-dev
-      
+
       after_success:
         # codecov
         - gcov $(find test -name *.cpp | xargs)
         - bash <(curl -s https://codecov.io/bash)
 
-        # codacy
-        - curl -Ls -o codacy-coverage-reporter "$(curl -Ls https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | contains("codacy-coverage-reporter-linux"))) | .[0].browser_download_url')"
-        - chmod +x codacy-coverage-reporter
-        - CODACY_PROJECT_TOKEN=66907648526b42228da1f90f35066c3a ./codacy-coverage-reporter report
+        # # codacy
+        # - curl -Ls -o codacy-coverage-reporter "$(curl -Ls https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r '.assets | map({name, browser_download_url} | select(.name | contains("codacy-coverage-reporter-linux"))) | .[0].browser_download_url')"
+        # - chmod +x codacy-coverage-reporter
+        # - CODACY_PROJECT_TOKEN=66907648526b42228da1f90f35066c3a ./codacy-coverage-reporter report
 
         # coveralls
         - pip install --user cpp-coveralls
