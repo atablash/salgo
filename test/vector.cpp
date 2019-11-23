@@ -205,6 +205,18 @@ TEST(Dense_Vector, push_delete_compact_inplace_nontrivial) {
 
 
 
+TEST(Dense_Vector, assignment_operator) {
+	Vector<int> vec(1);
+
+	vec(0) = 123;
+	EXPECT_EQ(vec[0], 123);
+
+	vec[0] = 234;
+	EXPECT_EQ(vec(0), 234);
+}
+
+
+
 
 TEST(Accessor, print_to_ostream) {
 	Vector<int> v(1);
