@@ -225,7 +225,7 @@ Of course, in this case it's easier to use the *scoped for*:
 >
 > As you can see in the above example with `List`, it's safe to erase elements inside the loop in most Salgo containers.
 
-Just like accessor, for simplicity, iterator is implicitly convertible to both underlying object reference and *Handle*. To get this explicit, use `operator()` and `handle()` (again, same as with accessor).
+Just like accessor, for simplicity, iterator is implicitly convertible to both underlying object reference and *Handle*. To get this explicit, use `operator()()` and `handle()` (again, same as with accessor).
 
 
 
