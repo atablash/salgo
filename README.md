@@ -244,7 +244,7 @@ They are different from `std` Allocators:
 
 > NOTE
 >
-> It wasn't possible to use standard Allocator concept, because in Salgo handles alone can't be used to retrieve objects - the allocator object is needed for this.
+> It wasn't possible to use the standard Allocator concept, because in Salgo handles alone can't be used to retrieve objects - the allocator object is needed for this.
 
 
 
