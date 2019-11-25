@@ -1,7 +1,7 @@
 #include "common.hpp"
 #include <benchmark/benchmark.h>
 
-#include <salgo/hash-table.hpp>
+#include <salgo/hash-table>
 
 #include <unordered_set>
 

@@ -1,12 +1,12 @@
 #include "common.hpp"
 #include <benchmark/benchmark.h>
 
-#include <salgo/memory-block.hpp>
+#include <salgo/memory-block>
 
-#include <salgo/salgo-from-std-allocator.hpp>
-#include <salgo/crude-allocator.hpp>
-#include <salgo/random-allocator.hpp>
-#include <salgo/vector-allocator.hpp>
+#include <salgo/salgo-from-std-allocator>
+#include <salgo/crude-allocator>
+#include <salgo/random-allocator>
+#include <salgo/vector-allocator>
 
 using namespace benchmark;
 

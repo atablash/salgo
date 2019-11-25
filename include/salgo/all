@@ -1,2 +1,5 @@
+#pragma once
+
 // TODO: include all files here
-#include n-ary-forest
+#include <salgo/n-ary-forest>
+#include <salgo/modulo>

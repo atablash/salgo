@@ -1,10 +1,10 @@
 #include "common.hpp"
 #include <benchmark/benchmark.h>
 
-#include <salgo/vector.hpp>
-#include <salgo/chunked-vector.hpp>
-#include <salgo/unordered-vector.hpp>
-#include <salgo/reversed.hpp>
+#include <salgo/vector>
+#include <salgo/chunked-vector>
+#include <salgo/unordered-vector>
+#include <salgo/reversed>
 
 #include <vector>
 
