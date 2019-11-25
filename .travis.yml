@@ -182,7 +182,7 @@ script:
   - if [[ $BUILD_TYPE = Release ]]; then    (cd samples && GTEST_COLOR=1 CTEST_OUTPUT_ON_FAILURE=1 make test); fi
 
   # run benchmarks (Release only)
-  - if [[ $BUILD_TYPE = Release ]]; then    bench/allocator &&    bench/vector &&    bench/list --benchmark_min_time=0.1 &&    bench/hash-table; fi
+  - if [[ $BUILD_TYPE = Release ]]; then    (cd bench && ctest --verbose); fi
 
 
 notifications:
