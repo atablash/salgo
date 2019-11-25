@@ -62,7 +62,7 @@ def append_tests(t):
 		tests.append(t)
 	else:
 		print(t + ' does not exist')
-		exit()
+		exit(1)
 
 
 for test in args.tests:
@@ -229,7 +229,6 @@ print(' - total tests passed:  ' + str(num_tests))
 if num_tests > 0:
 	print(' - average test time:   %.3fs' % (time_sum / num_tests))
 	print(' - max test time:       %.3fs' % time_max)
-
 
 if args.tolerance != 0:
 	print(' - max error: ' + str(max_error) + ' < tolerance ' + str(args.tolerance))
