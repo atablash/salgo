@@ -93,6 +93,10 @@ using Key_Val = internal::key_val::Key_Val<Key,Val>;
 //
 // tuples interface (maybe can be removed in favor of automatic accessible members structured binding)
 //
+#if defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-tags"
+#endif
 template<class K, class V>
 struct std::tuple_size<salgo::internal::key_val::Key_Val<K,V>>    : std::integral_constant<std::size_t, 2> {};
 
@@ -103,7 +107,10 @@ template<class V>
 struct std::tuple_size<salgo::internal::key_val::Key_Val<void,V>> : std::integral_constant<std::size_t, 1> {};
 
 template<>
-struct std::tuple_size<salgo::internal::key_val::Key_Val<void,void>> : std::integral_constant<std::size_t, 0> {};\
+struct std::tuple_size<salgo::internal::key_val::Key_Val<void,void>> : std::integral_constant<std::size_t, 0> {};
+#if defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 
 template<std::size_t ITH, class K, class V>

@@ -525,11 +525,18 @@ using Hash_Table = typename internal::hash_table::Context<
 //
 // tuple interface for key_vals
 //
+#if defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmismatched-tags"
+#endif
 template<class CTX, salgo::Const_Flag CF>
 struct std::tuple_size<salgo::internal::hash_table::Accessor<CTX, CF>> : std::tuple_size<typename CTX::Key_Val> {};
 
 template<std::size_t ITH, class CTX, salgo::Const_Flag CF>
 struct std::tuple_element<ITH, salgo::internal::hash_table::Accessor<CTX, CF>> : std::tuple_element<ITH, typename CTX::Key_Val> {};
+#if defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 namespace std {
 	template<std::size_t ITH, class CTX, salgo::Const_Flag CF>
