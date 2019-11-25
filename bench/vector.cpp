@@ -16,6 +16,16 @@ using namespace salgo;
 
 
 
+namespace {
+	auto rnd() {
+		return rand();
+	}
+}
+
+
+
+
+
 
 static void PUSH_BACK_std(State& state) {
 	srand(69); clear_cache();
@@ -23,7 +33,7 @@ static void PUSH_BACK_std(State& state) {
 	std::vector<int> v;
 
 	for(auto _ : state) {
-		v.emplace_back( rand() );
+		v.emplace_back( rnd() );
 	}
 
 	int sum = 0;
@@ -42,7 +52,7 @@ static void PUSH_BACK_salgo(State& state) {
 	salgo::Vector<int> v;
 
 	for(auto _ : state) {
-		v.emplace_back( rand() );
+		v.emplace_back( rnd() );
 	}
 
 	int sum = 0;
@@ -60,7 +70,7 @@ static void PUSH_BACK_salgo_chunked(State& state) {
 	salgo::Chunked_Vector<int> v;
 
 	for(auto _ : state) {
-		v.emplace_back( rand() );
+		v.emplace_back( rnd() );
 	}
 
 	int sum = 0;
@@ -86,7 +96,7 @@ static void PUSH_BACK_reserved_std(State& state) {
 	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
-		v.emplace_back( rand() );
+		v.emplace_back( rnd() );
 	}
 
 	int sum = 0;
@@ -106,7 +116,7 @@ static void PUSH_BACK_reserved_salgo(State& state) {
 	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
-		v.emplace_back( rand() );
+		v.emplace_back( rnd() );
 	}
 
 	int sum = 0;
@@ -123,7 +133,7 @@ static void PUSH_BACK_reserved_salgo_chunked(State& state) {
 	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
-		v.emplace_back( rand() );
+		v.emplace_back( rnd() );
 	}
 
 	int sum = 0;
@@ -145,11 +155,11 @@ static void RANDOM_ACCESS_std(State& state) {
 	srand(69); clear_cache();
 
 	std::vector<int> v( state.max_iterations );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	int sum = 0;
 	for(auto _ : state) {
-		sum += v[rand()%v.size()];
+		sum += v[rnd()%v.size()];
 	}
 	DoNotOptimize(sum);
 }
@@ -161,11 +171,11 @@ static void RANDOM_ACCESS_salgo(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Vector<int> v( state.max_iterations );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	int sum = 0;
 	for(auto _ : state) {
-		sum += v[rand()%v.size()];
+		sum += v[rnd()%v.size()];
 	}
 	DoNotOptimize(sum);
 }
@@ -177,11 +187,11 @@ static void RANDOM_ACCESS_salgo_chunked(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Chunked_Vector<int> v( state.max_iterations );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	int sum = 0;
 	for(auto _ : state) {
-		sum += v[rand()%v.size()];
+		sum += v[rnd()%v.size()];
 	}
 	DoNotOptimize(sum);
 }
@@ -202,7 +212,7 @@ static void SEQUENTIAL_ACCESS_std(State& state) {
 	srand(69); clear_cache();
 
 	std::vector<int> v( state.range(0) );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	for(auto _ : state) {
 		int sum = 0;
@@ -217,7 +227,7 @@ static void SEQUENTIAL_ACCESS_salgo(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Vector<int> v( state.range(0) );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	for(auto _ : state) {
 		int sum = 0;
@@ -232,7 +242,7 @@ static void SEQUENTIAL_ACCESS_salgo_chunked(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Chunked_Vector<int> v( state.range(0) );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	for(auto _ : state) {
 		int sum = 0;
@@ -257,7 +267,7 @@ static void FOREACH_ACCESS_std(State& state) {
 	srand(69); clear_cache();
 
 	std::vector<int> v( state.range(0) );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	for(auto _ : state) {
 		int sum = 0;
@@ -272,7 +282,7 @@ static void FOREACH_ACCESS_salgo(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Vector<int> v( state.range(0) );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	for(auto _ : state) {
 		int sum = 0;
@@ -287,7 +297,7 @@ static void FOREACH_ACCESS_salgo_unordered(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Unordered_Vector<int> v( state.range(0) );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	for(auto _ : state) {
 		int sum = 0;
@@ -302,7 +312,7 @@ static void FOREACH_ACCESS_salgo_chunked(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Chunked_Vector<int> v( state.range(0) );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	for(auto _ : state) {
 		int sum = 0;
@@ -324,7 +334,7 @@ static void FOREACH_ACCESS_REV_salgo_unordered(State& state) {
 	srand(69); clear_cache();
 
 	salgo::Unordered_Vector<int> v( state.range(0) );
-	for(auto& e : v) e = rand();
+	for(auto& e : v) e = rnd();
 
 	for(auto _ : state) {
 		int sum = 0;

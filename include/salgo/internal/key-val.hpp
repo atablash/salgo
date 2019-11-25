@@ -108,9 +108,6 @@ struct std::tuple_size<salgo::internal::key_val::Key_Val<void,V>> : std::integra
 
 template<>
 struct std::tuple_size<salgo::internal::key_val::Key_Val<void,void>> : std::integral_constant<std::size_t, 0> {};
-#if defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
 
 
 template<std::size_t ITH, class K, class V>
@@ -121,6 +118,10 @@ struct std::tuple_element<ITH, salgo::internal::key_val::Key_Val<K,void>> { stat
 
 template<std::size_t ITH, class V>
 struct std::tuple_element<ITH, salgo::internal::key_val::Key_Val<void,V>> { static_assert(ITH == 0); using type = V; };
+
+#if defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 
 namespace std {
