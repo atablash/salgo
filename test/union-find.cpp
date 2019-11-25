@@ -1,4 +1,4 @@
-#include <salgo/union-find.hpp>
+#include <salgo/union-find>
 
 #include <gtest/gtest.h>
 

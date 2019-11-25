@@ -1,4 +1,4 @@
-#include <salgo/primes.hpp>
+#include <salgo/primes>
 
 #include <gtest/gtest.h>
 

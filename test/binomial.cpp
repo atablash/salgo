@@ -1,5 +1,5 @@
-#include <salgo/binomial.hpp>
-#include <salgo/modulo.hpp>
+#include <salgo/binomial>
+#include <salgo/modulo>
 
 #include <gtest/gtest.h>
 

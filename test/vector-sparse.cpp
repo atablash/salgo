@@ -1,4 +1,4 @@
-#include <salgo/vector.hpp>
+#include <salgo/vector>
 
 #include <gtest/gtest.h>
 

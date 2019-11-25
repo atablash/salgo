@@ -1,4 +1,7 @@
-#include <salgo/hash-table.hpp>
+#include "common.hpp"
+
+#include <salgo/hash-table>
+
 #include <gtest/gtest.h>
 
 
@@ -129,44 +132,13 @@ TEST(Hash_Table, key_val) {
 
 
 
-namespace {
-	int g_constructors = 0;
-	int g_destructors = 0;
-}
-
-namespace {
-struct Copyable {
-	Copyable(int xx) : x(xx) { ++g_constructors; }
-	Copyable(const Copyable& o) { x = o.x; ++g_constructors; }
-	Copyable(Copyable&&) = delete;
-	~Copyable() { ++g_destructors; }
-
-	int x = -1;
-	operator int() const { return x; }
-	auto hash() const { return x; }
-};
-
-struct Movable {
-	Movable(int xx) : x(xx) { ++g_constructors; }
-	Movable(const Movable&) = delete;
-	Movable(Movable&& o) { x = o.x; o.x = 0; ++g_constructors; }
-	~Movable() { ++g_destructors; }
-
-	int x = -1;
-	operator int() const { return x; }
-	auto hash() const { return x; }
-};
-}
-
-
-
 
 TEST(Hash_Table, copy) {
-	g_constructors = 0;
-	g_destructors = 0;
+	using T = Copyable;
+	T::reset();
 
 	{
-		Hash_Table<Copyable> _ht = {1, 100, 10000};
+		Hash_Table<T> _ht = {1, 100, 10000};
 		auto ht = _ht;
 
 		{
@@ -182,17 +154,17 @@ TEST(Hash_Table, copy) {
 		}
 	}
 
-	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_EQ(T::constructors(), T::destructors());
 }
 
 TEST(Hash_Table, move) {
-	g_constructors = 0;
-	g_destructors = 0;
+	using T = Movable;
+	T::reset();
 
 	{
 		// NOTE: initializer_list version won't work here, because it doesn't work with move-only types
 		// ...but we also have the variadic template constructor
-		Hash_Table<Movable> _ht = {1, 100, 10000};
+		Hash_Table<T> _ht = {1, 100, 10000};
 
 		auto ht = std::move(_ht);
 
@@ -209,9 +181,31 @@ TEST(Hash_Table, move) {
 		}
 	}
 
-	EXPECT_EQ(g_constructors, g_destructors);
+	EXPECT_EQ(T::constructors(), T::destructors());
 }
 
+
+
+//
+// // we don't support this for now, it poses some problems for caching Keys inside accessors...
+//
+// TEST(Hash_Table, emplace_value_by_key) {
+// 	Hash_Table<int, int> ht;
+// 	ht(1).emplace(2);
+// 	ht(100).emplace(200);
+// 	ht(10000).emplace(20000);
+
+// 	int keys_sum = 0;
+// 	int vals_sum = 0;
+
+// 	for(auto& [key, value] : ht) {
+// 		keys_sum += key;
+// 		vals_sum += value;
+// 	}
+
+// 	EXPECT_EQ(keys_sum, 10101);
+// 	EXPECT_EQ(vals_sum, 20202);
+// }
 
 
 

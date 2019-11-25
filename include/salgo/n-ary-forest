@@ -1,0 +1,3 @@
+#pragma once
+
+#include <salgo/internal/n-ary-forest/n-ary-forest.hpp>

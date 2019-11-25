@@ -1,4 +1,4 @@
-hash-table
-list
-vector
-allocator
+salgo-bench-hashtable
+salgo-bench-list
+salgo-bench-vector
+salgo-bench-allocator

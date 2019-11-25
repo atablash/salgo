@@ -1,5 +1,7 @@
-#include <salgo/list.hpp>
-#include <salgo/salgo-from-std-allocator.hpp>
+#include "common.hpp"
+
+#include <salgo/list>
+#include <salgo/salgo-from-std-allocator>
 
 #include <gtest/gtest.h>
 
@@ -50,33 +52,6 @@ TEST(List, count) {
 
 
 
-namespace {
-	struct Movable {
-		static int& constructors() {
-			static int constructors = 0;
-			return constructors;
-		}
-		
-		static int& destructors() {
-			static int destructors = 0;
-			return destructors;
-		}
-
-		static void reset() {
-			constructors() = 0;
-			destructors() = 0;
-		}
-
-		Movable(int xx) : x(xx) { ++constructors(); }
-		Movable(const Movable&) = delete;
-		Movable(Movable&& o) : x(o.x) { o.x = 0; ++constructors(); }
-		~Movable() { ++destructors(); }
-
-		int x = -1;
-		operator int() const { return x; }
-		auto hash() const { return x; }
-	};
-}
 
 
 

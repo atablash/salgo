@@ -1,9 +1,7 @@
-#include <salgo/3d/mesh.hpp>
-#include <salgo/3d/edge-links.hpp>
-#include <salgo/3d/vert-poly-links.hpp>
-#include <salgo/3d/solid.hpp>
-#include <salgo/3d/cap-holes.hpp>
-#include <salgo/3d/io.hpp>
+#include <salgo/3d/mesh>
+#include <salgo/3d/solid>
+#include <salgo/3d/cap-holes>
+#include <salgo/3d/io>
 
 #include <gtest/gtest.h>
 
@@ -22,7 +20,7 @@ using MyMesh = Mesh<double> ::EDGE_LINKS;
 
 TEST(Cap_holes, sphere_holes_ply) {
 
-	auto mesh = load_ply<MyMesh>("sphere-holes.ply");
+	auto mesh = load_ply<MyMesh>("resources/sphere-holes.ply");
 	EXPECT_FALSE(mesh.verts().empty());
 
 	fast_compute_edge_links(mesh);
@@ -43,7 +41,7 @@ TEST(Cap_holes, sphere_holes_ply) {
 
 TEST(Cap_holes, bunny_holes_ply) {
 
-	auto mesh = load_ply<MyMesh>("bunny-holes.ply");
+	auto mesh = load_ply<MyMesh>("resources/bunny-holes.ply");
 	EXPECT_FALSE(mesh.verts().empty());
 
 	fast_compute_edge_links(mesh);

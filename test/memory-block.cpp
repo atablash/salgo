@@ -1,4 +1,6 @@
-#include <salgo/memory-block.hpp>
+#include "common.hpp"
+
+#include <salgo/memory-block>
 
 #include <gtest/gtest.h>
 
@@ -10,45 +12,12 @@ using namespace salgo;
 
 
 
-namespace {
-	int g_destructors = 0;
-	int g_constructors = 0;
-}
-
-
-
-
-namespace {
-struct Movable {
-	Movable(int xx = 0) : x(xx) { ++g_constructors; }
-	Movable(const Movable&) = delete;
-	Movable(Movable&& o) : x(o.x) { o.x = -10; ++g_constructors; }
-	~Movable() { x = -100; ++g_destructors;  }
-
-	int x = -1;
-	operator int() const { return x; }
-};
-
-
-struct Copyable {
-	Copyable(int xx = 0) : x(xx) { ++g_constructors; }
-	Copyable(const Copyable& o) : x(o.x) { ++g_constructors; }
-	Copyable(Copyable&& o) = delete;
-	~Copyable() { x = -100; ++g_destructors;  }
-
-	int x = -1;
-	operator int() const { return x; }
-};
-}
-
-
-
 TEST(Memory_Block, stack_optim_inplace_nontrivial) {
-	g_destructors = 0;
-	g_constructors = 0;
+	using T = Movable;
+	T::reset();
 
 	{
-		Memory_Block<Movable> ::CONSTRUCTED_FLAGS_INPLACE ::COUNT ::INPLACE_BUFFER<2> m(1);
+		Memory_Block<T> ::CONSTRUCTED_FLAGS_INPLACE ::COUNT ::INPLACE_BUFFER<2> m(1);
 		m(0).construct(1);
 		m.resize(2);
 		m(1).construct(2);
@@ -72,52 +41,52 @@ TEST(Memory_Block, stack_optim_inplace_nontrivial) {
 	}
 
 
-	EXPECT_EQ(g_constructors, g_destructors);
-	EXPECT_NE(g_constructors, 0);
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
 }
 
 
 
 TEST(Memory_Block, destructors_called_exists) {
-	g_destructors = 0;
-	g_constructors = 0;
+	using T = Movable;
+	T::reset();
 
 	{
-		Memory_Block<Movable>::CONSTRUCTED_FLAGS::COUNT block(10);
+		Memory_Block<T> ::CONSTRUCTED_FLAGS ::COUNT block(10);
 		block.construct_all();
 
 		EXPECT_EQ(10, block.domain());
 		EXPECT_EQ(10, block.count());
 	}
 
-	EXPECT_EQ(g_constructors, g_destructors);
-	EXPECT_NE(g_constructors, 0);
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
 }
 
 
 
 TEST(Memory_Block, destructors_called_dense) {
-	g_destructors = 0;
-	g_constructors = 0;
+	using T = Movable;
+	T::reset();
 
 	{
-		Memory_Block<Movable> ::DENSE  block(10);
+		Memory_Block<T> ::DENSE  block(10);
 
 		EXPECT_EQ(10, block.domain());
 		EXPECT_EQ(10, block.count());
 	}
 
-	EXPECT_EQ(g_constructors, g_destructors);
-	EXPECT_NE(g_constructors, 0);
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
 }
 
 
 TEST(Memory_Block, destructors_called_dense_shrunk) {
-	g_constructors = 0;
-	g_destructors = 0;
+	using T = Movable;
+	T::reset();
 
 	{
-		Memory_Block<Movable> ::DENSE  block;
+		Memory_Block<T> ::DENSE  block;
 		EXPECT_EQ(0, block.domain());
 		EXPECT_EQ(0, block.count());
 		block.resize(1);
@@ -126,26 +95,26 @@ TEST(Memory_Block, destructors_called_dense_shrunk) {
 		EXPECT_EQ(1, block.count());
 	}
 
-	EXPECT_EQ(g_constructors, g_destructors);
-	EXPECT_NE(g_constructors, 0);
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
 }
 
 
 
 TEST(Memory_Block, destructors_called_dense_grown) {
-	g_constructors = 0;
-	g_destructors = 0;
+	using T = Movable;
+	T::reset();
 
 	{
-		Memory_Block<Movable> ::DENSE  mb(10);
+		Memory_Block<T> ::DENSE  mb(10);
 		EXPECT_EQ(10, mb.count());
 
 		mb.resize(20);
 		EXPECT_EQ(20, mb.count());
 	}
 
-	EXPECT_EQ(g_constructors, g_destructors);
-	EXPECT_NE(g_constructors, 0);
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
 }
 
 
@@ -166,34 +135,34 @@ TEST(Memory_Block, dense_constructor) {
 
 
 TEST(Memory_Block, copy_container_exists) {
-	g_destructors = 0;
-	g_constructors = 0;
+	using T = Copyable;
+	T::reset();
 
 	{
-		Memory_Block<Copyable> ::CONSTRUCTED_FLAGS block(10);
+		Memory_Block<T> ::CONSTRUCTED_FLAGS block(10);
 		block.construct_all();
 
 		auto block2 = block;
 	}
 
-	EXPECT_EQ(g_constructors, g_destructors);
-	EXPECT_NE(g_constructors, 0);
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
 }
 
 TEST(Memory_Block, copy_container_dense) {
-	g_destructors = 0;
-	g_constructors = 0;
+	using T = Copyable;
+	T::reset();
 
 	{
-		Memory_Block<Copyable>::DENSE block(10);
+		Memory_Block<T>::DENSE block(10);
 		//block.construct_all();
 
 		auto block2 = block;
 		block2 = block;
 	}
 
-	EXPECT_EQ(g_constructors, g_destructors);
-	EXPECT_NE(g_constructors, 0);
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
 }
 
 
@@ -201,11 +170,11 @@ TEST(Memory_Block, copy_container_dense) {
 
 
 TEST(Memory_Block, move_container_exists) {
-	g_destructors = 0;
-	g_constructors = 0;
+	using T = Movable;
+	T::reset();
 
 	{
-		Memory_Block<Movable> ::CONSTRUCTED_FLAGS ::INPLACE_BUFFER<2> block(10);
+		Memory_Block<T> ::CONSTRUCTED_FLAGS ::INPLACE_BUFFER<2> block(10);
 		block.construct_all();
 
 		auto block2 = std::move(block);
@@ -215,8 +184,8 @@ TEST(Memory_Block, move_container_exists) {
 		EXPECT_EQ(10, block.domain());
 	}
 
-	EXPECT_EQ(g_constructors, g_destructors);
-	EXPECT_NE(g_constructors, 0);
+	EXPECT_EQ(T::constructors(), T::destructors());
+	EXPECT_NE(T::constructors(), 0);
 }
 
 

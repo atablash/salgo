@@ -1,0 +1,4 @@
+#pragma once
+
+#include <salgo/internal/3d/mesh.hpp>
+#include <salgo/internal/3d/common.hpp>

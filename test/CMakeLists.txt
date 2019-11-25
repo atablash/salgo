@@ -26,7 +26,7 @@ endif()
 
 set(sources
 	main.cpp
-	stack-storage.cpp
+	inplace-storage.cpp
 	memory-block.cpp
 	vector.cpp
 	vector-sparse.cpp
@@ -35,13 +35,13 @@ set(sources
 	unordered-vector.cpp
 	hash-table.cpp
 	chunked-vector.cpp
-	rooted-forest.cpp
+	binary-forest.cpp
 	graph.cpp
 	modulo.cpp
 	binomial.cpp
 	union-find.cpp
-
 	miller-rabin.cpp
+	kd.cpp
 )
 
 
@@ -61,8 +61,8 @@ link_libraries( ${SALGO_CXX_LINKER_FLAGS} )
 
 
 
-add_executable(	unit-tests ${sources} )
-add_test( unit-tests unit-tests )
+add_executable(	salgo-unit-tests ${sources} )
+add_test( salgo-unit-tests salgo-unit-tests )
 
 
 add_subdirectory( 3d )

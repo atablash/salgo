@@ -1,5 +1,4 @@
-#include <salgo/modulo.hpp>
-#include <salgo/modulo-hash.hpp>
+#include <salgo/modulo>
 
 #include <gtest/gtest.h>
 
@@ -81,7 +80,7 @@ TEST(Modulo_Hash, palindrome) {
 	H h0, h1;
 	H pow_26 = 1;
 
-	const int N = 1'000'000;
+	const int N = 100'000;
 	
 	for(int i=0; i<N; ++i) {
 		char c = palindrome(N, i);
@@ -100,7 +99,7 @@ TEST(Modulo_Hash, almost_palindrome) {
 	H h0, h1;
 	H pow_26 = 1;
 
-	const int N = 1'000'000;
+	const int N = 100'000;
 	
 	for(int i=0; i<N; ++i) {
 		char c = almost_palindrome(N, i);

@@ -19,7 +19,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 option(SALGO_BUILD_TESTS "Build salgo tests" OFF)
 option(SALGO_BUILD_BENCHMARKS "Build salgo benchmarks" OFF)
 option(SALGO_BUILD_SAMPLES "Build salgo samples" OFF)
-option(SALGO_USE_LIBCXX "Link with libc++ (instead of default, usually libstdc++)" OFF) # TODO: set to off
+option(SALGO_USE_LIBCXX "Link with libc++ (instead of default, usually libstdc++)" OFF)
 
 
 
@@ -32,6 +32,13 @@ option(SALGO_USE_LIBCXX "Link with libc++ (instead of default, usually libstdc++
 #===============================================================================
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+
+
+
+
+#===============================================================================
+# c++ version, compiler flags
+#===============================================================================
 #set(CMAKE_CXX_STANDARD 17) # not supported by older cmake
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fno-exceptions")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pipe -march=native -mtune=native -mfpmath=sse")
@@ -127,6 +134,7 @@ endif(SALGO_BUILD_TESTS)
 # benchmarking
 #===============================================================================
 if(SALGO_BUILD_BENCHMARKS)
+	enable_testing()
 	add_subdirectory(bench)
 endif(SALGO_BUILD_BENCHMARKS)
 
@@ -139,6 +147,7 @@ endif(SALGO_BUILD_BENCHMARKS)
 # samples
 #===============================================================================
 if(SALGO_BUILD_SAMPLES)
+	enable_testing()
 	add_subdirectory(samples)
 endif(SALGO_BUILD_SAMPLES)
 
@@ -159,13 +168,13 @@ endif(SALGO_BUILD_SAMPLES)
 # output build configuration
 #===============================================================================
 message("\n")
-message("Build configuration:\n")
+message("Salgo Build configuration:\n")
 message("** Build type: " ${CMAKE_BUILD_TYPE})
 message("** Build tests: " ${SALGO_BUILD_TESTS})
 message("** Build benchmarks: " ${SALGO_BUILD_BENCHMARKS})
 message("** Use libc++ (instead of default, usually libstdc++): " ${SALGO_USE_LIBCXX})
-#message("** salgo version: " ${SALGO_VERSION})
-#message("** Build shared libs: " ${SALGO_BUILD_SHARED})
-#message("** Build docs: " ${SALGO_BUILD_DOC})
+# message("** salgo version: " ${SALGO_VERSION})
+# message("** Build shared libs: " ${SALGO_BUILD_SHARED})
+# message("** Build docs: " ${SALGO_BUILD_DOC})
 message("\n")
 

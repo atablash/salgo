@@ -1,5 +1,5 @@
-#include <salgo/unordered-vector.hpp>
-#include <salgo/reversed.hpp>
+#include <salgo/unordered-vector>
+#include <salgo/reversed>
 
 #include <gtest/gtest.h>
 

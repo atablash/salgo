@@ -1,4 +1,4 @@
-#include <salgo/chunked-vector.hpp>
+#include <salgo/chunked-vector>
 
 #include <gtest/gtest.h>
 

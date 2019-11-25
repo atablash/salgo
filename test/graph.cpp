@@ -1,4 +1,4 @@
-#include <salgo/graph.hpp>
+#include <salgo/graph>
 
 #include <gtest/gtest.h>
 

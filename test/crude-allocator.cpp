@@ -1,4 +1,4 @@
-#include <salgo/crude-allocator.hpp>
+#include <salgo/crude-allocator>
 
 #include <gtest/gtest.h>
 

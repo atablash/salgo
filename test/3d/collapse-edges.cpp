@@ -1,10 +1,8 @@
-#include <salgo/3d/mesh.hpp>
-#include <salgo/3d/edge-links.hpp>
-#include <salgo/3d/vert-poly-links.hpp>
-#include <salgo/3d/solid.hpp>
-#include <salgo/3d/cap-holes.hpp>
-#include <salgo/3d/collapse-edges.hpp>
-#include <salgo/3d/io.hpp>
+#include <salgo/3d/mesh>
+#include <salgo/3d/solid>
+#include <salgo/3d/cap-holes>
+#include <salgo/3d/collapse-edges>
+#include <salgo/3d/io>
 
 #include <gtest/gtest.h>
 
@@ -21,7 +19,7 @@ using M = Mesh<double> ::EDGE_LINKS ::VERT_POLY_LINKS ::POLYS_ERASABLE ::VERTS_E
 
 
 TEST(Fast_collapse_edges, sphere_solid) {
-	auto mesh = load_ply<M>("sphere-holes.ply");
+	auto mesh = load_ply<M>("resources/sphere-holes.ply");
 	remove_isolated_verts(mesh);
 	EXPECT_NE( 0, mesh.verts().domain() );
 	EXPECT_TRUE( is_solid(mesh, Check_Solid_Flags::ALLOW_HOLES) );
@@ -38,7 +36,7 @@ TEST(Fast_collapse_edges, sphere_solid) {
 
 
 auto& get_bunny() {
-	static const auto bunny = load_ply<M>("bunny-holes.ply");
+	static const auto bunny = load_ply<M>("resources/bunny-holes.ply");
 	return bunny;
 }
 

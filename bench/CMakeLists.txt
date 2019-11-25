@@ -26,9 +26,16 @@ include_directories( # SYSTEM
 )
 
 
-add_executable( allocator  allocator.cpp )
-add_executable(	hash-table hash-table.cpp )
-add_executable(	list       list.cpp )
-add_executable(	vector     vector.cpp )
+add_executable( salgo-bench-allocator  allocator.cpp )
+add_test( salgo-bench-allocator salgo-bench-allocator )
+
+add_executable(	salgo-bench-hashtable hash-table.cpp )
+add_test( salgo-bench-hashtable salgo-bench-hashtable )
+
+add_executable(	salgo-bench-list       list.cpp )
+add_test( salgo-bench-list salgo-bench-list )
+
+add_executable(	salgo-bench-vector     vector.cpp )
+add_test( salgo-bench-vector salgo-bench-vector )
 
 

@@ -53,7 +53,7 @@ Contents
 	* Other
 		* Modulo - TODO, but see tests
 		* Binomial - TODO, but see tests
-		* Stack_Storage - TODO, but see tests
+		* Inplace_Storage - TODO, but see tests
 
 
 
