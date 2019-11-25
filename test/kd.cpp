@@ -4,6 +4,7 @@
 
 #include <Eigen/Dense>
 
+#include <random>
 #include <algorithm>
 
 using namespace salgo;
@@ -38,7 +39,9 @@ void insert_grid(KD& kd) {
 		}
 	}
 
-	std::random_shuffle(v.begin(), v.end());
+    std::random_device rd;
+    std::mt19937 g(rd());
+	std::shuffle(v.begin(), v.end(), g);
 
 	for(auto& p : v) {
 		kd.insert(p);
