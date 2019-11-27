@@ -221,6 +221,8 @@ struct Context {
 			// TODO: global bitset
 		}
 
+		bool not_constructed() const { return ! constructed(); }
+
 		//bool exists_SLOW(Handle handle) const {
 			// check bounds
 			//return constructed;
@@ -239,19 +241,16 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Iterator,BASE) {}
 		friend Chunked_Vector;
 
-		using BASE::container;
-		using BASE::_handle;
-
 
 	private:
 		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++_handle(); while( _handle() != container().end().accessor() && !container()( _handle() ).constructed() );
+			do ++MUT_HANDLE; while( HANDLE != CONT.end() && ACC.not_constructed() );
 		}
 
 		void _decrement() {
-			do --_handle(); while( !ACC.constructed() );
+			do --MUT_HANDLE; while( !ACC.constructed() );
 		}
 	};
 

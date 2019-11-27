@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../common.hpp"
+#include "../../common.hpp"
+
 #include "edge-links.hpp"
 #include "vert-poly-links.hpp"
 #include "mesh-utils.hpp"
@@ -18,8 +19,8 @@ namespace salgo {
 template<class MESH>
 bool has_degenerate_polys(const MESH& mesh) {
 	for(auto& p : mesh.polys()) {
-		for(auto& v : p.verts()) {
-			if(v == v.next()) return true;
+		for(auto& v : p.polyVerts()) {
+			if(v.vert() == v.next().vert()) return true;
 		}
 	}
 	return false;

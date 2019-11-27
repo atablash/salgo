@@ -127,11 +127,11 @@ struct Context {
 		friend Iterator_Base<C,Context>;
 
 		inline void _increment() {
-			if(!_just_erased) ++HANDLE;
+			if(!_just_erased) ++MUT_HANDLE;
 			_just_erased = false;
 		}
 		inline void _decrement() {
-			--HANDLE;
+			--MUT_HANDLE;
 			_just_erased = false;
 		}
 

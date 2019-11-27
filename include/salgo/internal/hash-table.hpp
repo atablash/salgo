@@ -175,11 +175,11 @@ struct Context {
 
 		void _increment() {
 			_just_erased = false;
-			--HANDLE.b;
+			--MUT_HANDLE.b;
 			while(HANDLE.b == (typename List::Handle)(-1)) {
-				--HANDLE.a;
-				HANDLE.b = 0;
-				if(HANDLE.a >= 0) HANDLE.b = CONT._buckets[HANDLE.a].size() - 1;
+				--MUT_HANDLE.a;
+				MUT_HANDLE.b = 0;
+				if(HANDLE.a >= 0) MUT_HANDLE.b = CONT._buckets[HANDLE.a].size() - 1;
 			}
 		}
 
@@ -322,6 +322,13 @@ struct Context {
 		auto operator()(Handle handle) const { return Accessor<CONST>(this, handle); }
 
 
+		auto& operator[](Any_Tag)       { return begin().accessor().data(); }
+		auto& operator[](Any_Tag) const { return begin().accessor().data(); }
+
+		auto operator()(Any_Tag)       { return begin().accessor(); }
+		auto operator()(Any_Tag) const { return begin().accessor(); }
+
+
 		auto& operator[](const Key& k)       { return operator[]( _find(k) ); }
 		auto& operator[](const Key& k) const { return operator[]( _find(k) ); }
 
@@ -410,6 +417,10 @@ struct Context {
 
 		bool empty() const {
 			return _count == 0;
+		}
+
+		bool not_empty() const {
+			return !empty();
 		}
 
 		void rehash(int want_buckets) {

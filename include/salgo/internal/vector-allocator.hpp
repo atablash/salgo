@@ -92,8 +92,6 @@ struct Context {
 	template<Const_Flag C>
 	class Accessor : public Accessor_Base<C,Context> {
 		using BASE = Accessor_Base<C,Context>;
-		using BASE::container;
-		using BASE::_handle;
 
 	private:
 		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
@@ -141,11 +139,11 @@ struct Context {
 		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++HANDLE; while( *this != End_Iterator()  &&  !CONT( HANDLE ).constructed() );
+			do ++MUT_HANDLE; while( *this != End_Iterator()  &&  !CONT( HANDLE ).constructed() );
 		}
 
 		void _decrement() {
-			do --HANDLE; while( !CONT().exists( HANDLE ) );
+			do --MUT_HANDLE; while( !CONT().exists( HANDLE ) );
 		}
 
 	public:
@@ -224,7 +222,7 @@ struct Context {
 				lookup_index = 0;
 			}
 
-			return Accessor<MUTAB>( this, v(index).construct( std::forward<ARGS>(args)... ).handle() );
+			return Accessor<MUTAB>( this, v(index).construct( std::forward<ARGS>(args)... ) );
 		}
 
 		template<class... ARGS>

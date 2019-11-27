@@ -124,8 +124,6 @@ namespace salgo {
 				template<Const_Flag C>
 				class Accessor : public Accessor_Base<C,Context> {
 					using BASE = Accessor_Base<C,Context>;
-					using BASE::container;
-					using BASE::_handle;
 
 				public:
 					FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
@@ -143,7 +141,7 @@ namespace salgo {
 						_check_bounds();
 						if constexpr(Exists) {
 							DCHECK( !constructed() ) << "element already constructed";
-							CONT._set_exists(_handle(), true);
+							CONT._set_exists(HANDLE, true);
 						}
 						_get().construct( std::forward<ARGS>(args)... );
 						if constexpr(Count) ++CONT.num_existing;
@@ -158,7 +156,7 @@ namespace salgo {
 						_check_bounds();
 						if constexpr(Exists) {
 							DCHECK( constructed() ) << "erasing already erased element";
-							CONT._set_exists(_handle(), false);
+							CONT._set_exists(HANDLE, false);
 						}
 						_get().destruct();
 						if constexpr(Count) --CONT.num_existing;
@@ -177,7 +175,7 @@ namespace salgo {
 						} else if constexpr(Exists_Inplace) {
 							return _get().exists;
 						} else if constexpr(Exists_Bitset) {
-							return CONT.exists[ _handle() ];
+							return CONT.exists[ HANDLE ];
 						}
 					}
 
@@ -189,15 +187,15 @@ namespace salgo {
 
 				private:
 					bool _is_in_bounds() const {
-						return CONT._is_in_bounds( _handle() );
+						return CONT._is_in_bounds( HANDLE );
 					}
 
 					void _check_bounds() const {
-						CONT._check_bounds( _handle() );
+						CONT._check_bounds( HANDLE );
 					}
 
-					auto& _get()       { return CONT._get( _handle() ); }
-					auto& _get() const { return CONT._get( _handle() ); }
+					auto& _get()       { return CONT._get( HANDLE ); }
+					auto& _get() const { return CONT._get( HANDLE ); }
 				};
 
 
@@ -213,29 +211,25 @@ namespace salgo {
 				template<Const_Flag C>
 				class Iterator : public Iterator_Base<C,Context> {
 					using BASE = Iterator_Base<C,Context>;
-					using BASE::container;
-					using BASE::_handle;
 
 				public:
-					FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
-
-
+					using BASE::BASE;
 
 				private:
 					friend BASE;
 
 					void _increment() {
-						if constexpr(Dense) ++_handle();
-						else do ++HANDLE; while( (int)_handle() != CONT.domain() && !BASE::accessor().constructed() );
+						if constexpr(Dense) ++MUT_HANDLE;
+						else do ++MUT_HANDLE; while( (int)HANDLE != CONT.domain() && !BASE::accessor().constructed() );
 					}
 
 					void _decrement() {
-						if constexpr(Dense) --_handle();
-						else do --HANDLE; while( !BASE::accessor().constructed() );
+						if constexpr(Dense) --MUT_HANDLE;
+						else do --MUT_HANDLE; while( !BASE::accessor().constructed() );
 					}
 
 				public:
-					bool operator!=(const End_Iterator&) { return _handle() != CONT.domain(); }
+					bool operator!=(const End_Iterator&) { return HANDLE != CONT.domain(); }
 				};
 
 

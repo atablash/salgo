@@ -1,8 +1,8 @@
-#include <salgo/3d/mesh>
-#include <salgo/3d/solid>
-#include <salgo/3d/cap-holes>
-#include <salgo/3d/collapse-edges>
-#include <salgo/3d/io>
+#include <salgo/geom/3d/mesh>
+#include <salgo/geom/3d/solid>
+#include <salgo/geom/3d/cap-holes>
+#include <salgo/geom/3d/collapse-edges>
+#include <salgo/geom/3d/io>
 
 #include <gtest/gtest.h>
 

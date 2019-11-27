@@ -317,8 +317,8 @@ namespace graph {
 			private:
 				friend BASE;
 
-				void _increment() { HANDLE = CONT._vs( HANDLE ).iterator().next(); }
-				void _decrement() { HANDLE = CONT._vs( HANDLE ).iterator().prev(); }
+				void _increment() { MUT_HANDLE = CONT._vs( HANDLE ).iterator().next(); }
+				void _decrement() { MUT_HANDLE = CONT._vs( HANDLE ).iterator().prev(); }
 
 			public:
 				bool operator!=(End_Iterator) const { return HANDLE < CONT._vs.domain(); }
@@ -469,8 +469,8 @@ namespace graph {
 
 			private:
 				friend BASE;
-				void _increment() {	HANDLE.b = _raw_outs()(HANDLE.b).iterator().next(); }
-				void _decrement() { HANDLE.b = _raw_outs()(HANDLE.b).iterator().prev(); }
+				void _increment() {	MUT_HANDLE.b = _raw_outs()(HANDLE.b).iterator().next(); }
+				void _decrement() { MUT_HANDLE.b = _raw_outs()(HANDLE.b).iterator().prev(); }
 
 			private:
 				auto& _raw_outs()       { return CONT._vs[ HANDLE.a ].outs_ins[oi]; }

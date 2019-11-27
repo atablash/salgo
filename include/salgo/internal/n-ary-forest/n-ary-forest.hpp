@@ -213,11 +213,11 @@ private:
 	friend BASE;
 
 	void _increment() {
-		HANDLE = ++ALLOC( HANDLE ).iterator();
+		MUT_HANDLE = ++ALLOC( HANDLE ).iterator();
 	}
 
 	void _decrement() {
-		HANDLE = --ALLOC( HANDLE ).iterator();
+		MUT_HANDLE = --ALLOC( HANDLE ).iterator();
 	}
 
 public:

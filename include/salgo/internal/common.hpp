@@ -24,35 +24,57 @@ namespace salgo {
 
 
 
+
+//
+// macro overloading
+// https://stackoverflow.com/a/27051616/1123898
+//
+#define VARGS_(_10, _9, _8, _7, _6, _5, _4, _3, _2, _1, N, ...) N 
+#define VARGS(...) VARGS_(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+
+#define CONCAT_(a, b) a##b
+#define CONCAT(a, b) CONCAT_(a, b)
+
+
+
+
+
 //
 // MEMBER DETECTOR
 //
 // https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Member_Detector
 //
-#define GENERATE_HAS_MEMBER(member) \
+#define _GENERATE_HAS_MEMBER_3(member, definition_args, name) \
 \
 template < class T > \
-class _Class_Has_Member__##member \
+class _Class_Has_Member__##name \
 { \
-	struct Fallback { int member; }; \
+	struct Fallback { int member definition_args; }; \
 	struct Derived : T, Fallback { }; \
 \
-	template<typename U, U> struct Check; \
+	template<class U, U> struct Check; \
 \
 	typedef char ArrayOfOne[1]; \
 	typedef char ArrayOfTwo[2]; \
 \
-	template<typename U> static ArrayOfOne & func(Check<int Fallback::*, &U::member> *); \
-	template<typename U> static ArrayOfTwo & func(...); \
+	template<class U> static ArrayOfOne & test(Check<int (Fallback::*) definition_args, &U::member> *); \
+	template<class U> static ArrayOfTwo & test(...); \
   public: \
-	enum { value = sizeof(func<Derived>(0)) == 2 }; \
+	enum { value = sizeof(test<Derived>(0)) == 2 }; \
 }; \
 \
 template<class T> \
-using _Has_Member__##member = std::conditional_t< std::is_class_v<T>, _Class_Has_Member__##member<T>, std::false_type>; \
+using _Has_Member__##name = std::conditional_t< std::is_class_v<T>, _Class_Has_Member__##name<T>, std::false_type>; \
 \
 template<class X> \
-static constexpr bool has_member__##member = _Has_Member__##member<X>::value;
+static constexpr bool has_member__##name = _Has_Member__##name<X>::value;
+
+#define _GENERATE_HAS_MEMBER_1(member)   _GENERATE_HAS_MEMBER_3(member, , member)
+
+#define GENERATE_HAS_MEMBER(...)   CONCAT(_GENERATE_HAS_MEMBER_, VARGS(__VA_ARGS__))(__VA_ARGS__)
+
+
+
 
 
 
@@ -202,11 +224,15 @@ constexpr X operator ~ (X x) \
 //
 // access first or last elements of containers
 //
-struct First_Tag {};
-struct Last_Tag {};
+namespace internal {
+	struct First_Tag {};
+	struct Last_Tag {};
+	struct Any_Tag {};
+}
 
-#define FIRST salgo::First_Tag()
-#define LAST salgo::Last_Tag()
+static constexpr auto FIRST = salgo::internal::First_Tag();
+static constexpr auto LAST  = salgo::internal::Last_Tag();
+static constexpr auto ANY   = salgo::internal::Any_Tag();
 
 
 

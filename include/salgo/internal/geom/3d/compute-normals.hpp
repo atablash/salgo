@@ -30,7 +30,7 @@ void fast_compute_vert_normals( MESH& mesh,
 		auto normal = v01.cross(v02);
 		normal.normalize();
 
-		for(auto pv : p.poly_verts()) {
+		for(auto pv : p.polyVerts()) {
 			get_v_normal( pv.vert().handle() ) += normal;
 			++nums[ pv.vert().handle() ];
 		}
@@ -84,7 +84,7 @@ void compute_vert_normals( MESH& mesh,
 	for(auto p : mesh.polys()) {
 		auto normal = compute_poly_normal(p);
 
-		for(auto pv : p.poly_verts()) {
+		for(auto pv : p.polyVerts()) {
 			auto angle = compute_poly_vert_angle( pv );
 			get_v_normal( pv.vert().handle() ) += normal * angle;
 			weights[ pv.vert().handle() ] += angle;

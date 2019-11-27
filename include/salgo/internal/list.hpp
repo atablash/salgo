@@ -189,6 +189,9 @@ struct Context {
 
 		auto prev()       { return CONT( BASE::get_prev() ); }
 		auto prev() const { return CONT( BASE::get_prev() ); }
+
+		bool exists() const { return HANDLE.valid(); }
+		bool not_exists() const { return ! exists(); }
 	};
 
 
@@ -213,13 +216,13 @@ struct Context {
 
 		void _increment() {
 			DCHECK( HANDLE.valid() ) << "followed broken list link";
-			HANDLE = BASE::get_next();
+			MUT_HANDLE = BASE::get_next();
 			BASE::reset();
 		}
 
 		void _decrement() {
 			DCHECK( HANDLE.valid() ) << "followed broken list link";
-			HANDLE = BASE::get_prev();
+			MUT_HANDLE = BASE::get_prev();
 			BASE::reset();
 		}
 
@@ -325,68 +328,26 @@ struct Context {
 
 
 
-		// copy
-		//List(const List& o) {
-		//	*this = o;
-		//}
-
-		// trivial move
-		//List(List&& o) = default;
-
-		// copy assignment
-		//List& operator=(const List& o) {
-		//	clear();
-		//	*this += o;
-		//}
-
-		// move assignment: todo
-
-		//List& operator+=(const List& o) {
-		//	for(auto e : o) {
-		//		emplace_back( e() );
-		//	}
-		//}
-
-		// todo
-		//List& operator+=(List&& o) {}
-
-
-
-
-		//bool exists(Handle handle) const {
-		//	return v[ key ].exists;
-		//}
-
-
-
-
-
-
-
-		// direct access
-	public:
-		auto& operator[](Handle handle)       { return _alloc()[handle].val; }
-		auto& operator[](Handle handle) const { return _alloc()[handle].val; }
-
-		auto& operator[](First_Tag)       { return operator[](_front); }
-		auto& operator[](First_Tag) const { return operator[](_front); }
-
-		auto& operator[](Last_Tag)       { return operator[](_back); }
-		auto& operator[](Last_Tag) const { return operator[](_back); }
-
-
-
-
-		// accessor access
 	public:
 		auto operator()(Handle handle)       { return Accessor<MUTAB>(this, handle); }
 		auto operator()(Handle handle) const { return Accessor<CONST>(this, handle); }
+		auto& operator[](Handle handle)       { return _alloc()[handle].val; }
+		auto& operator[](Handle handle) const { return _alloc()[handle].val; }
 
 		auto operator()(First_Tag)       { return operator()(_front); }
 		auto operator()(First_Tag) const { return operator()(_front); }
+		auto& operator[](First_Tag)       { return operator[](_front); }
+		auto& operator[](First_Tag) const { return operator[](_front); }
 
 		auto operator()(Last_Tag)       { return operator()(_back); }
 		auto operator()(Last_Tag) const { return operator()(_back); }
+		auto& operator[](Last_Tag)       { return operator[](_back); }
+		auto& operator[](Last_Tag) const { return operator[](_back); }
+
+		void erase(Handle handle) { operator()(handle).erase(); }
+
+
+
 
 
 

@@ -4,9 +4,9 @@
 #include "mesh.hpp"
 #include "mesh-utils.hpp"
 
+#include "../../list.hpp"
 
 
-#include <list>
 #include <map>
 
 
@@ -29,15 +29,15 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 
 	auto& m = edge.mesh();
 
-	using H_Poly_Edge = typename EDGE::Mesh::H_Poly_Edge;
+	using H_PolyEdge = typename EDGE::Mesh::H_PolyEdge;
 
-	std::list< H_Poly_Edge > perimeter;
+	typename List< H_PolyEdge > ::COUNTABLE perimeter;
 
 	// iterators to perimeter, ordered by score
-	std::multimap<double, typename decltype(perimeter)::iterator> cands;
+	std::multimap<double, typename decltype(perimeter)::Handle_Small> cands;
 
 	//std::unordered_map<H_Poly_Edge, typename decltype(cands)::iterator> where_cands;
-	salgo::Hash_Table<H_Poly_Edge, typename decltype(cands)::iterator> where_cands;
+	Hash_Table<H_PolyEdge, typename decltype(cands)::iterator> where_cands;
 
 
 	auto get_score = [](auto e0, auto e1){
@@ -64,16 +64,18 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 	};
 
 
-	auto add_cand = [&](const auto& it) {
+	auto add_cand = [&](const auto& h_perim_0) {
+		auto perim_0 = perimeter( h_perim_0 );
+		auto perim_1 = perim_0.next();
+		if(perim_1.not_exists()) perim_1 = perimeter(FIRST);
 
-		auto next = it;
-		++next;
-		if(next == perimeter.end()) next = perimeter.begin();
+		auto v0 = m(perim_0);
+		auto v1 = m(perim_1);
 
-		DCHECK_EQ( m(*it).next_vert().handle(), m(*next).prev_vert().handle() ) << "edges not adjacent";
+		DCHECK_EQ( v0.next_vert(), v1.prev_vert() ) << "verts must be adjacent";
 
-		auto cands_it = cands.insert({get_score(m(*it), m(*next)), it});
-		where_cands.emplace(*it, cands_it);
+		auto cands_it = cands.insert({get_score(v0, v1), perim_0});
+		where_cands.emplace(v0, cands_it);
 
 		//LOG(INFO) << "where_cands.insert(" << (*it) << ")";
 	};
@@ -94,35 +96,36 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 	auto he = edge.handle();
 	do {
 		while(m(he).next().has_link()) {
-			he = m(he).next().linked_edge();
+			he = m(he).next().linked_polyEdge();
 		}
 
 		he = m(he).next();
 
-		perimeter.push_back(he);
+		perimeter.emplace_back( he );
 	} while(he != edge);
 
 
-	for(typename decltype(perimeter)::iterator iter = perimeter.begin(); iter != perimeter.end(); ++iter) {
-		add_cand(iter);
+	for(auto& p : perimeter) {
+		add_cand(p);
 	}
 
 
-	while(perimeter.size() >= 3) {
+	while(perimeter.count() >= 3) {
 		auto iter = cands.end(); --iter;
-		auto curr = iter->second;
+
+		auto curr = perimeter( iter->second );
 
 		//LOG(INFO) << "score: " << it->first;
 
 		// get next edge in perimeter
-		auto next = curr; ++next;
-		if(next == perimeter.end()) next = perimeter.begin();
+		auto next = curr.next();
+		if(next.not_exists()) next = perimeter(FIRST);
 
-		DCHECK_EQ( m(*curr).next_vert().handle(), m(*next).prev_vert().handle() ) << "edges not adjacent";
+		DCHECK_EQ( m(curr).next_vert(), m(next).prev_vert() ) << "edges not adjacent";
 
-		auto i0 = m(*curr).prev_vert().handle();
-		auto i1 = m(*next).next_vert().handle();
-		auto i2 = m(*curr).next_vert().handle();
+		auto i0 = m(curr).prev_vert().handle();
+		auto i1 = m(next).next_vert().handle();
+		auto i2 = m(curr).next_vert().handle();
 		// add cand, cand+1 poly
 		auto p = m.polys().add(i0, i1, i2);
 
@@ -131,24 +134,23 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 		//LOG(INFO) << "add " << i0 << " " << i1 << " " << i2;
 
 		// create missing edge-links
-		m(*curr).link( p.poly_edge(2) );
-		m(*next).link( p.poly_edge(1) );
+		m(curr).link( p.polyEdge(2) );
+		m(next).link( p.polyEdge(1) );
 
 		// get prev edge in perimeter
-		auto prev = curr;
-		if(prev == perimeter.begin()) prev = perimeter.end();
-		--prev;
+		auto prev = curr.prev();
+		if(prev.not_exists()) prev = perimeter(LAST);
 
 		// insert new edge
-		auto new_edge = perimeter.insert( curr, p.poly_edge(0).handle() );
+		auto new_edge = curr.emplace_before(p.polyEdge(0));
 
-		DCHECK_EQ( p.poly_edge(0).prev_vert().handle(), m(*prev).next_vert().handle() ) << "new_edge not adjacent";
-		DCHECK_EQ( p.poly_edge(0).next_vert().handle(), m(*next).next_vert().handle() ) << "new_edge not adjacent";
+		DCHECK_EQ( p.polyEdge(0).prev_vert(), m(prev).next_vert() ) << "new_edge not adjacent";
+		DCHECK_EQ( p.polyEdge(0).next_vert(), m(next).next_vert() ) << "new_edge not adjacent";
 
 		// erase 3 candidate polys from priority queue
-		del_cand(*prev);
-		del_cand(*next);
-		del_cand(*iter->second);
+		del_cand(m(prev));
+		del_cand(m(next));
+		del_cand(m(curr));
 
 		// remove 2 old edges
 		perimeter.erase(curr);
@@ -158,7 +160,7 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 		add_cand(prev);
 		add_cand(new_edge);
 
-		DCHECK_EQ(perimeter.size(), cands.size());
+		DCHECK_EQ(perimeter.count(), cands.size());
 		DCHECK_EQ(where_cands.count(), cands.size());
 	}
 
@@ -189,7 +191,7 @@ Cap_Holes_Result cap_holes(MESH& mesh) {
 	Cap_Holes_Result r;
 
 	for(auto& p : mesh.polys()) {
-		for(auto& pe : p.poly_edges()) {
+		for(auto& pe : p.polyEdges()) {
 			if(!pe.has_link()) {
 				auto lr = cap_hole(pe);
 				++r.num_holes_capped;

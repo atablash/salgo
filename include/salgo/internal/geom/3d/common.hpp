@@ -14,11 +14,11 @@ void move_verts(MESH& mesh, const typename MESH::Vector& d) {
 template<class MESH>
 void invert_polys(MESH& mesh) {
     for(auto& p : mesh.polys()) {
-        auto a = p.vert(1).handle();
-        auto b = p.vert(2).handle();
+        auto a = p.vert(1);
+        auto b = p.vert(2);
 
-        p.poly_vert(1).change_vert(b);
-        p.poly_vert(2).change_vert(a);
+        p.polyVert(1).change_vert(b);
+        p.polyVert(2).change_vert(a);
     }
 }
 

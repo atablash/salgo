@@ -1,8 +1,8 @@
 #include "common.hpp"
 
-#include <salgo/3d/mesh>
-#include <salgo/3d/compute-normals>
-#include <salgo/3d/io>
+#include <salgo/geom/3d/mesh>
+#include <salgo/geom/3d/compute-normals>
+#include <salgo/geom/3d/io>
 
 #include <gtest/gtest.h>
 

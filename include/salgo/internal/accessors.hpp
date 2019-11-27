@@ -31,8 +31,7 @@ template<Const_Flag C, class CONTEXT> class Iterator_Base;
 
 
 
-
-
+GENERATE_HAS_MEMBER(operator[], (int), operator_subscript)
 
 
 template<Const_Flag C, class CONTEXT>
@@ -47,11 +46,11 @@ public:
 
 
 public:
-	Reference_Base(Const<Container,C>* container, Handle handle) : __handle(handle), __container(container) {}
+	Reference_Base(Const<Container,C>* container, Handle handle) : _handle(handle), _container(container) {}
 
 private:
-	Handle __handle;
-	Const<Container,C>* __container;
+	Handle _handle;
+	Const<Container,C>* _container;
 
 public:
 	auto& accessor()       { _check(); return *static_cast<      Accessor<C>*>(this); }
@@ -59,6 +58,22 @@ public:
 
 	auto& iterator()       { _check(); return *static_cast<      Iterator<C>*>(this); }
 	auto& iterator() const { _check(); return *static_cast<const Iterator<C>*>(this); }
+
+	auto&    handle()  const { return _handle; }
+	operator auto&()   const { return handle(); }
+
+	auto& container()       { return *_container; }
+	auto& container() const { return *_container; }
+
+	auto& data()       { static_assert(has_member__operator_subscript<Container>,
+		"in order to access DATA/VALUE, your container should have operator[](HANDLE) defined"); return (*_container)[_handle]; }
+
+	auto& data() const { static_assert(has_member__operator_subscript<Container>,
+		"in order to access DATA/VALUE, your container should have operator[](HANDLE) defined"); return (*_container)[_handle]; }
+
+	// get value
+	auto& operator()()       { return data(); }
+	auto& operator()() const { return data(); }
 
 private:
 	void _check() const {
@@ -68,33 +83,13 @@ private:
 
 
 protected:
-	auto& _handle()       { return __handle; }
-	auto& _handle() const { return __handle; }
-
-	auto& _val()       { return (*__container)[__handle]; }
-	auto& _val() const { return (*__container)[__handle]; }
-
 	void _will_compare_with(const Reference_Base& o) const {
-		DCHECK_EQ(__container, o.__container) << "comparing iterators to different containers";
+		DCHECK_EQ(_container, o._container) << "comparing iterators to different containers";
 	}
 
+	auto& _mut_handle() { return _handle; }
 
 public:
-	// get handle
-	auto     handle() const { return _handle(); }
-	operator Handle() const { return handle(); }
-
-	// get container
-	auto& container()       { return *__container; }
-	auto& container() const { return *__container; }
-
-
-	// get value
-	auto& operator()()       { return _val(); }
-	auto& operator()() const { return _val(); }
-
-	auto& value()       { return _val(); }
-	auto& value() const { return _val(); }
 
 
 	operator       auto&()       {
@@ -115,7 +110,7 @@ public:
 
 	// is handle non-null
 	//explicit operator bool() const { return _handle().valid(); }
-	bool exists() const { return _handle().valid(); }
+	bool exists() const { return handle().valid(); }
 };
 
 
@@ -197,15 +192,15 @@ public:
 	auto& operator=(VAL&& val) { BASE::operator()() = std::forward<VAL>(val); return _self(); }
 
 public:
-	Accessor<C>& operator++() { ++BASE::value(); return _self(); }
-	Accessor<C>& operator--() { --BASE::value(); return _self(); }
+	Accessor<C>& operator++() { ++BASE::data(); return _self(); }
+	Accessor<C>& operator--() { --BASE::data(); return _self(); }
 
 	// doesn't return accessor:
 	auto operator++(int) { return BASE::operator()()++; }
 	auto operator--(int) { return BASE::operator()()--; }
 
-	template<class T> Accessor<C>& operator+=(T&& t) { BASE::value() += std::forward<T>(t); return _self(); }
-	template<class T> Accessor<C>& operator-=(T&& t) { BASE::value() -= std::forward<T>(t); return _self(); }
+	template<class T> Accessor<C>& operator+=(T&& t) { BASE::data() += std::forward<T>(t); return _self(); }
+	template<class T> Accessor<C>& operator-=(T&& t) { BASE::data() -= std::forward<T>(t); return _self(); }
 
 // public:
 // 	auto next() const { auto r = _self(); ++r.iterator(); return r; }
@@ -371,7 +366,7 @@ private:
 			return _self()._get_comparable();
 		}
 		else {
-			return BASE::_handle();
+			return BASE::handle();
 		}
 	}
 

@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include <salgo/3d/io>
+#include <salgo/geom/3d/io>
 
 template<class MESH>
 void add_quad(MESH& mesh, int a, int b, int c, int d) {

@@ -2,7 +2,7 @@
 
 
 
-#include "../common.hpp"
+#include "../../common.hpp"
 
 #include <tinyply.h>
 
@@ -190,7 +190,7 @@ MESH load_ply(FILE_NAME&& file_name) {
 		);
 		(void)p;
 
-		if constexpr(has_member__texcoords<typename MESH::Poly_Vert_Data>) if(p_texcoords_count) {
+		if constexpr(has_member__texcoords<typename MESH::PolyVert_Data>) if(p_texcoords_count) {
 			p.poly_vert(0).data().texcoords = { p_texcoords[i*6 + 0], p_texcoords[i*6 + 1] };
 			p.poly_vert(1).data().texcoords = { p_texcoords[i*6 + 2], p_texcoords[i*6 + 3] };
 			p.poly_vert(2).data().texcoords = { p_texcoords[i*6 + 4], p_texcoords[i*6 + 5] };

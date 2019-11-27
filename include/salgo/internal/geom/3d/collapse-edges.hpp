@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <salgo/3d/solid>
+#include "solid.hpp"
 
 
 namespace salgo {
@@ -10,32 +10,29 @@ namespace salgo {
 
 
 /*
-     C
-    / \
-   /   \
-  A-----B
-   \   /
-    \ /
-     D
+      C                  C
+     / \                 |
+    /   \                |
+X--A-----B--Y   -->   X--A--Y
+    \   /                |
+     \ /                 |
+      D                  D
 */
 //
 // merge 'b' into 'a'
 //
-// if links are present, this effectively collapses edge (if present)
+// if links are present, this effectively collapses edge
 //
 template<class VERT>
-void merge_verts(VERT _a, VERT _b, const typename VERT::Mesh::Scalar& alpha) {
+void merge_verts(VERT a, VERT b, const typename VERT::Mesh::Scalar& alpha) {
 	static_assert(VERT::Mesh::Polys_Erasable, "merge_verts requires POLYS_ERASABLE");
 	static_assert(VERT::Mesh::Has_Vert_Poly_Links, "merge_verts requires VERT_POLY_LINKS");
 
-	// make sure we access verts directly (not e.g. via `poly_verts()`)
-	auto a = _a.vert();
-	auto b = _b.vert();
 
 	// this is optimization, as well as bugfix - without it program will crash in some cases,
 	// because 'a' could become isolated and deleted while this function is still running
 	if constexpr(VERT::Mesh::Has_Vert_Poly_Links) {
-		if(a.vert_polys().count() < b.vert_polys().count()) {
+		if(a.vertPolys().count() < b.vertPolys().count()) {
 			merge_verts(b, a, 1.0 - alpha);
 			return;
 		}
@@ -57,7 +54,7 @@ void merge_verts(VERT _a, VERT _b, const typename VERT::Mesh::Scalar& alpha) {
 		// 	std::cout << "-> " << vp.poly().handle() << std::endl;
 		// }
 
-		for(auto& vp : b.vert_polys()) {
+		for(auto& vp : b.vertPolys()) {
 			//std::cout << "--> " << vp.poly().handle() << std::endl;
 			auto p = vp.poly();
 			vp.change_vert( a ); // invalidates `vp`
@@ -110,18 +107,18 @@ auto clean_flat_surfaces_on_edges(MESH& mesh) {
 		change = false;
 
 		for(auto p : mesh.polys()) {
-			for(auto ab : p.poly_edges()) {
+			for(auto ab : p.polyEdges()) {
 				if(!ab.has_link()) continue;
 
-				auto ba = ab.linked_edge();
+				auto ba = ab.linked_polyEdge();
 
 				// C == D
-				if(ba.next_vert().next().handle() == ab.next_vert().next().handle()) {
+				if(ba.opposite_vert() == ab.opposite_vert()) {
 
 					if(ab.next().has_link() && ba.prev().has_link()) {
 
-						auto cb = ab.next().linked_edge();
-						auto bd = ba.prev().linked_edge();
+						auto cb = ab.next().linked_polyEdge();
+						auto bd = ba.prev().linked_polyEdge();
 
 						if(ba.poly().handle() != cb.poly().handle()) {
 							cb.unlink();
@@ -133,8 +130,8 @@ auto clean_flat_surfaces_on_edges(MESH& mesh) {
 
 					if(ab.prev().has_link() && ba.next().has_link()) {
 
-						auto ac = ab.prev().linked_edge();
-						auto da = ba.next().linked_edge();
+						auto ac = ab.prev().linked_polyEdge();
+						auto da = ba.next().linked_polyEdge();
 
 						if(ab.poly() != da.poly()) {
 							ac.unlink();
@@ -192,12 +189,12 @@ auto fast_collapse_edges(MESH& mesh, const typename MESH::Scalar& max_edge_lengt
 
 			// std::cout << "process poly " << p.handle() << std::endl;
 
-			for(auto& pe : p.poly_edges()) {
+			for(auto& pe : p.polyEdges()) {
 				if(pe.segment().trace().squaredNorm() <= max_edge_length * max_edge_length) {
 					// std::cout << "collapsing edge with length " << pe.segment().trace().norm() << std::endl;
 
-					auto a = pe.prev_vert().vert();
-					auto b = pe.next_vert().vert();
+					auto a = pe.prev_vert();
+					auto b = pe.next_vert();
 
 					auto weight_sum = get_v_weight( a ) + get_v_weight( b );
 

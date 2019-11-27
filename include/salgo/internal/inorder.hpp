@@ -107,11 +107,11 @@ struct Context {
 	private:
 		void increment() {
 			BASE::just_erased = false;
-			HANDLE = bst_next( BASE::accessor() );
+			MUT_HANDLE = bst_next( BASE::accessor() );
 		}
 
 		void decrement() {
-			if(!BASE::just_erased) HANDLE = bst_prev( BASE::accessor() );
+			if(!BASE::just_erased) MUT_HANDLE = bst_prev( BASE::accessor() );
 			BASE::just_erased = false;
 		}
 

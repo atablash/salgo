@@ -55,12 +55,12 @@ class Kd;
 //
 // accessor
 //
-template<class PARAMS, Const_Flag C>
-class Accessor : public Accessor_Base<C,Context<PARAMS>> {
-	using BASE = Accessor_Base<C, Context<PARAMS> >;
+template<class P, Const_Flag C>
+class Accessor : public Accessor_Base<C,Context<P>> {
+	using BASE = Accessor_Base<C, Context<P> >;
 
 	using BASE::BASE; // constructor
-	friend Kd<PARAMS>;
+	friend Kd<P>;
 
 public:
 	// get key
@@ -68,8 +68,8 @@ public:
 	auto& key() const { return CONT._tree[ HANDLE ].kv.key; }
 
 	// get val (explicit)
-	auto& val()       { return BASE::operator()(); }
-	auto& val() const { return BASE::operator()(); }
+	auto& val()       { static_assert(P::Has_Val, "your KD tree does not define any value (only keys)"); return BASE::operator()(); }
+	auto& val() const { static_assert(P::Has_Val, "your KD tree does not define any value (only keys)"); return BASE::operator()(); }
 
 	auto& key_val()       { return CONT._tree[ HANDLE ].kv; }
 	auto& key_val() const { return CONT._tree[ HANDLE ].kv; }
@@ -127,6 +127,11 @@ struct Node {
 	Node(ARGS&&... args) : kv( std::forward<ARGS>(args)... ) {}
 };
 
+GENERATE_HAS_MEMBER(key)
+GENERATE_HAS_MEMBER(val)
+
+GENERATE_HAS_MEMBER(first)
+GENERATE_HAS_MEMBER(second)
 
 //
 // kd
@@ -140,6 +145,7 @@ class Kd {
 
 	using Key = typename P::Key;
 	using Val = typename P::Val;
+	using Key_Val = typename P::Key_Val;
 
 	using Scalar = typename P::Scalar;
 	using Vector = typename P::Vector;
@@ -150,9 +156,36 @@ class Kd {
 	friend Accessor<P, MUTAB>;
 	friend Accessor<P, CONST>;
 
+private:
+	template<class AGG>
+	static constexpr auto _is_kv_like_impl =   has_member__key<AGG> && has_member__val<AGG>;
+
+	template<class AGG>
+	static constexpr auto _is_pair_like_impl = has_member__first<AGG> && has_member__second<AGG>;
+
+	template<class AGG>
+	static constexpr auto _is_kv_like = _is_kv_like_impl< std::remove_reference_t<AGG> >;
+
+	template<class AGG>
+	static constexpr auto _is_pair_like = _is_pair_like_impl< std::remove_reference_t<AGG> >;
+
+	template<class AGG>
+	static constexpr auto _is_kv_or_pair_like =
+		_is_kv_like<AGG> || _is_pair_like<AGG>;
+
 public:
+	auto emplace() {
+		return _emplace();
+	}
+
+	template<class ARG, class... ARGS, REQUIRES( ! _is_kv_or_pair_like<ARG> )>
+	auto emplace(ARG&& arg, ARGS&&... args) {
+		return _emplace( std::forward<ARG>(arg), std::forward<ARGS>(args)... );
+	}
+
+private:
 	template<class... ARGS>
-	auto emplace(ARGS&&... args) {
+	auto _emplace(ARGS&&... args) {
 		// std::cout << "sizeof kd node " << sizeof(Node) << std::endl;
 		auto new_node = _tree.emplace( std::forward<ARGS>(args)... );
 		new_node().aabb = Get_Aabb()( new_node().kv.key );
@@ -193,6 +226,7 @@ public:
 		return Accessor<P, MUTAB>(this, new_node);
 	}
 
+public:
 	auto insert(const Key& key) {
 		static_assert( ! P::Has_Val, "use insert(key,val) instead (or emplace(...))" );
 		return emplace(key);
@@ -204,18 +238,32 @@ public:
 		return emplace(key, val);
 	}
 
+public:
+	// construct from {.key, .val}
+	// construct from {.first, .second}
+	template<class AGG, REQUIRES( _is_kv_or_pair_like<AGG> )>
+	auto emplace(AGG&& agg) {
+		if constexpr( _is_kv_like<AGG> ) {
+			return emplace( std::forward<AGG>(agg).key, std::forward<AGG>(agg).val ); // TODO: is this correct? does it correctly result with r-value ref?
+		}
+		if constexpr( _is_pair_like<AGG> ) {
+			return emplace( std::forward<AGG>(agg).first, std::forward<AGG>(agg).second ); // TODO: is this correct? does it correctly result with r-value ref?
+		}
+	}
+
+
 	auto find_closest_center(const Vector& vec) const {
 		auto root = _tree( _root );
 		if(!root.exists()) return Accessor<P, CONST>(this, root);
 
-		auto best = std::get<0>( find_closest_center_impl(vec, _tree(Handle()), std::numeric_limits<Scalar>::max(), root, 0) );
+		auto best = std::get<0>( _find_closest_center_impl(vec, _tree(Handle()), std::numeric_limits<Scalar>::max(), root, 0) );
 
 		return Accessor<P, CONST>(this, best);
 	}
 
 private:
 	template<class VEC, class CAND_NODE>
-	auto find_closest_center_impl(const VEC& vec, CAND_NODE best, Scalar best_dist_sqr, const CAND_NODE& node, int axis) const {
+	auto _find_closest_center_impl(const VEC& vec, CAND_NODE best, Scalar best_dist_sqr, const CAND_NODE& node, int axis) const {
 		if(!node.exists()) return std::tuple{best, best_dist_sqr};
 
 		auto cand_dist_sqr = (node().aabb.center() - vec).squaredNorm();
@@ -225,15 +273,54 @@ private:
 		}
 
 		if(node.has_left()  && vec[axis] - node().l_to <= best_dist_sqr) { // TODO: add epsilon?
-			std::tie(best, best_dist_sqr) = find_closest_center_impl(vec, best, best_dist_sqr, node.left(), (axis+1) % P::Dim);
+			std::tie(best, best_dist_sqr) = _find_closest_center_impl(vec, best, best_dist_sqr, node.left(), (axis+1) % P::Dim);
 		}
 
 		if(node.has_right() && node().r_fr - vec[axis] <= best_dist_sqr) { // TODO: add epsilon?
-			std::tie(best, best_dist_sqr) = find_closest_center_impl(vec, best, best_dist_sqr, node.right(), (axis+1) % P::Dim);
+			std::tie(best, best_dist_sqr) = _find_closest_center_impl(vec, best, best_dist_sqr, node.right(), (axis+1) % P::Dim);
 		}
 
 		return std::tuple{best, best_dist_sqr};
 	}
+
+public:
+	template<class AABB, class FUN>
+	void each_intersecting(const AABB& aabb, const FUN& fun) {
+		_each_intersecting<MUTAB>(aabb, fun, _tree(_root), 0);
+	}
+
+	template<class AABB, class FUN>
+	void each_intersecting(const AABB& aabb, const FUN& fun) const {
+		const_cast<Kd*>(this)->_each_intersecting<CONST>(aabb, fun, _tree(_root), 0);
+	}
+
+private:
+	template<Const_Flag C, class AABB, class FUN, class ND>
+	void _each_intersecting(const AABB& aabb, const FUN& fun, const ND& node, int axis) {
+		// warning: we're const-casted here, so need to respect `Const_Flag C`
+		{
+			auto accessor = Accessor<P, C>(this, node);
+			if(node().aabb.intersects(aabb)) fun( accessor );
+		}
+
+		if(node.has_left() && node().l_to >= aabb.min()[axis]) {
+			_each_intersecting<C>(aabb, fun, node.left(), (axis+1) % P::Dim);
+		}
+
+		if(node.has_right() && node().r_fr <= aabb.max()[axis]) {
+			_each_intersecting<C>(aabb, fun, node.right(), (axis+1) % P::Dim);
+		}
+	}
+
+	// each_contained()
+	// each_containing()
+
+public:
+	auto operator()(const Handle& handle)       { return Accessor<P, MUTAB>(this, handle); }
+	auto operator()(const Handle& handle) const { return Accessor<P, CONST>(this, handle); }
+
+	auto& operator[](const Handle& handle)       { return _tree[ handle ].kv.val; }
+	auto& operator[](const Handle& handle) const { return _tree[ handle ].kv.val; }
 };
 
 

@@ -105,9 +105,6 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Accessor, BASE) {}
 		friend Vector;
 
-		using BASE::container;
-		using BASE::_handle;
-
 	public:
 		using BASE::operator=;
 
@@ -115,15 +112,15 @@ struct Context {
 		void construct(ARGS&&... args) {
 			static_assert(C == MUTAB, "called construct() on CONST accessor");
 			static_assert(Sparse);
-			CONT._check_bounds( _handle() );
-			CONT._mb( _handle() ).construct( std::forward<ARGS>(args)... );
+			CONT._check_bounds( HANDLE );
+			CONT._mb( HANDLE ).construct( std::forward<ARGS>(args)... );
 		}
 
 		void destruct() {
 			static_assert(C == MUTAB, "called destruct() on CONST accessor");
 			static_assert(Sparse);
-			CONT._check_bounds( _handle() );
-			CONT._mb( _handle() ).destruct();
+			CONT._check_bounds( HANDLE );
+			CONT._mb( HANDLE ).destruct();
 		}
 
 		void erase() {
@@ -132,14 +129,14 @@ struct Context {
 
 		// assumes element is in bounds
 		bool constructed() const {
-			CONT._check_bounds( _handle() );
+			CONT._check_bounds( HANDLE );
 			if constexpr(Dense) return true;
-			else return CONT._mb( _handle() ).constructed();
+			else return CONT._mb( HANDLE ).constructed();
 		}
 
 		// same as `constructed()`, but also checks bounds
 		bool exists_SLOW() const {
-			if(!CONT._is_in_bounds( _handle() )) return false;
+			if(!CONT._is_in_bounds( HANDLE )) return false;
 			return constructed();
 		}
 
@@ -166,18 +163,15 @@ struct Context {
 		FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 		friend Vector;
 
-		using BASE::container;
-		using BASE::_handle;
-
 	private:
 		friend Iterator_Base<C,Context>;
 
 		void _increment() {
-			do ++_handle(); while( (int)_handle() != CONT.domain() && !CONT( _handle() ).constructed() );
+			do ++MUT_HANDLE; while( (int)HANDLE != CONT.domain() && !ACC.constructed() );
 		}
 
 		void _decrement() {
-			do --_handle(); while( !CONT( _handle() ).constructed() );
+			do --MUT_HANDLE; while( !ACC.constructed() );
 		}
 
 	public:

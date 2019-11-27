@@ -1,3 +1,0 @@
-#pragma once
-
-#include <salgo/internal/3d/collapse-edges.hpp>

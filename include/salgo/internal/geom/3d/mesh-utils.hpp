@@ -113,21 +113,24 @@ auto compute_poly_normal(POLY p) {
 
 template< class POLY >
 void remove_if_degenerate(POLY poly) {
-	for(auto& v : poly.verts()) {
-		auto w = v.next();
+	for(auto& pv : poly.polyVerts()) {
+		auto pw = pv.next();
+
+		auto v = pv.vert();
+		auto w = pw.vert();
 
 		if(v == w) {
 			// yes, remove
 			if constexpr(POLY::Mesh::Has_Edge_Links) {
-				v.next_poly_edge().unlink_if_linked();
+				pv.next_polyEdge().unlink_if_linked();
 
 				// note: in some corner-cases poly can be edge-linked to itself
 				// it's generally not good situation to work with, but this function should support this anyway
 
-				auto vv = v.prev_poly_edge().linked_edge();
+				auto vv = pv.prev_polyEdge().linked_polyEdge();
 				if(vv.exists()) vv.unlink();
 
-				auto ww = w.next_poly_edge().linked_edge();
+				auto ww = pw.next_polyEdge().linked_polyEdge();
 				if(ww.exists()) ww.unlink();
 
 				if(vv.exists() && ww.exists()) {
@@ -150,7 +153,7 @@ template<class MESH>
 void remove_isolated_verts(MESH& mesh) {
 	if constexpr(MESH::Has_Vert_Poly_Links) {
 		for(auto& v : mesh.verts()) {
-			if(v.polys().empty()) v.fast_erase();
+			if(v.vertPolys().empty()) v.fast_erase();
 		}
 	}
 	else {
@@ -164,7 +167,7 @@ template<class MESH>
 bool has_isolated_verts(const MESH& mesh) {
 	if constexpr(MESH::Has_Vert_Poly_Links) {
 		for(auto& v : mesh.verts()) {
-			if(v.polys().empty()) return true;
+			if(v.vertPolys().empty()) return true;
 		}
 		return false;
 	}
@@ -180,3 +183,21 @@ bool has_isolated_verts(const MESH& mesh) {
 	}
 }
 
+
+// merge `a` into `b`
+template<class A, class B>
+void mesh_vert_merge(A a, B b) {
+	auto num_before = b.mesh().verts().count();
+
+	for(auto& vp : a.vertPolys()) {
+		vp.change_vert( b );
+	}
+
+	DCHECK_EQ( a.vertPolys().count(), 0 );
+
+	a.fast_erase();
+
+	auto num_after = b.mesh().verts().count();
+
+	DCHECK_EQ(num_before - 1, num_after);
+}
