@@ -261,7 +261,7 @@ void append(MESH& mesh, const OTHER& other) {
             v_remap[ p.vert(2) ]
         );
 
-		(void)new_poly;
+		(void)new_poly; // unused warning
 
         if constexpr(MESH::Has_Poly_Data) new_poly.data() = p.data();
 

@@ -3,6 +3,7 @@
 #include "../named-arguments.hpp"
 
 #include "../../segment.hpp"
+#include "../../triangle.hpp"
 
 #include "../../../helper-macros-on.inc"
 
@@ -255,7 +256,7 @@ struct Polys_Context : private P {
 		auto polyEdges() const {  return P::template create_polyEdges_accessor<CONST>(CONT, HANDLE);  }
 
 
-		auto get_aabb() const {
+		auto aabb() const {
 			auto a = vert(0).pos().array();
 			auto b = vert(1).pos().array();
 			auto c = vert(2).pos().array();
@@ -263,6 +264,14 @@ struct Polys_Context : private P {
 			return Eigen::AlignedBox<Scalar,3> {
 				a.min(b).min(c),
 				a.max(b).max(c)
+			};
+		}
+
+		auto triangle() const {
+			return Triangle<Scalar,3> {
+				vert(0).pos(),
+				vert(1).pos(),
+				vert(2).pos()
 			};
 		}
 

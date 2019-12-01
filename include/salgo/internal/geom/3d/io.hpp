@@ -91,8 +91,8 @@ GENERATE_HAS_MEMBER(color);
 GENERATE_HAS_MEMBER(texcoords);
 
 
-template<class MESH, class FILE_NAME>
-MESH load_ply(FILE_NAME&& file_name) {
+template<class MESH>
+MESH load_ply(const std::string& file_name) {
 	
 	using namespace ::tinyply;
 	using namespace std;
@@ -100,7 +100,13 @@ MESH load_ply(FILE_NAME&& file_name) {
 	
 	// Read the file and create a std::istringstream suitable
 	// for the lib -- tinyply does not perform any file i/o.
-	std::ifstream ss(file_name, std::ios::binary);
+	std::cout << "opening " << file_name << std::endl;
+	std::ifstream ss(file_name.c_str(), std::ios::binary);
+
+	if(!ss.good()) {
+		std::cerr << "Failed to open " << file_name << strerror(errno) << std::endl;
+		return MESH();
+	}
 
 	// Parse the ASCII header fields
 	PlyFile file(ss);

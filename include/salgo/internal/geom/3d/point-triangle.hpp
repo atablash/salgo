@@ -1,6 +1,6 @@
 #pragma once
 
-namespace salgo {
+namespace salgo::geom::geom_3d {
 
 
 
@@ -8,10 +8,13 @@ namespace salgo {
 // ignores case when `point`'s projection is outside `triangle`
 template<class TRI, class Vector>
 auto orient_point_triangle(const Vector& point, const TRI& triangle) {
-    using Scalar = std::remove_reference_t< decltype(point[0]) >;
+    using Scalar = std::remove_cv_t<
+		std::remove_reference_t< decltype(point[0]) >
+	>;
 
     struct Result {
-        Scalar dist_sqr = std::numeric_limits<F>::max();
+        Scalar dist_sqr = std::numeric_limits<Scalar>::max();
+        Scalar dist     = std::numeric_limits<Scalar>::max();
     };
     Result result;
 
@@ -22,25 +25,26 @@ auto orient_point_triangle(const Vector& point, const TRI& triangle) {
 	Vector AP = triangle.vert(0) - point;
 	Vector BP = triangle.vert(1) - point;
 
-	Scalar pab = normal * AP.cross(BP);
+	Scalar pab = AP.cross(BP).dot(normal);
 	if (pab < 0) return result;
 
 	Vector CP = triangle.vert(2) - point;
 
-	Scalar pbc = normal * BP.cross(CP);
+	Scalar pbc = BP.cross(CP).dot(normal);
 	if (pbc < 0) return result;
 
-	Scalar pca = normal * CP.cross(AP);
+	Scalar pca = CP.cross(AP).dot(normal);
 	if (pca < 0) return result;
 
 	// optim todo: use lagrange identity: Real-Time Collision Detection, page 140
 
-	Scalar R = (
+	Vector R = (
         triangle.vert(0) * pbc +
         triangle.vert(1) * pca +
         triangle.vert(2) * pab) / (pab + pbc + pca);
 
 	result.dist_sqr = (point - R).squaredNorm();
+	result.dist = sqrt(result.dist_sqr);
 	return result;
 }
 

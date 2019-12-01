@@ -1,0 +1,3 @@
+#pragma once
+
+#include <salgo/internal/geom/3d/point-triangle.hpp>
