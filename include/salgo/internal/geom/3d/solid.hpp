@@ -113,7 +113,7 @@ auto check_solid(const MESH& mesh, Check_Solid_Flags flags = Check_Solid_Flags::
 template <class MESH>
 auto is_solid(const MESH& mesh, Check_Solid_Flags flags = Check_Solid_Flags::NONE) {
 	auto r = check_solid(mesh, flags);
-	std::cout << "check_solid_result " << (int)r.failure << std::endl;
+	// std::cout << "check_solid_result " << (int)r.failure << std::endl;
 	return r.is_solid;
 }
 

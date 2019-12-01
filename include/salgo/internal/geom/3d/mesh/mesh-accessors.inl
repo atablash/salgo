@@ -313,7 +313,7 @@ struct Polys_Context : private P {
 				}
 			}
 
-			std::cout << "erase poly " << this->handle() << std::endl;
+			// std::cout << "erase poly " << this->handle() << std::endl;
 
 			if constexpr(args.has(ON_POLY_ERASE)) {
 				args(ON_POLY_ERASE)(*this);
