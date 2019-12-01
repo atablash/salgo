@@ -1,8 +1,9 @@
+#include "resources.hpp"
+
 #include <salgo/geom/3d/mesh>
 #include <salgo/geom/3d/solid>
 #include <salgo/geom/3d/cap-holes>
 #include <salgo/geom/3d/collapse-edges>
-#include <salgo/geom/3d/io>
 
 #include <gtest/gtest.h>
 
@@ -35,13 +36,9 @@ TEST(Fast_collapse_edges, sphere_solid) {
 }
 
 
-auto& get_bunny() {
-	static const auto bunny = load_ply<M>("resources/bunny-holes.ply");
-	return bunny;
-}
 
 TEST(Fast_collapse_edges, bunny_ply) {
-	auto mesh = get_bunny();
+	M mesh = get_bunny_holes();
 
 	erase_isolated_verts(mesh);
 	EXPECT_NE( 0, mesh.verts().domain() );
@@ -61,7 +58,7 @@ TEST(Fast_collapse_edges, bunny_ply) {
 
 
 TEST(Fast_collapse_edges, bunny_ply_solid) {
-	auto mesh = get_bunny();
+	M mesh = get_bunny_holes();
 	
 	erase_isolated_verts(mesh);
 	EXPECT_NE( 0, mesh.verts().domain() );

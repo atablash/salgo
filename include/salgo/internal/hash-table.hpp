@@ -353,15 +353,34 @@ struct Context {
 
 
 
-	public:
+	public: // todo: remove duplicates, add REQUIRES(kv_like) - similar implementation in kd-tree
 		auto emplace(      Key_Val&  kv) { return emplace_kv( kv ); }
 		auto emplace(const Key_Val&  kv) { return emplace_kv( kv ); }
 		auto emplace(      Key_Val&& kv) { return emplace_kv( std::move(kv) ); }
 		auto emplace(const Key_Val&& kv) { return emplace_kv( std::move(kv) ); }
 
+	public: // todo: remove duplicates, add REQUIRES(kv_like) - similar implementation in kd-tree
+		auto emplace_if_not_found(      Key_Val&  kv) { return emplace_kv_inf( kv ); }
+		auto emplace_if_not_found(const Key_Val&  kv) { return emplace_kv_inf( kv ); }
+		auto emplace_if_not_found(      Key_Val&& kv) { return emplace_kv_inf( std::move(kv) ); }
+		auto emplace_if_not_found(const Key_Val&& kv) { return emplace_kv_inf( std::move(kv) ); }
+
 	private:
 		template<class KV>
 		auto emplace_kv(KV&& kv) {
+			if constexpr(Has_Val) {
+				return emplace( std::forward<KV>(kv).key, std::forward<KV>(kv).val );
+			}
+			else {
+				return emplace( std::forward<KV>(kv).key );
+			}
+		}
+
+		template<class KV>
+		auto emplace_kv_inf(KV&& kv) {
+			auto r = operator()( kv.key );
+			if(r.found()) return r;
+
 			if constexpr(Has_Val) {
 				return emplace( std::forward<KV>(kv).key, std::forward<KV>(kv).val );
 			}
@@ -382,6 +401,13 @@ struct Context {
 		}
 
 	public:
+		template<class K, class... V>
+		auto emplace_if_not_found(K&& k, V&&... v) {
+			auto r = operator()( k );
+			if(r.found()) return r;
+			else return emplace( std::forward<K>(k), std::forward<V>(v)... );
+		}
+
 		template<class K, class... V>
 		auto emplace(K&& k, V&&... v) {
 

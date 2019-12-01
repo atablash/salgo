@@ -1,3 +1,5 @@
+#include "resources.hpp"
+
 #include <salgo/geom/3d/mesh>
 #include <salgo/geom/3d/solid>
 #include <salgo/geom/3d/cap-holes>
@@ -41,7 +43,7 @@ TEST(Cap_holes, sphere_holes_ply) {
 
 TEST(Cap_holes, bunny_holes_ply) {
 
-	auto mesh = load_ply<MyMesh>("resources/bunny-holes.ply");
+	MyMesh mesh = get_bunny_holes();
 	EXPECT_FALSE(mesh.verts().empty());
 
 	fast_compute_edge_links(mesh);

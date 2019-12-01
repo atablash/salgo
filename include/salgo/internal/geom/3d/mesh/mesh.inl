@@ -7,6 +7,7 @@
 
 // geom/3d
 #include "../named-arguments.hpp"
+#include "../mesh-utils.hpp"
 
 // geom
 #include "../../segment.hpp"
@@ -139,6 +140,16 @@ public:
 	auto polys()       {  return P::template create_polys_accessor<MUTAB>(*this);  }
 	auto polys() const {  return P::template create_polys_accessor<CONST>(*this);  }
 
+public:
+	Mesh() = default;
+	Mesh(const Mesh&) = default;
+	Mesh(Mesh&&) = default;
+
+	template<class OP>
+	Mesh(const Mesh<OP>& o) {
+		append(*this, o);
+	}
+
 }; // class Mesh
 
 
@@ -151,6 +162,8 @@ public:
 
 template<class P>
 struct With_Builder : Mesh<P> {
+	using Mesh<P>::Mesh;
+
 	using typename P::Scalar;
 	using typename P::Vert_Data;
 	using typename P::Subvert_Data;

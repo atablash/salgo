@@ -1,4 +1,6 @@
 add_executable( salgo-unit-tests-3d
+    resources.cpp
+
     compute-normals.cpp
     cap-holes.cpp
     collapse-edges.cpp
