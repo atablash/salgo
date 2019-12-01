@@ -425,7 +425,7 @@ static void run_sparse_vector_common(VEC& v, int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = rand() % N;
 
-			if(v(ii).exists()) {
+			if(v(ii).found()) {
 				v(ii)() = rand();
 				if(rand()%2) v(ii).destruct();
 			}
@@ -434,7 +434,7 @@ static void run_sparse_vector_common(VEC& v, int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = rand() % N;
 
-			if(v(ii).exists()) result += v(ii)();
+			if(v(ii).found()) result += v(ii)();
 		}
 	}
 
@@ -503,7 +503,7 @@ static void run_sparse_vector_index(int N, int type) {
 		}
 
 		for(int i=0; i<N; ++i) {
-			if(v(i).exists()) result += v(i)();
+			if(v(i).found()) result += v(i)();
 		}
 	}
 	else {
@@ -511,7 +511,7 @@ static void run_sparse_vector_index(int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = rand() % N;
 
-			if(v(ii).exists()) {
+			if(v(ii).found()) {
 				v(ii)() = rand();
 				if(rand()%2) v(ii).destruct();
 			}
@@ -520,7 +520,7 @@ static void run_sparse_vector_index(int N, int type) {
 		for(int i=0; i<N; ++i) {
 			int ii = rand() % N;
 
-			if(v(ii).exists()) result += v(ii)();
+			if(v(ii).found()) result += v(ii)();
 		}
 	}
 

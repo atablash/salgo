@@ -16,7 +16,7 @@
 
 
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 namespace salgo {
 
 
@@ -287,7 +287,7 @@ using Random_Allocator = typename internal::random_allocator::Context<
 
 
 } // namespace salgo
-#include "helper-macros-off"
+#include "helper-macros-off.inc"
 
 
 

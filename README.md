@@ -51,10 +51,11 @@ Contents
 		* [Crude_Allocator](doc/CRUDE-ALLOCATOR.md)
 		* [Salgo_From_Std_Allocator](doc/SALGO-FROM-STD-ALLOCATOR.md) - adapter for `std` compatible allocators
 	* Other
+		* [Named_Arguments](doc/NAMED-ARGUMENTS.md) - named arguments for functions
 		* Modulo - TODO, but see tests
 		* Binomial - TODO, but see tests
 		* Inplace_Storage - TODO, but see tests
-
+* [Design Choices / Issues](#design-choices-issues)
 
 
 Library Design
@@ -336,23 +337,9 @@ No such thing. Google doesn't care, neither do I.
 
 
 
-
-Reference
-=========
-Apart from the following reference, you can also read the code in `test` directory to learn how to use Salgo from unit tests.
-
-* Containers
-	* [Vector](doc/VECTOR.md) - a replacement for `std::vector`
-	* [Memory_Block](doc/MEMORY-BLOCK.md) - similar to `Vector`, but without automatic grow
-	* [Chunked_Vector](doc/CHUNKED-VECTOR.md)
-	* [Hash_Table](doc/HASH-TABLE.md) - a replacement for `std::map` and `std::set`
-	* [List](doc/LIST.md) - a replacement for `std::list`
-* Allocators
-	* [Vector_Allocator](doc/VECTOR-ALLOCATOR.md) - the default Salgo allocator
-	* [Random_Allocator](doc/RANDOM-ALLOCATOR.md)
-	* [Crude_Allocator](doc/CRUDE-ALLOCATOR.md)
-	* [Salgo_From_Std_Allocator](doc/SALGO-FROM-STD-ALLOCATOR.md) - adapter for `std` compatible allocators
-
-
-
-
+Design Choices / Issues
+=======================
+* There's little compatibility with *STL* iterators.
+	* Dereferencing an *Iterator* results in *Accessor*, therefore assignment operator won't work as expected - this causes functions like `std::sort` to break.
+	* The `.begin()` and `.end()` interface in Salgo containers is meant only for the purposes of *scoped-for*. You should never use this interface in your code directly.
+	* Special empty dummy `End_Iterator` types for `.end()` are used in many containers, especially tree-based. This iterator has no data members, it's effectively state-less. It's assumed to always point to container's end, even if new elements are pushed.

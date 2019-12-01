@@ -26,6 +26,16 @@ public:
 		return _verts[1] - _verts[0];
 	}
 
+	auto        length() const { return trace().       norm(); }
+	auto squaredLength() const { return trace().squaredNorm(); }
+
+	auto get_aabb() const {
+		return Eigen::AlignedBox<Scalar,Dim>{
+			_verts[0].array().min( _verts[1].array() ),
+			_verts[0].array().max( _verts[1].array() )
+		};
+	}
+
 	auto verts()       { return _verts; }
 	auto verts() const { return _verts; }
 

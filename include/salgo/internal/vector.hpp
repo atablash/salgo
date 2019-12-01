@@ -9,7 +9,7 @@
 #include "memory-block.hpp"
 
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 
 
 namespace salgo {
@@ -596,7 +596,7 @@ using Vector = typename internal::vector::Context<
 
 } // namespace salgo
 
-#include "helper-macros-off"
+#include "helper-macros-off.inc"
 
 
 

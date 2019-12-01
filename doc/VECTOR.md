@@ -141,6 +141,12 @@ Grow factor is `1.5` for Salgo.
 
 
 
+More Examples
+-------------
+See `test/vector.cpp` and `vector-sparse.cpp` for more usage examples.
+
+
+
 
 TODO
 ----

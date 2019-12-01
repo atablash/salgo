@@ -7,7 +7,7 @@
 
 #include <glog/logging.h>
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 
 namespace salgo {
 
@@ -306,4 +306,4 @@ using Unordered_Vector = typename internal::unordered_vector::Context<
 
 }
 
-#include "helper-macros-off"
+#include "helper-macros-off.inc"

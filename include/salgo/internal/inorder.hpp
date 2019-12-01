@@ -4,7 +4,7 @@
 
 
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 namespace salgo {
 
 
@@ -142,12 +142,12 @@ struct Context {
 
 	public:
 		Inorder(const typename Container::template Accessor<MUTAB>& v) : root(v) {
-			DCHECK( !root.parent().exists() );
+			DCHECK( root.has_no_parent() );
 		}
 
 		auto begin() {
 			auto first = root;
-			while( first.left().exists() ) {
+			while( first.has_left() ) {
 				LOG(INFO) << "go left";
 				first = first.left();
 			}
@@ -188,6 +188,6 @@ auto Inorder(const V& root) {
 
 
 } // namespace salgo
-#include "helper-macros-off"
+#include "helper-macros-off.inc"
 
 

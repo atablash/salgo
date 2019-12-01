@@ -9,21 +9,21 @@ namespace salgo {
 
 template<class V>
 auto bst_next(const V& v) {
-	DCHECK(v.exists());
+	DCHECK(v.valid());
 
 	auto curr = v;
 
-	if(curr.right().exists()) {
+	if(curr.has_right()) {
 		// go 1 right and n left
 		curr = curr.right();
-		while(curr.left().exists()) curr = curr.left();
+		while(curr.has_left()) curr = curr.left();
 		return curr;
 	}
 	else {
 		// go n up-left and 1 up-right
 		for(;;) {
 			//DCHECK(curr.has_parent());
-			if(!curr.parent().exists() || curr.is_left()) return curr.parent(); 
+			if(curr.has_no_parent() || curr.is_left()) return curr.parent(); 
 			curr = curr.parent();
 		}
 	}
@@ -32,14 +32,14 @@ auto bst_next(const V& v) {
 
 template<class V>
 auto bst_prev(const V& v) {
-	DCHECK(v.exists());
+	DCHECK(v.valid());
 
 	auto curr = v;
 
-	if(curr.left().exists()) {
+	if(curr.has_left()) {
 		// go 1 left and n right
 		curr = curr.left();
-		while(curr.right().exists()) curr = curr.right();
+		while(curr.has_right()) curr = curr.right();
 		return curr;
 	}
 	else {
@@ -58,10 +58,10 @@ auto bst_prev(const V& v) {
 // try to cut out node (possible if max 1 child)
 template<class V>
 bool bst_cut_out(V& v) {
-	DCHECK(v.exists());
+	DCHECK(v.valid());
 
-	if(!v.right().exists()) {
-		if(!v.parent().exists()) {
+	if(v.has_no_right()) {
+		if(v.has_no_parent()) {
 			v.unlink_and_erase(); // optim?
 			return true;
 		}
@@ -69,10 +69,10 @@ bool bst_cut_out(V& v) {
 		auto parent = v.parent();
 		auto ch = v.is_which();
 
-		if(v.left().exists()) parent.relink_child(ch, v.left());
+		if(v.has_left()) parent.relink_child(ch, v.left());
 	}
-	else if(!v.left().exists()) {
-		if(!v.parent().exists()) {
+	else if(!v.has_left()) {
+		if(v.has_no_parent()) {
 			v.unlink_and_erase(); // optim?
 			return true;
 		}
@@ -80,7 +80,7 @@ bool bst_cut_out(V& v) {
 		auto parent = v.parent();
 		auto ch = v.is_which();
 
-		if(v.right().exists()) parent.relink_child(ch, v.right());
+		if(v.has_right()) parent.relink_child(ch, v.right());
 	}
 	else {
 		return false;
@@ -97,7 +97,7 @@ bool bst_cut_out(V& v) {
 // remove node and replace the hole with prev element
 template<class V>
 void bst_erase(V& v) {
-	DCHECK(v.exists());
+	DCHECK(v.valid());
 
 	if( bst_cut_out(v) ) return;
 

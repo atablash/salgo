@@ -8,7 +8,7 @@
 
 #include "common.hpp"
 
-using namespace salgo;
+using namespace salgo::geom::geom_3d;
 
 
 
@@ -20,7 +20,7 @@ using M = Mesh<double> ::EDGE_LINKS ::VERT_POLY_LINKS ::POLYS_ERASABLE ::VERTS_E
 
 TEST(Fast_collapse_edges, sphere_solid) {
 	auto mesh = load_ply<M>("resources/sphere-holes.ply");
-	remove_isolated_verts(mesh);
+	erase_isolated_verts(mesh);
 	EXPECT_NE( 0, mesh.verts().domain() );
 	EXPECT_TRUE( is_solid(mesh, Check_Solid_Flags::ALLOW_HOLES) );
 
@@ -43,7 +43,7 @@ auto& get_bunny() {
 TEST(Fast_collapse_edges, bunny_ply) {
 	auto mesh = get_bunny();
 
-	remove_isolated_verts(mesh);
+	erase_isolated_verts(mesh);
 	EXPECT_NE( 0, mesh.verts().domain() );
 
 	fast_compute_edge_links(mesh);
@@ -63,7 +63,7 @@ TEST(Fast_collapse_edges, bunny_ply) {
 TEST(Fast_collapse_edges, bunny_ply_solid) {
 	auto mesh = get_bunny();
 	
-	remove_isolated_verts(mesh);
+	erase_isolated_verts(mesh);
 	EXPECT_NE( 0, mesh.verts().domain() );
 
 	fast_compute_edge_links(mesh);

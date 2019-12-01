@@ -18,6 +18,8 @@ struct Int_Handle_Base {
 	explicit Int_Handle_Base(INT new_key) : a(new_key) {}
 
 	bool valid() const { return a != default_value; }
+	bool not_valid() const { return ! valid(); }
+
 	void reset() { a = default_value; }
 
 	bool operator==(const CRTP& o) const { return a == o.a; }

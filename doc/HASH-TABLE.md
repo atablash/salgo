@@ -6,7 +6,7 @@ To use as a set (only keys):
 
 ```cpp
 	Hash_Table<int> s = {11, 22, 33, 44, 55};
-	cout << s(34).exists() << endl; // false
+	cout << s(34).found() << endl; // false
 	s(33).erase(); // now {11, 22, 44, 55}
 ```
 
@@ -84,6 +84,12 @@ Comparing to `std::unordered_multiset` from `libstdc++`.
 |FIND_ERASE        |64 ns    |134 ns      |
 |ITERATE           |7 ns     |30 ns       |
 
+
+
+
+More Examples
+-------------
+See `test/hash-table.cpp` for more usage examples.
 
 
 

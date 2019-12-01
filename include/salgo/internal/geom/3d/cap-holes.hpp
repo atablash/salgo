@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "mesh.hpp"
+#include "mesh/mesh.inl"
 #include "mesh-utils.hpp"
 
 #include "../../list.hpp"
@@ -10,7 +10,7 @@
 #include <map>
 
 
-namespace salgo {
+namespace salgo::geom::geom_3d {
 
 
 
@@ -67,7 +67,7 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 	auto add_cand = [&](const auto& h_perim_0) {
 		auto perim_0 = perimeter( h_perim_0 );
 		auto perim_1 = perim_0.next();
-		if(perim_1.not_exists()) perim_1 = perimeter(FIRST);
+		if(perim_1.not_found()) perim_1 = perimeter(FIRST);
 
 		auto v0 = m(perim_0);
 		auto v1 = m(perim_1);
@@ -85,7 +85,7 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 
 		auto it = where_cands(e);
 
-		DCHECK(it.exists()) << "edge not found in where_cands";
+		DCHECK(it.found()) << "edge not found in where_cands";
 		DCHECK(it.val() != cands.end()) << "edge not found in cands";
 
 		cands.erase( it.val() );
@@ -95,7 +95,7 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 
 	auto he = edge.handle();
 	do {
-		while(m(he).next().has_link()) {
+		while(m(he).next().is_linked()) {
 			he = m(he).next().linked_polyEdge();
 		}
 
@@ -119,7 +119,7 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 
 		// get next edge in perimeter
 		auto next = curr.next();
-		if(next.not_exists()) next = perimeter(FIRST);
+		if(next.not_found()) next = perimeter(FIRST);
 
 		DCHECK_EQ( m(curr).next_vert(), m(next).prev_vert() ) << "edges not adjacent";
 
@@ -139,7 +139,7 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 
 		// get prev edge in perimeter
 		auto prev = curr.prev();
-		if(prev.not_exists()) prev = perimeter(LAST);
+		if(prev.not_found()) prev = perimeter(LAST);
 
 		// insert new edge
 		auto new_edge = curr.emplace_before(p.polyEdge(0));
@@ -192,7 +192,7 @@ Cap_Holes_Result cap_holes(MESH& mesh) {
 
 	for(auto& p : mesh.polys()) {
 		for(auto& pe : p.polyEdges()) {
-			if(!pe.has_link()) {
+			if(!pe.is_linked()) {
 				auto lr = cap_hole(pe);
 				++r.num_holes_capped;
 				r.num_polys_created += lr.num_polys_created;

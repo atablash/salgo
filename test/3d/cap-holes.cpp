@@ -7,7 +7,7 @@
 
 #include "common.hpp"
 
-using namespace salgo;
+using namespace salgo::geom::geom_3d;
 
 
 

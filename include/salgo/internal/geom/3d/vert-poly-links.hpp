@@ -4,7 +4,7 @@
 
 #include <unordered_set>
 
-
+namespace salgo::geom::geom_3d {
 
 
 
@@ -69,3 +69,5 @@ void compute_vert_poly_links(MESH& mesh) {
 */
 
 
+
+} // namespace salgo::geom::geom_3d

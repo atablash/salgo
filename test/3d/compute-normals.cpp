@@ -6,9 +6,9 @@
 
 #include <gtest/gtest.h>
 
+#include <Eigen/Dense>
 
-
-using namespace salgo;
+using namespace salgo::geom::geom_3d;
 
 
 

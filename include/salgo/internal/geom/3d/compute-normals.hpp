@@ -5,7 +5,7 @@
 #include <vector>
 
 
-namespace salgo {
+namespace salgo::geom::geom_3d {
 
 
 
@@ -18,25 +18,25 @@ void fast_compute_vert_normals( MESH& mesh,
 
 	std::vector<int> nums( mesh.verts().domain() );
 
-	for(auto v : mesh.verts()) {
+	for(auto& v : mesh.verts()) {
 		// DLOG(INFO) << "v";
 		get_v_normal( v.handle() ) = {0,0,0};
 	}
 
-	for(auto p : mesh.polys()) {
+	for(auto& p : mesh.polys()) {
 		// DLOG(INFO) << "p";
 		auto v01 = p.vert(1).pos() - p.vert(0).pos();
 		auto v02 = p.vert(2).pos() - p.vert(0).pos();
 		auto normal = v01.cross(v02);
 		normal.normalize();
 
-		for(auto pv : p.polyVerts()) {
+		for(auto& pv : p.polyVerts()) {
 			get_v_normal( pv.vert().handle() ) += normal;
 			++nums[ pv.vert().handle() ];
 		}
 	}
 
-	for(auto v : mesh.verts()) {
+	for(auto& v : mesh.verts()) {
 		if(nums[ v.handle() ] > 0) {
 			get_v_normal( v.handle() ) /= nums[ v.handle() ];
 			get_v_normal( v.handle() ).normalize();

@@ -1,6 +1,8 @@
 #pragma once
 
-namespace salgo {
+#include "../../hash-table.hpp"
+
+namespace salgo::geom::geom_3d {
 
 
 

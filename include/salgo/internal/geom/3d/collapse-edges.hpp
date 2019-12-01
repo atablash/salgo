@@ -2,79 +2,10 @@
 
 
 #include "solid.hpp"
+#include "merge-verts.hpp"
 
 
-namespace salgo {
-
-
-
-
-/*
-      C                  C
-     / \                 |
-    /   \                |
-X--A-----B--Y   -->   X--A--Y
-    \   /                |
-     \ /                 |
-      D                  D
-*/
-//
-// merge 'b' into 'a'
-//
-// if links are present, this effectively collapses edge
-//
-template<class VERT>
-void merge_verts(VERT a, VERT b, const typename VERT::Mesh::Scalar& alpha) {
-	static_assert(VERT::Mesh::Polys_Erasable, "merge_verts requires POLYS_ERASABLE");
-	static_assert(VERT::Mesh::Has_Vert_Poly_Links, "merge_verts requires VERT_POLY_LINKS");
-
-
-	// this is optimization, as well as bugfix - without it program will crash in some cases,
-	// because 'a' could become isolated and deleted while this function is still running
-	if constexpr(VERT::Mesh::Has_Vert_Poly_Links) {
-		if(a.vertPolys().count() < b.vertPolys().count()) {
-			merge_verts(b, a, 1.0 - alpha);
-			return;
-		}
-	}
-
-	// LOG(INFO) << "merge_verts(" << a.handle() << ", " << b.handle() << ", alpha:" << alpha << ")";
-
-	a.pos() = a.pos() * (1-alpha)  +  b.pos() * alpha;
-
-	if constexpr(VERT::Mesh::Has_Vert_Data) {
-		a.data() = a.data() * (1-alpha)  +  b.data() * alpha;
-	}
-
-	// update polygons containing 'b': replace 'b'->'a'
-	if constexpr(VERT::Mesh::Has_Vert_Poly_Links) {
-
-		// std::cout << "have " << b.vert_polys().count() << " polygons to change vertex " << b.handle() << "->" << a.handle() << std::endl;
-		// for(auto& vp : b.vert_polys()) {
-		// 	std::cout << "-> " << vp.poly().handle() << std::endl;
-		// }
-
-		for(auto& vp : b.vertPolys()) {
-			//std::cout << "--> " << vp.poly().handle() << std::endl;
-			auto p = vp.poly();
-			vp.change_vert( a ); // invalidates `vp`
-
-			remove_if_degenerate( p ); // will delete vertices that become isolated
-		}
-	}
-
-	b.fast_erase();
-
-	// auto r = check_solid(a.mesh(), Check_Solid_Flags::ALLOW_HOLES);
-	// if(!r.is_solid) {
-	// 	std::cout << "error " << (int)r.failure << std::endl;
-	// 	exit(1);
-	// }
-}
-
-
-
-
+namespace salgo::geom::geom_3d {
 
 
 
@@ -108,14 +39,14 @@ auto clean_flat_surfaces_on_edges(MESH& mesh) {
 
 		for(auto p : mesh.polys()) {
 			for(auto ab : p.polyEdges()) {
-				if(!ab.has_link()) continue;
+				if(!ab.is_linked()) continue;
 
 				auto ba = ab.linked_polyEdge();
 
 				// C == D
 				if(ba.opposite_vert() == ab.opposite_vert()) {
 
-					if(ab.next().has_link() && ba.prev().has_link()) {
+					if(ab.next().is_linked() && ba.prev().is_linked()) {
 
 						auto cb = ab.next().linked_polyEdge();
 						auto bd = ba.prev().linked_polyEdge();
@@ -128,7 +59,7 @@ auto clean_flat_surfaces_on_edges(MESH& mesh) {
 						}
 					}
 
-					if(ab.prev().has_link() && ba.next().has_link()) {
+					if(ab.prev().is_linked() && ba.next().is_linked()) {
 
 						auto ac = ab.prev().linked_polyEdge();
 						auto da = ba.next().linked_polyEdge();
@@ -141,8 +72,8 @@ auto clean_flat_surfaces_on_edges(MESH& mesh) {
 						}
 					}
 
-					ab.poly().erase({ .unlink_edge_links = false, .remove_isolated_verts = true }); // we handle edge-links ourselves
-					ba.poly().erase({ .unlink_edge_links = false, .remove_isolated_verts = true });
+					ab.poly().erase( UNLINK_EDGE_LINKS = false, ERASE_ISOLATED_VERTS = true ); // we handle edge-links ourselves
+					ba.poly().erase( UNLINK_EDGE_LINKS = false, ERASE_ISOLATED_VERTS = true );
 					r.num_polys_removed += 2;
 					change = true;
 					break; // skip the rest edges of this poly (it's removed and invalid now)
@@ -198,7 +129,12 @@ auto fast_collapse_edges(MESH& mesh, const typename MESH::Scalar& max_edge_lengt
 
 					auto weight_sum = get_v_weight( a ) + get_v_weight( b );
 
-					merge_verts(a, b, (typename MESH::Scalar) get_v_weight(a) / weight_sum);
+					merge_verts(a, b,
+						ALPHA = (typename MESH::Scalar) get_v_weight(a) / weight_sum
+					);
+					// merge_verts(a, b, {
+					// 	.alpha=
+					// });
 					++r.num_edges_collapsed;
 
 					// poly does not exist anymore - watch out!

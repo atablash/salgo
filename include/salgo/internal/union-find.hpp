@@ -4,7 +4,7 @@
 #include "vector.hpp"
 #include "inplace-storage.hpp"
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 
 namespace salgo {
 
@@ -326,5 +326,5 @@ using Union_Find = internal::union_find::Context<
 } // namespace salgo
 
 
-#include "helper-macros-off"
+#include "helper-macros-off.inc"
 

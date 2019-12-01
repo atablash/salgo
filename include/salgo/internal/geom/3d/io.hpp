@@ -11,7 +11,7 @@
 #include <fstream>
 #include <chrono>
 
-namespace salgo {
+namespace salgo::geom::geom_3d {
 
 
 

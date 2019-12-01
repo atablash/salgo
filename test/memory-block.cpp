@@ -198,6 +198,6 @@ TEST(Memory_Block, begin_returns_first_existing) {
 	
 	block(3).construct(123);
 
-	EXPECT_TRUE( block.begin()->exists() );
+	EXPECT_TRUE( block.begin()->constructed() );
 	EXPECT_EQ( 123, block.begin()->data() );
 }

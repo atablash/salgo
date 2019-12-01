@@ -202,7 +202,7 @@ static void FIND__salgo(State& state) {
 
 	for(auto _ : state) {
 		auto acc = s( rand() % N );
-		if(acc.exists()) DoNotOptimize( acc() );
+		if(acc.found()) DoNotOptimize( acc() );
 	}
 }
 BENCHMARK( FIND__salgo )->MinTime(0.1);
@@ -253,7 +253,7 @@ static void FIND_ERASE__salgo(State& state) {
 
 	for(auto _ : state) {
 		auto e = s( rand() % N );
-		if(e.exists()) e.erase();
+		if(e.found()) e.erase();
 	}
 }
 BENCHMARK( FIND_ERASE__salgo )->MinTime(0.1);

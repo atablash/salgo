@@ -10,11 +10,9 @@
 
 #include <array>
 
-#include "../helper-macros-on"
+#include "../helper-macros-on.inc"
 
-namespace salgo {
-namespace internal {
-namespace n_ary_forest {
+namespace salgo::internal::n_ary_forest {
 
 
 
@@ -37,22 +35,6 @@ class N_Ary_Forest;
 ADD_MEMBER(data)
 ADD_MEMBER(children)
 ADD_MEMBER(parent)
-
-template<class P>
-struct Node :
-		Add_data     <typename P::Data,         P::Has_Data>,
-		Add_parent   <typename P::Parent,       P::Has_Parent_Links>,
-		Add_children <typename P::Children,     P::Has_Child_Links>
-		// Add_aggreg<Aggreg>,
-		// Add_propag<Propag>
-{
-private:
-	using DATA_BASE = Add_data     <typename P::Data,         P::Has_Data>;
-
-public:
-	using DATA_BASE :: DATA_BASE;
-};
-
 
 
 
@@ -91,6 +73,22 @@ public:
 
 
 
+template<class P>
+struct Node :
+		Add_data     <typename P::Data,         P::Has_Data>,
+		Add_parent   <typename P::Parent,       P::Has_Parent_Links>,
+		Add_children <typename P::Children,     P::Has_Child_Links>
+		// Add_aggreg<Aggreg>,
+		// Add_propag<Propag>
+{
+private:
+	using DATA_BASE = Add_data<typename P::Data, P::Has_Data>;
+
+public:
+	using DATA_BASE :: DATA_BASE;
+};
+
+
 
 
 
@@ -102,17 +100,29 @@ template<
 	bool PARENT_LINKS,
 	//bool EVERSIBLE,
 	//class AGGREG, class PROPAG,
-	class ALLOCATOR
+	class SUPPLIED_ALLOCATOR,
+	int ALIGN_OVERRIDE
 >
 struct Params {
 	static constexpr auto N_Ary = N_ARY;
 	using Data = DATA;
 	static constexpr auto Has_Parent_Links = PARENT_LINKS;
 	static constexpr auto Has_Child_Links = CHILD_LINKS;
+	using Supplied_Allocator = SUPPLIED_ALLOCATOR;
+	static constexpr auto Align_Override = ALIGN_OVERRIDE;
 
 	using Node = n_ary_forest::Node<Params>;
 
-	using Allocator = typename ALLOCATOR ::template VAL<Node>; // rebind to `Node`
+
+	using Rebound_Allocator = typename SUPPLIED_ALLOCATOR ::template VAL<Node>; // rebind to `Node`
+
+	using Allocator = std::conditional_t<ALIGN_OVERRIDE == 0,
+		Rebound_Allocator,
+		typename Rebound_Allocator ::template ALIGN<ALIGN_OVERRIDE>
+	>;
+
+
+	static constexpr auto Align = Allocator::Align;
 
 	static constexpr auto Has_Data = ! std::is_same_v<Data, void>;
 
@@ -273,6 +283,8 @@ public:
 	using Handle       = typename P::Handle;
 	using Handle_Small = typename P::Handle_Small;
 
+	static constexpr auto Align = P::Align;
+
 	template<Const_Flag C>
 	using Accessor = typename P::template Accessor<C>;
 
@@ -333,33 +345,39 @@ private:
 	using typename P::Data;
 	using P::Has_Child_Links;
 	using P::Has_Parent_Links;
-	using typename P::Allocator;
+	using typename P::Supplied_Allocator;
+	using P::Align_Override;
 
 public:
-	using CHILD_LINKS  = With_Builder< Params< N_Ary, Data, true,            Has_Parent_Links, Allocator > >;
+	using CHILD_LINKS  = With_Builder< Params< N_Ary, Data, true,            Has_Parent_Links, Supplied_Allocator, Align_Override > >;
 
-	using PARENT_LINKS = With_Builder< Params< N_Ary, Data, Has_Child_Links, true,             Allocator > >;
-
-	template<class X>
-	using DATA         = With_Builder< Params< N_Ary, X,    Has_Child_Links, Has_Parent_Links, Allocator > >;
+	using PARENT_LINKS = With_Builder< Params< N_Ary, Data, Has_Child_Links, true,             Supplied_Allocator, Align_Override > >;
 
 	template<class X>
-	using ALLOCATOR    = With_Builder< Params< N_Ary, Data, Has_Child_Links, Has_Parent_Links, X         > >;
+	using DATA         = With_Builder< Params< N_Ary, X,    Has_Child_Links, Has_Parent_Links, Supplied_Allocator, Align_Override > >;
+
+	template<class X>
+	using ALLOCATOR    = With_Builder< Params< N_Ary, Data, Has_Child_Links, Has_Parent_Links, X                 , Align_Override > >;
 
 	template<int X>
-	using ALIGN        = With_Builder< Params< N_Ary, Data, Has_Child_Links, Has_Parent_Links, typename Allocator ::template ALIGN<X> > >;
+	using ALIGN        = With_Builder< Params< N_Ary, Data, Has_Child_Links, Has_Parent_Links, Supplied_Allocator, X > >;
 };
 
 
 
 
-} // n_ary_forest
-} // internal
+} // namespace salgo::internal::n_ary_forest
+
+
+
+#include "../helper-macros-off.inc"
 
 
 
 
 
+
+namespace salgo {
 
 
 // N_ARY is number of children per node
@@ -370,7 +388,8 @@ using N_Ary_Forest = internal::n_ary_forest::With_Builder< internal::n_ary_fores
 	DATA,
 	false, // child_links
 	false, // parent_links
-	Vector_Allocator<>
+	Vector_Allocator<>,
+	0 // align override
 >>;
 
 
@@ -382,11 +401,8 @@ using Rooted_Forest = N_Ary_Forest< 0 /* dynamic */>;
 
 
 
+} // namespace salgo
 
 
 
-
-} // salgo
-
-#include "../helper-macros-off"
 

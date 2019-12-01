@@ -6,7 +6,7 @@
 #include "hash.hpp"
 #include "key-val.hpp"
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 
 namespace salgo {
 namespace internal {
@@ -44,17 +44,12 @@ public:
 		BASE::_just_erased = true;
 	}
 
-	bool exists() const {
-		return HANDLE.valid();
+	void erase_if_found() {
+		if(found()) erase();
 	}
 
-	// template<class... ARGS, class X = CTX, REQUIRES(X::Accessor_Caches_Key)>
-	// auto& emplace(ARGS&&... args) {
-	// 	DCHECK( !exists() ) << "- can't emplace to existing value";
-	// 	HANDLE = CONT.emplace(BASE::cached_key, std::forward<ARGS>(args)... );
-	// 	// note: cached_key is still alive
-	// 	return *this;
-	// }
+	bool found()     const { return HANDLE.valid(); }
+	bool not_found() const { return ! found(); }
 };
 
 
@@ -322,8 +317,8 @@ struct Context {
 		auto operator()(Handle handle) const { return Accessor<CONST>(this, handle); }
 
 
-		auto& operator[](Any_Tag)       { return begin().accessor().data(); }
-		auto& operator[](Any_Tag) const { return begin().accessor().data(); }
+		auto& operator[](Any_Tag)       { DCHECK(not_empty()) << "hash_table[ANY] called on empty hash table"; return begin().accessor().data(); }
+		auto& operator[](Any_Tag) const { DCHECK(not_empty()) << "hash_table[ANY] called on empty hash table"; return begin().accessor().data(); }
 
 		auto operator()(Any_Tag)       { return begin().accessor(); }
 		auto operator()(Any_Tag) const { return begin().accessor(); }
@@ -529,7 +524,7 @@ using Hash_Table = typename internal::hash_table::Context<
 
 } // namespace salgo
 
-#include "helper-macros-off"
+#include "helper-macros-off.inc"
 
 
 

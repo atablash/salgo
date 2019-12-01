@@ -296,7 +296,14 @@ struct Invalid_Type {};
 
 
 
-
+namespace internal {
+	enum class Iteration_Callback_Result {
+		BREAK    = 0x4c8b3311, // magic numbers in case user forgets to return CONTINUE
+		CONTINUE = 0x69f012b4
+	};
+}
+static constexpr auto BREAK    = internal::Iteration_Callback_Result::BREAK;
+static constexpr auto CONTINUE = internal::Iteration_Callback_Result::CONTINUE;
 
 
 

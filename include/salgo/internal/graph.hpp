@@ -6,7 +6,7 @@
 
 #include <array>
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 
 
 namespace salgo {
@@ -508,7 +508,7 @@ namespace graph {
 			void resize(int new_size) {
 				if constexpr(Verts_Erasable != NOT_ERASABLE) {
 					for(int i=_graph._vs.domain()-1; i>=new_size; --i) {
-						if(_graph.vert(i).exists()) _graph.vert(i).erase();
+						if(_graph.vert(i).found()) _graph.vert(i).erase();
 					}
 				}
 				else {
@@ -802,4 +802,4 @@ using Graph = internal::graph::Context<
 
 } // namespace salgo
 
-#include "helper-macros-off"
+#include "helper-macros-off.inc"

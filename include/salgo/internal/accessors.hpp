@@ -8,8 +8,7 @@
 
 
 
-namespace salgo {
-namespace internal {
+namespace salgo::internal {
 
 GENERATE_HAS_MEMBER(Reference)
 GENERATE_HAS_MEMBER(Has_Data)
@@ -46,11 +45,12 @@ public:
 
 
 public:
+	Reference_Base() = default;
 	Reference_Base(Const<Container,C>* container, Handle handle) : _handle(handle), _container(container) {}
 
 private:
 	Handle _handle;
-	Const<Container,C>* _container;
+	Const<Container,C>* _container = nullptr;
 
 public:
 	auto& accessor()       { _check(); return *static_cast<      Accessor<C>*>(this); }
@@ -74,6 +74,12 @@ public:
 	// get value
 	auto& operator()()       { return data(); }
 	auto& operator()() const { return data(); }
+
+	bool     valid() const { return handle().valid(); }
+	bool not_valid() const { return ! valid(); }
+
+	bool     found() const { return handle().valid(); }
+	bool not_found() const { return ! found(); }
 
 private:
 	void _check() const {
@@ -107,10 +113,6 @@ public:
 		}
 		else return operator()();
 	}
-
-	// is handle non-null
-	//explicit operator bool() const { return _handle().valid(); }
-	bool exists() const { return handle().valid(); }
 };
 
 
@@ -152,7 +154,6 @@ class _Reference<false,C,CONTEXT> : public Reference_Base<C, CONTEXT> {
 
 public:
 	using BASE::BASE;
-	//FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
 };
 
 
@@ -389,7 +390,20 @@ public:
 
 
 
-} // namespace internal
+} // namespace salgo::internal
+
+
+namespace salgo {
+
+template<Const_Flag C, class CONTEXT>
+using Reference_Base = internal::Reference_Base<C, CONTEXT>;
+
+template<Const_Flag C, class CONTEXT>
+using Accessor_Base = internal::Accessor_Base<C, CONTEXT>;
+
+template<Const_Flag C, class CONTEXT>
+using Iterator_Base = internal::Iterator_Base<C, CONTEXT>;
+
 } // namespace salgo
 
 

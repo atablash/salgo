@@ -14,7 +14,7 @@
 
 
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 
 namespace salgo {
 
@@ -190,8 +190,30 @@ struct Context {
 		auto prev()       { return CONT( BASE::get_prev() ); }
 		auto prev() const { return CONT( BASE::get_prev() ); }
 
-		bool exists() const { return HANDLE.valid(); }
-		bool not_exists() const { return ! exists(); }
+
+		auto next_in_cycle()       {
+			auto r = CONT( BASE::get_next() );
+			return r.found() ? r : CONT(FIRST);
+		}
+
+		auto next_in_cycle() const {
+			auto r = CONT( BASE::get_next() );
+			return r.found() ? r : CONT(FIRST);
+		}
+
+		auto prev_in_cycle()       {
+			auto r = CONT( BASE::get_prev() );
+			return r.found() ? r : CONT(LAST);
+		}
+
+		auto prev_in_cycle() const {
+			auto r = CONT( BASE::get_prev() );
+			return r.found() ? r : CONT(LAST);
+		}
+
+
+		bool valid() const { return HANDLE.valid(); }
+		bool not_valid() const { return ! valid(); }
 	};
 
 
@@ -358,13 +380,13 @@ struct Context {
 	public:
 		template<class... ARGS>
 		auto emplace_front(ARGS&&... args) {
-			if(empty()) return _emplace_into_empty( std::forward<ARGS>(args)... );
+			if(is_empty()) return _emplace_into_empty( std::forward<ARGS>(args)... );
 			return (*this)(FIRST).emplace_before( std::forward<ARGS>(args)... );
 		}
 
 		template<class... ARGS>
 		auto emplace_back(ARGS&&... args) {
-			if(empty()) return _emplace_into_empty( std::forward<ARGS>(args)... );
+			if(is_empty()) return _emplace_into_empty( std::forward<ARGS>(args)... );
 			return (*this)(LAST).emplace_after( std::forward<ARGS>(args)... );
 		}
 
@@ -396,7 +418,7 @@ struct Context {
 			return NUM_EXISTING_BASE::num_existing;
 		}
 
-		bool empty() const { return !_front.valid(); }
+		bool is_empty() const { return !_front.valid(); }
 
 
 
@@ -469,6 +491,6 @@ using List = typename internal::List::Context<
 
 } // namespace salgo
 
-#include "helper-macros-off"
+#include "helper-macros-off.inc"
 
 

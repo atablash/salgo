@@ -34,7 +34,7 @@ TEST(Hash_Table, iterate_empty_2) {
 	Hash_Table<int> ht;
 	ht.emplace(123);
 
-	if(!ht(12).exists()) ht(123).erase();
+	if(ht(12).not_found()) ht(123).erase();
 
 	int sum = 0;
 	for(auto& e : ht) sum += e;

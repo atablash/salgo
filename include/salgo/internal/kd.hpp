@@ -7,36 +7,48 @@
 #include "accessors.hpp"
 #include "const-flag.hpp"
 
-#include "helper-macros-on"
+#include <functional>
+
+#include "helper-macros-on.inc"
 
 namespace salgo {
 namespace internal {
 namespace kd {
 
 
+template<class X>
+using Aabb_Of = decltype( std::declval< Get_Aabb<X> >()( std::declval<X>() ) );
+
+
+
+
 template<class PARAMS>
 struct Node;
 
 
-template<class KEY, class VAL, class GET_AABB, class BINARY_FOREST>
+template<class KEY, class VAL, class AABB, class IMPLICIT_KEY, class BINARY_FOREST, int ALIGN_OVERRIDE, bool ERASABLE>
 struct Params {
 	using Key = KEY;
 	using Val = VAL;
-	using Get_Aabb = GET_AABB;
+	using Aabb = AABB;
+	using Implicit_Key = IMPLICIT_KEY;
+	static constexpr auto Align_Override = ALIGN_OVERRIDE;
+	static constexpr auto Erasable = ERASABLE;
 
+	static constexpr auto Has_Key = ! std::is_same_v<Key, void>;
 	static constexpr auto Has_Val = ! std::is_same_v<Val, void>;
 
-	using Key_Val = salgo::Key_Val<Key, Val>;
+	using Key_Val = salgo::Key_Val< Key, Val >;
 
 	using Node = kd::Node<Params>;
 
-	using Binary_Forest = typename BINARY_FOREST ::template DATA<Node> ::CHILD_LINKS;
+	static constexpr auto Align = Align_Override != -1 ? Align_Override : BINARY_FOREST::Align;
+	using Binary_Forest = typename BINARY_FOREST ::template DATA<Node> ::CHILD_LINKS ::template ALIGN<Align>;
 
 	using Handle       = typename Binary_Forest::Handle;
 	using Handle_Small = typename Binary_Forest::Handle_Small;
 
-	using Aabb = decltype( std::declval<GET_AABB>()(std::declval<KEY>()) );
-	using Vector = std::remove_reference_t< decltype( std::declval<Aabb>().min() ) >;
+	using Vector = std::remove_cv_t< std::remove_reference_t< decltype( std::declval<Aabb>().min() ) > >;
 	using Scalar = std::remove_reference_t< decltype( std::declval<Vector>()[0] ) >;
 	static constexpr auto Dim = Vector::RowsAtCompileTime;
 };
@@ -64,15 +76,26 @@ class Accessor : public Accessor_Base<C,Context<P>> {
 
 public:
 	// get key
-	auto& key()       { return CONT._tree[ HANDLE ].kv.key; }
-	auto& key() const { return CONT._tree[ HANDLE ].kv.key; }
+	template<class PP = P, REQUIRES(PP::Has_Key)>
+	auto& key()       { static_assert(P::Has_Key, "your KD tree does not store keys"); return CONT._tree[ HANDLE ].kv.key; }
+
+	template<class PP = P, REQUIRES(PP::Has_Key)>
+	auto& key() const { static_assert(P::Has_Key, "your KD tree does not store keys"); return CONT._tree[ HANDLE ].kv.key; }
 
 	// get val (explicit)
-	auto& val()       { static_assert(P::Has_Val, "your KD tree does not define any value (only keys)"); return BASE::operator()(); }
-	auto& val() const { static_assert(P::Has_Val, "your KD tree does not define any value (only keys)"); return BASE::operator()(); }
+	auto& val()       { static_assert(P::Has_Val, "your KD tree does not store values"); return BASE::operator()(); }
+	auto& val() const { static_assert(P::Has_Val, "your KD tree does not store values"); return BASE::operator()(); }
 
 	auto& key_val()       { return CONT._tree[ HANDLE ].kv; }
 	auto& key_val() const { return CONT._tree[ HANDLE ].kv; }
+
+	void erase() {
+		static_assert(C==MUTAB, "erase() called on CONST accessor");
+		static_assert(P::Erasable, "erase() only available if kd tree is ERASABLE");
+
+		CONT._tree[HANDLE]._erased = true;
+		// todo: destruct key/val, maybe even aabb
+	}
 };
 
 
@@ -112,19 +135,24 @@ struct Context {
 	using Iterator = kd::Iterator<P, C>;
 };
 
-
-
+ADD_MEMBER(_erased)
 
 template<class P>
-struct Node {
+struct Node : Add__erased<bool, P::Erasable> {
 	typename P::Aabb aabb; // for this key only
-	typename P::Key_Val kv;
+	typename P::Key_Val kv; // todo: keep inside Inplace_Storage to destruct after erase()
 
 	typename P::Scalar l_to; // left to
 	typename P::Scalar r_fr; // right from
 
-	template<class... ARGS>
-	Node(ARGS&&... args) : kv( std::forward<ARGS>(args)... ) {}
+	bool erased() const {
+		if constexpr(P::Erasable) {
+			return this->_erased;
+		}
+		else return false;
+	}
+
+	FORWARDING_CONSTRUCTOR_VAR(Node, kv) {}
 };
 
 GENERATE_HAS_MEMBER(key)
@@ -137,18 +165,24 @@ GENERATE_HAS_MEMBER(second)
 // kd
 //
 template<class P>
-class Kd {
-	using Node          = typename P::Node;
-	using Binary_Forest = typename P::Binary_Forest;
-	using Handle        = typename P::Handle;
-	using Get_Aabb      = typename P::Get_Aabb;
+class Kd : protected P {
+public:
+	using typename P::Scalar;
+	using typename P::Vector;
 
-	using Key = typename P::Key;
-	using Val = typename P::Val;
-	using Key_Val = typename P::Key_Val;
+	using typename P::Key;
+	using typename P::Val;
 
-	using Scalar = typename P::Scalar;
-	using Vector = typename P::Vector;
+	using typename P::Handle;
+	using typename P::Handle_Small;
+
+private:
+	using typename P::Node;
+	using typename P::Binary_Forest;
+	using typename P::Aabb;
+
+	using typename P::Key_Val;
+
 
 	Binary_Forest _tree;
 	Handle _root;
@@ -174,9 +208,6 @@ private:
 		_is_kv_like<AGG> || _is_pair_like<AGG>;
 
 public:
-	auto emplace() {
-		return _emplace();
-	}
 
 	template<class ARG, class... ARGS, REQUIRES( ! _is_kv_or_pair_like<ARG> )>
 	auto emplace(ARG&& arg, ARGS&&... args) {
@@ -184,11 +215,24 @@ public:
 	}
 
 private:
+	template<class KEY, class... ARGS>
+	auto _select_tree_emplace(KEY&& key, ARGS&&... args) {
+		if constexpr(P::Has_Key) {
+			auto acc = _tree.emplace( key, std::forward<ARGS>(args)... );
+			acc().aabb = Get_Aabb<KEY>()(key);
+			return acc;
+		}
+		else {
+			auto acc = _tree.emplace( std::forward<ARGS>(args)... );
+			acc().aabb = Get_Aabb<KEY>()(key);
+			return acc;
+		}
+	}
+
 	template<class... ARGS>
 	auto _emplace(ARGS&&... args) {
 		// std::cout << "sizeof kd node " << sizeof(Node) << std::endl;
-		auto new_node = _tree.emplace( std::forward<ARGS>(args)... );
-		new_node().aabb = Get_Aabb()( new_node().kv.key );
+		auto new_node = _select_tree_emplace( std::forward<ARGS>(args)... );
 
 		if(!_root.valid()) {
 			_root = new_node;
@@ -227,13 +271,12 @@ private:
 	}
 
 public:
-	auto insert(const Key& key) {
-		static_assert( ! P::Has_Val, "use insert(key,val) instead (or emplace(...))" );
+	auto insert(const typename P::Implicit_Key& key) {
 		return emplace(key);
 	}
 
 	template<class V = Val>
-	auto insert(const Key& key, const V& val) {
+	auto insert(const typename P::Implicit_Key& key, const V& val) {
 		static_assert( P::Has_Val, "use insert(key) instead (or emplace(...))" );
 		return emplace(key, val);
 	}
@@ -254,7 +297,7 @@ public:
 
 	auto find_closest_center(const Vector& vec) const {
 		auto root = _tree( _root );
-		if(!root.exists()) return Accessor<P, CONST>(this, root);
+		if(!root.valid()) return Accessor<P, CONST>(this, Handle());
 
 		auto best = std::get<0>( _find_closest_center_impl(vec, _tree(Handle()), std::numeric_limits<Scalar>::max(), root, 0) );
 
@@ -263,13 +306,14 @@ public:
 
 private:
 	template<class VEC, class CAND_NODE>
-	auto _find_closest_center_impl(const VEC& vec, CAND_NODE best, Scalar best_dist_sqr, const CAND_NODE& node, int axis) const {
-		if(!node.exists()) return std::tuple{best, best_dist_sqr};
+	std::tuple<CAND_NODE, Scalar> _find_closest_center_impl(const VEC& vec, CAND_NODE best, Scalar best_dist_sqr, const CAND_NODE& node, int axis) const {
 
-		auto cand_dist_sqr = (node().aabb.center() - vec).squaredNorm();
-		if(cand_dist_sqr < best_dist_sqr) {
-			best = node;
-			best_dist_sqr = cand_dist_sqr;
+		if(!node().erased()) {
+			auto cand_dist_sqr = (node().aabb.center() - vec).squaredNorm();
+			if(cand_dist_sqr < best_dist_sqr) {
+				best = node;
+				best_dist_sqr = cand_dist_sqr;
+			}
 		}
 
 		if(node.has_left()  && vec[axis] - node().l_to <= best_dist_sqr) { // TODO: add epsilon?
@@ -286,34 +330,66 @@ private:
 public:
 	template<class AABB, class FUN>
 	void each_intersecting(const AABB& aabb, const FUN& fun) {
-		_each_intersecting<MUTAB>(aabb, fun, _tree(_root), 0);
+		if(_root.not_valid()) return;
+
+		if constexpr( std::is_same_v<void, std::invoke_result_t<FUN, Accessor<P,MUTAB>&>> ) {
+			auto proxy_fun = [&fun](auto&&... args) {
+				fun(std::forward<decltype(args)>(args)...);
+				return CONTINUE;
+			};
+			_each_intersecting<MUTAB>(aabb, std::move(proxy_fun), _tree(_root), 0);
+		}
+		else {
+			_each_intersecting<MUTAB>(aabb, fun, _tree(_root), 0);
+		}
 	}
 
 	template<class AABB, class FUN>
 	void each_intersecting(const AABB& aabb, const FUN& fun) const {
-		const_cast<Kd*>(this)->_each_intersecting<CONST>(aabb, fun, _tree(_root), 0);
+		if(_root.not_valid()) return;
+
+		if constexpr( std::is_same_v<void, std::invoke_result_t<FUN, Accessor<P,CONST>&>> ) {
+			auto proxy_fun = [&fun](auto&&... args) {
+				fun(std::forward<decltype(args)>(args)...);
+				return CONTINUE;
+			};
+			const_cast<Kd*>(this)->_each_intersecting<CONST>(aabb, std::move(proxy_fun), _tree(_root), 0);
+		}
+		else {
+			const_cast<Kd*>(this)->_each_intersecting<CONST>(aabb, fun, _tree(_root), 0);
+		}
 	}
 
 private:
 	template<Const_Flag C, class AABB, class FUN, class ND>
-	void _each_intersecting(const AABB& aabb, const FUN& fun, const ND& node, int axis) {
+	auto _each_intersecting(const AABB& aabb, const FUN& fun, const ND& node, int axis) {
 		// warning: we're const-casted here, so need to respect `Const_Flag C`
-		{
-			auto accessor = Accessor<P, C>(this, node);
-			if(node().aabb.intersects(aabb)) fun( accessor );
+
+		if(!node().erased()){
+			if(node().aabb.intersects(aabb)) {
+				auto accessor = Accessor<P, C>(this, node);
+				auto r = fun( accessor );
+
+				DCHECK(r == CONTINUE || r == BREAK) << "each_intersecting(a,fun): make sure you return value in every path of fun";
+				if(r == BREAK) return BREAK;
+			}
 		}
 
 		if(node.has_left() && node().l_to >= aabb.min()[axis]) {
-			_each_intersecting<C>(aabb, fun, node.left(), (axis+1) % P::Dim);
+			auto r = _each_intersecting<C>(aabb, fun, node.left(), (axis+1) % P::Dim);
+			DCHECK(r == CONTINUE || r == BREAK) << "each_intersecting(a,fun): make sure you return value in every path of fun";
+			if(r == BREAK) return BREAK;
 		}
 
 		if(node.has_right() && node().r_fr <= aabb.max()[axis]) {
-			_each_intersecting<C>(aabb, fun, node.right(), (axis+1) % P::Dim);
+			auto r = _each_intersecting<C>(aabb, fun, node.right(), (axis+1) % P::Dim);
+			DCHECK(r == CONTINUE || r == BREAK) << "each_intersecting(a,fun): make sure you return value in every path of fun";
+			if(r == BREAK) return BREAK;
 		}
+
+		return CONTINUE;
 	}
 
-	// each_contained()
-	// each_containing()
 
 public:
 	auto operator()(const Handle& handle)       { return Accessor<P, MUTAB>(this, handle); }
@@ -326,30 +402,58 @@ public:
 
 
 
+template<class P> class With_Builder;
 
 //
 // type builder
 //
 template<class P>
-class With_Builder : public Kd<P> {
-	using BASE = Kd<P>;
-
-	using BASE::BASE;
-
-	using Key           = typename P::Key;
-	using Val           = typename P::Val;
-	using Get_Aabb      = typename P::Get_Aabb;
-	using Binary_Forest = typename P::Binary_Forest;
+class Builder : private P {
+	using typename P::Key;
+	using typename P::Val;
+	using typename P::Aabb;
+	using typename P::Implicit_Key;
+	using typename P::Binary_Forest;
+	using P::Align_Override;
+	using P::Erasable;
 
 public:
 	template<class X>
-	using GET_AABB = With_Builder< Params<Key, Val, X, Binary_Forest> >;
+	using AABB          = With_Builder< Params<Key, Val, X, Implicit_Key, Binary_Forest, Align_Override, Erasable> >;
 
 	template<class X>
-	using BINARY_FOREST = With_Builder< Params<Key, Val, Get_Aabb, X> >;
+	using AABB_OF       = With_Builder< Params<Key, Val, Aabb_Of<X>, X, Binary_Forest, Align_Override, Erasable> >;
+
+	template<class X>
+	using KEY           = With_Builder< Params<X, Val, Aabb_Of<X>, X, Binary_Forest, Align_Override, Erasable> >;
+
+	template<class X>
+	using VAL           = With_Builder< Params<Key, X, Aabb, Implicit_Key, Binary_Forest, Align_Override, Erasable> >;
+
+	template<class X>
+	using BINARY_FOREST = With_Builder< Params<Key, Val, Aabb, Implicit_Key, X, Align_Override, Erasable> >;
 
 	template<int X>
-	using ALIGN = With_Builder< Params<Key, Val, Get_Aabb, typename Binary_Forest ::template ALIGN<X> > >;
+	using ALIGN         = With_Builder< Params<Key, Val, Aabb, Implicit_Key, Binary_Forest, X, Erasable > >;
+
+	using ERASABLE      = With_Builder< Params<Key, Val, Aabb, Implicit_Key, Binary_Forest, Align_Override, true > >;
+};
+
+
+template<class P>
+class With_Builder : public Kd<P>, public Builder<P> {
+	using BASE = Kd<P>;
+
+public:
+	using BASE::BASE;
+};
+
+
+template<class P>
+class Bare_Builder : public Builder<P> {
+	Bare_Builder() = delete;
+	Bare_Builder(const Bare_Builder&) = delete;
+	Bare_Builder(Bare_Builder&&) = delete;
 };
 
 
@@ -360,20 +464,19 @@ public:
 
 
 
-template<
-	class KEY,
-	class VAL = void
->
-using Kd = typename internal::kd::With_Builder<internal::kd::Params<
-	KEY,
-	VAL,
-	salgo::Get_Aabb<KEY>,
-	salgo::Binary_Forest
+using Kd = typename internal::kd::Bare_Builder<internal::kd::Params<
+	void, // key
+	void, // val
+	Eigen::AlignedBox<float,13>, // aabb, will be rebound anyway
+	void, // implicit key
+	salgo::Binary_Forest,
+	-1, // align-override
+	false // erasable
 >>;
 
 
 
 } // namespace salgo
 
-#include "helper-macros-off"
+#include "helper-macros-off.inc"
 

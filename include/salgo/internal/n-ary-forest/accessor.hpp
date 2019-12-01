@@ -3,13 +3,9 @@
 #include "../accessors.hpp"
 #include "../const-flag.hpp"
 
-#include "../helper-macros-on"
+#include "../helper-macros-on.inc"
 
-namespace salgo {
-namespace internal {
-namespace n_ary_forest {
-
-
+namespace salgo::internal::n_ary_forest {
 
 
 template<class P>
@@ -40,7 +36,7 @@ public:
 	auto& val() const { return NODE.val; }
 
 public:
-	bool exists() const { return HANDLE.valid(); }
+	bool valid() const { return HANDLE.valid(); }
 
 
 	auto child(int ith)       { _check_child_index(ith);
@@ -56,16 +52,21 @@ public:
 	auto right() const { static_assert(N_Ary == 2); return child(1); }
 
 
-	auto has_left()        { static_assert(N_Ary == 2); return child(0).exists(); }
-	auto has_left()  const { static_assert(N_Ary == 2); return child(0).exists(); }
+	auto has_left()        { static_assert(N_Ary == 2); return child(0).found(); }
+	auto has_left()  const { static_assert(N_Ary == 2); return child(0).found(); }
 
-	auto has_right()       { static_assert(N_Ary == 2); return child(1).exists(); }
-	auto has_right() const { static_assert(N_Ary == 2); return child(1).exists(); }
+	auto has_right()       { static_assert(N_Ary == 2); return child(1).found(); }
+	auto has_right() const { static_assert(N_Ary == 2); return child(1).found(); }
 
 
 	auto parent()       { return Accessor<P, C    >( &CONT, BASE::get_parent() ); }
 	auto parent() const { return Accessor<P, CONST>( &CONT, BASE::get_parent() ); }
 
+	auto has_parent()       { return Accessor<P, C    >( &CONT, BASE::get_parent() ).found(); }
+	auto has_parent() const { return Accessor<P, CONST>( &CONT, BASE::get_parent() ).found(); }
+
+	auto has_no_parent()       { return ! has_parent(); }
+	auto has_no_parent() const { return ! has_parent(); }
 
 
 	bool is_ith_child(int ith) const {
@@ -98,7 +99,7 @@ public:
 	template<class... Args>
 	auto emplace_child(int ith, Args&&... args) {
 		static_assert(C == MUTAB, "called on CONST accessor");
-		DCHECK( !child(ith).exists() );
+		DCHECK( child(ith).not_found() );
 		auto new_node = ALLOC.construct( std::forward<Args>(args)... );
 		link_child(ith, new_node);
 		return child(ith);
@@ -113,16 +114,16 @@ public:
 
 	void link_child(int ith, Handle new_child) {
 		static_assert(C == MUTAB, "called on CONST accessor");
-		DCHECK( exists() );
+		DCHECK( valid() );
 		_check_child_index(ith);
 
 		if constexpr(P::Has_Child_Links) {
-			DCHECK( !child(ith).exists() ); // no child
+			DCHECK( child(ith).not_found() ); // no child
 			NODE.children[ith] = new_child;
 		}
 
 		if constexpr(P::Has_Parent_Links) {
-			DCHECK( !CONT(new_child).parent().exists() ); // new_child has no parent
+			DCHECK( !CONT(new_child).has_parent() ); // new_child has no parent
 			_node(new_child).parent = HANDLE;
 		}
 	}
@@ -144,7 +145,7 @@ public:
 private:
 	void _unlink_child_1way(Handle_Small& ch) {
 		static_assert(C == MUTAB, "called on CONST accessor");
-		DCHECK( exists() );
+		DCHECK( valid() );
 
 		DCHECK( ch.valid() );
 		_node(ch).parent.reset();
@@ -153,7 +154,7 @@ private:
 public:
 	void unlink_child(int ith) {
 		static_assert(C == MUTAB, "called on CONST accessor");
-		DCHECK( exists() );
+		DCHECK( valid() );
 
 		auto& ch = _node().children[ith];
 		_unlink_child_1way(ch);
@@ -168,7 +169,7 @@ public:
 private:
 	// TODO: NOTE: linear in the number of children!
 	void _unlink_parent_1way() {
-		DCHECK( exists() );
+		DCHECK( valid() );
 		auto& par = _node( NODE.parent );
 		DCHECK( std::find(par.children.begin(), par.children.end(), HANDLE) != par.children.end() );
 		for(auto& ch : par.children) if(ch == HANDLE) {
@@ -191,7 +192,7 @@ private:
 	// when unlink_and_erase was just called, links will be 1-way
 	void _erase_unchecked() {
 		static_assert(C == MUTAB, "called on CONST accessor");
-		DCHECK( exists() );
+		DCHECK( valid() );
 		BASE::on_erase(); // cache links before removing this node
 		ALLOC( HANDLE ).destruct();
 	}
@@ -200,7 +201,7 @@ public:
 	// PREREQUISITE: does not have parent or child
 	void erase() {
 		static_assert(C == MUTAB, "called on CONST accessor");
-		DCHECK( exists() );
+		DCHECK( valid() );
 		DCHECK( !NODE.parent.valid() ) << "can't erase, still has parent";
 
 		for(auto& ch : NODE.children) DCHECK( !ch.valid() ) << "can't erase, still has child";
@@ -211,7 +212,7 @@ public:
 	// unlink both parent and children
 	void unlink_and_erase() {
 		static_assert(C == MUTAB, "called on CONST accessor");
-		DCHECK( exists() );
+		DCHECK( valid() );
 
 		// unlink parent (if present)
 		if( NODE.parent.valid() ) _unlink_parent_1way();
@@ -244,8 +245,6 @@ private:
 
 
 
-} // namespace n_ary_forest
-} // namespace internal
-} // namespace salgo
+} // namespace salgo::internal::n_ary_forest
 
-#include "../helper-macros-off"
+#include "../helper-macros-off.inc"

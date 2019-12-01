@@ -42,6 +42,7 @@ set(sources
 	union-find.cpp
 	miller-rabin.cpp
 	kd.cpp
+	named-arguments.cpp
 )
 
 

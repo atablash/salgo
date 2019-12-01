@@ -1,6 +1,9 @@
 #pragma once
 
+#include "named-arguments.hpp"
 
+
+namespace salgo::geom::geom_3d {
 
 
 
@@ -33,7 +36,24 @@ auto compute_poly_normal(POLY p) {
 }
 
 
+template<class POLY>
+auto get_longest_polyEdge(const POLY& poly) {
+	using Scalar = typename POLY::Scalar;
+	using Poly_Edge = std::remove_reference_t< decltype(poly.polyEdge(0)) >;
 
+	Scalar best = -1;
+	Poly_Edge best_pe;
+
+	for(auto& pe : poly.polyEdges()) {
+		Scalar cand = pe.squaredLength();
+		if(cand > best) {
+			best = cand;
+			best_pe = pe;
+		}
+	}
+
+	return best_pe;
+}
 
 
 
@@ -111,8 +131,12 @@ auto compute_poly_normal(POLY p) {
 
 
 
-template< class POLY >
-void remove_if_degenerate(POLY poly) {
+template<class POLY, class... ARGS>
+void erase_poly_if_degenerate(POLY poly, ARGS&&... _args) {
+	auto args = Named_Arguments( std::forward<ARGS>(_args)... );
+
+	const auto erase_isolated_verts = args(ERASE_ISOLATED_VERTS, false);
+
 	for(auto& pv : poly.polyVerts()) {
 		auto pw = pv.next();
 
@@ -128,20 +152,26 @@ void remove_if_degenerate(POLY poly) {
 				// it's generally not good situation to work with, but this function should support this anyway
 
 				auto vv = pv.prev_polyEdge().linked_polyEdge();
-				if(vv.exists()) vv.unlink();
+				if(vv.valid()) vv.unlink();
 
 				auto ww = pw.next_polyEdge().linked_polyEdge();
-				if(ww.exists()) ww.unlink();
+				if(ww.valid()) ww.unlink();
 
-				if(vv.exists() && ww.exists()) {
+				if(vv.valid() && ww.valid()) {
 					vv.link(ww);
 				}
 			}
 
-			poly.erase({
-				.unlink_edge_links = false,
-				.remove_isolated_verts = true,
-			});
+			if constexpr (args.has(ON_POLY_ERASE)) {
+				args(ON_POLY_ERASE)(poly);
+			}
+
+			poly.erase(
+				UNLINK_EDGE_LINKS = false,
+				ERASE_ISOLATED_VERTS = erase_isolated_verts,
+				ON_VERT_ERASE = args,
+				ON_POLY_ERASE = args
+			);
 
 			break;
 		}
@@ -150,7 +180,7 @@ void remove_if_degenerate(POLY poly) {
 
 
 template<class MESH>
-void remove_isolated_verts(MESH& mesh) {
+void erase_isolated_verts(MESH& mesh) {
 	if constexpr(MESH::Has_Vert_Poly_Links) {
 		for(auto& v : mesh.verts()) {
 			if(v.vertPolys().empty()) v.fast_erase();
@@ -184,20 +214,4 @@ bool has_isolated_verts(const MESH& mesh) {
 }
 
 
-// merge `a` into `b`
-template<class A, class B>
-void mesh_vert_merge(A a, B b) {
-	auto num_before = b.mesh().verts().count();
-
-	for(auto& vp : a.vertPolys()) {
-		vp.change_vert( b );
-	}
-
-	DCHECK_EQ( a.vertPolys().count(), 0 );
-
-	a.fast_erase();
-
-	auto num_after = b.mesh().verts().count();
-
-	DCHECK_EQ(num_before - 1, num_after);
 }

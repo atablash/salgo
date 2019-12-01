@@ -17,7 +17,7 @@ Multithreaded code: keep in mind that old objects can be moved when new objects 
 #include "memory-block.hpp"
 #include "accessors.hpp"
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 
 
 
@@ -111,10 +111,6 @@ struct Context {
 		void erase() { destruct(); } // alias
 
 		bool constructed() const { return CONT.v( HANDLE ).constructed(); }
-
-		auto exists() const { return constructed(); } // alias
-
-		//bool exists_SLOW() const { return CONT.v(h).exists_SLOW(); }
 	};
 
 
@@ -171,6 +167,8 @@ struct Context {
 		using Handle_Small = Context::Handle_Small;
 		using Handle       = Context::Handle;
 		using Index        = Context::Index;
+
+		static constexpr auto Align = Context::Align;
 
 		static constexpr bool Auto_Destruct = true;
 
@@ -331,7 +329,7 @@ using Vector_Allocator = typename internal::vector_allocator::Context<
 
 
 
-#include "helper-macros-off"
+#include "helper-macros-off.inc"
 
 
 

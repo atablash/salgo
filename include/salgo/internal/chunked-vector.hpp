@@ -14,7 +14,7 @@
 
 
 
-#include "helper-macros-on"
+#include "helper-macros-on.inc"
 namespace salgo {
 
 
@@ -618,6 +618,6 @@ using Chunked_Vector = typename internal::chunked_vector::Context<
 
 } // namespace salgo
 
-#include "helper-macros-off"
+#include "helper-macros-off.inc"
 
 
