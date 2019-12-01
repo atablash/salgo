@@ -7,10 +7,7 @@ rm -rf $DIR && mkdir $DIR && cd $DIR
 
 
 
-
-svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm           >/dev/null
-svn co http://llvm.org/svn/llvm-project/libcxx/trunk libcxx       >/dev/null
-svn co http://llvm.org/svn/llvm-project/libcxxabi/trunk libcxxabi >/dev/null
+git clone https://github.com/llvm/llvm-project.git --branch llvmorg-8.0.1 --depth 1
 
 # build libc++abi
 ( cd libcxxabi && mkdir build && cd build &&  \

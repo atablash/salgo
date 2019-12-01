@@ -104,12 +104,17 @@ MESH load_ply(const std::string& file_name) {
 	std::ifstream ss(file_name.c_str(), std::ios::binary);
 
 	if(!ss.good()) {
-		std::cerr << "Failed to open " << file_name << strerror(errno) << std::endl;
+		std::cerr << "Failed to open " << file_name << ": " << strerror(errno) << std::endl;
 		return MESH();
 	}
 
 	// Parse the ASCII header fields
 	PlyFile file(ss);
+
+	if(!ss.good()) {
+		std::cerr << "Failed to read " << file_name << " ASCII header: " << strerror(errno) << std::endl;
+		return MESH();
+	}
 
 	// debug print
 	for (auto e : file.get_elements())
@@ -156,6 +161,11 @@ MESH load_ply(const std::string& file_name) {
 	file.read(ss);
 	auto after = steady_clock::now();
 
+	if(!ss.good()) {
+		std::cerr << "Failed to read " << file_name << " past the ASCII header: " << strerror(errno) << std::endl;
+		return MESH();
+	}
+
 	// Good place to put a breakpoint!
 	DLOG(INFO) << "Parsing took " << duration_cast<milliseconds>(after-before).count() << "ms:";
 	DLOG(INFO) << "\tRead " << verts.size() << " total vertices (" << verts_count << " properties).";
@@ -163,16 +173,16 @@ MESH load_ply(const std::string& file_name) {
 	DLOG(INFO) << "\tRead " << v_colors.size() << " total vertex colors (" << v_colors_count << " properties).";
 	DLOG(INFO) << "\tRead " << polys.size() << " total faces (triangles) (" << polys_count << " properties).";
 	DLOG(INFO) << "\tRead " << p_texcoords.size() << " total texcoords (" << p_texcoords_count << " properties).";
-	
-	
-	
-	
+
+
+
+
 	//
 	// copy data to resultant MESH
 	//
-	
+
 	MESH mesh;
-	
+
 	mesh.verts().reserve(verts_count);
 	for(int i=0; i<(int)verts_count; ++i){
 		auto v = mesh.verts().add(verts[i*3 + 0], verts[i*3 + 1], verts[i*3 + 2]);
@@ -186,7 +196,7 @@ MESH load_ply(const std::string& file_name) {
 			v.data().color = { v_colors[i*4 + 0], v_colors[i*4 + 1], v_colors[i*4 + 2], v_colors[i*4 + 3] };
 		}
 	}
-	
+
 	mesh.polys().reserve(polys_count);
 	for(int i=0; i<(int)polys_count; ++i) {
 		auto p = mesh.polys().add(
@@ -202,9 +212,9 @@ MESH load_ply(const std::string& file_name) {
 			p.poly_vert(2).data().texcoords = { p_texcoords[i*6 + 4], p_texcoords[i*6 + 5] };
 		}
 	}
-	
+
 	LOG(INFO) << "loaded " << file_name << "   verts: " << mesh.verts().domain() << "   polys: " << mesh.polys().domain();
-	
+
 	return mesh;
 }
 
