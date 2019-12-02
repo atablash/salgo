@@ -5,6 +5,7 @@
 #include "mesh-utils.hpp"
 
 #include "../../list.hpp"
+#include "../../hash-table.hpp"
 
 
 #include <map>
@@ -34,15 +35,15 @@ Cap_Hole_Result cap_hole(const EDGE& edge) {
 	typename List< H_PolyEdge > ::COUNTABLE perimeter;
 
 	// iterators to perimeter, ordered by score
-	std::multimap<double, typename decltype(perimeter)::Handle_Small> cands;
+	std::multimap<double, typename decltype(perimeter)::Handle_Small> cands; // todo: replace with salgo heap/tree
 
 	//std::unordered_map<H_Poly_Edge, typename decltype(cands)::iterator> where_cands;
 	Hash_Table<H_PolyEdge, typename decltype(cands)::iterator> where_cands;
 
 
 	auto get_score = [](auto e0, auto e1){
-		auto t0 = e0.segment().trace();
-		auto t1 = e1.segment().trace();
+		auto t0 = e0.trace();
+		auto t1 = e1.trace();
 
 		auto my_normal = t1.cross( t0 ).eval();
 		my_normal.normalize();

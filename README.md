@@ -333,7 +333,7 @@ Of course, you can declare a new type, and parametrize it more later:
 
 Exception safety
 ================
-No such thing. Google doesn't care, neither do I.
+No such thing.
 
 
 
@@ -343,3 +343,8 @@ Design Choices / Issues
 	* Dereferencing an *Iterator* results in *Accessor*, therefore assignment operator won't work as expected - this causes functions like `std::sort` to break.
 	* The `.begin()` and `.end()` interface in Salgo containers is meant only for the purposes of *scoped-for*. You should never use this interface in your code directly.
 	* Special empty dummy `End_Iterator` types for `.end()` are used in many containers, especially tree-based. This iterator has no data members, it's effectively state-less. It's assumed to always point to container's end, even if new elements are pushed.
+
+TODO
+====
+* Implement splay trees (and an alternative to std::set)
+* Enable back GCC/libc++ build (see the comment in `.travis.yml`)

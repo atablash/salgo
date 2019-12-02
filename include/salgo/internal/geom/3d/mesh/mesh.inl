@@ -9,9 +9,6 @@
 #include "../named-arguments.hpp"
 #include "../mesh-utils.hpp"
 
-// geom
-#include "../../segment.hpp"
-
 
 
 #include <array>

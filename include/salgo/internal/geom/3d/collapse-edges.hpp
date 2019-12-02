@@ -121,7 +121,7 @@ auto fast_collapse_edges(MESH& mesh, const typename MESH::Scalar& max_edge_lengt
 			// std::cout << "process poly " << p.handle() << std::endl;
 
 			for(auto& pe : p.polyEdges()) {
-				if(pe.segment().trace().squaredNorm() <= max_edge_length * max_edge_length) {
+				if(pe.squared_length() <= max_edge_length * max_edge_length) {
 					// std::cout << "collapsing edge with length " << pe.segment().trace().norm() << std::endl;
 
 					auto a = pe.prev_vert();

@@ -93,14 +93,11 @@ GENERATE_HAS_MEMBER(texcoords);
 
 template<class MESH>
 MESH load_ply(const std::string& file_name) {
-	
 	using namespace ::tinyply;
 	using namespace std;
 	using namespace std::chrono;
-	
-	// Read the file and create a std::istringstream suitable
-	// for the lib -- tinyply does not perform any file i/o.
-	std::cout << "opening " << file_name << std::endl;
+
+	//std::cout << "opening " << file_name << std::endl;
 	std::ifstream ss(file_name.c_str(), std::ios::binary);
 
 	if(!ss.good()) {

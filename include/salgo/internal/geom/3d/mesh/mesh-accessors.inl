@@ -2,8 +2,8 @@
 
 #include "../named-arguments.hpp"
 
-#include "../../segment.hpp"
-#include "../../triangle.hpp"
+#include "../../segment-base.hpp"
+#include "../../triangle-base.hpp"
 
 #include "../../../helper-macros-on.inc"
 
@@ -196,7 +196,7 @@ struct Polys_Context : private P {
 
 
 	template<Const_Flag C>
-	class Accessor : public Accessor_Base<C,Polys_Context> {
+	class Accessor : public Accessor_Base<C,Polys_Context>, public Triangle_Base<Accessor<C>> {
 		using BASE = Accessor_Base<C,Polys_Context>;
 
 	public:
@@ -264,14 +264,6 @@ struct Polys_Context : private P {
 			return Eigen::AlignedBox<Scalar,3> {
 				a.min(b).min(c),
 				a.max(b).max(c)
-			};
-		}
-
-		auto triangle() const {
-			return Triangle<Scalar,3> {
-				vert(0).pos(),
-				vert(1).pos(),
-				vert(2).pos()
 			};
 		}
 
@@ -484,7 +476,7 @@ struct PolyEdges_Context : private P {
 	using typename P::H_PolyVert;
 
 	template<Const_Flag C>
-	class Accessor : public Accessor_Base<C,PolyEdges_Context> {
+	class Accessor : public Accessor_Base<C,PolyEdges_Context>, public Segment_Base<Accessor<C>> {
 		using BASE = Accessor_Base<C,PolyEdges_Context>;
 
 	public:
@@ -531,22 +523,10 @@ struct PolyEdges_Context : private P {
 		auto opposite_vert() const { _check(); return opposite_polyVert().vert(); }
 
 
-		auto segment() const {
-			_check();
+		// segment interface
+		auto vert(int ith)       { _check(); DCHECK_LE(0, ith); DCHECK_LT(ith, 2); return ith == 0 ? prev_polyVert().vert() : next_polyVert().vert(); }
+		auto vert(int ith) const { _check(); DCHECK_LE(0, ith); DCHECK_LT(ith, 2); return ith == 0 ? prev_polyVert().vert() : next_polyVert().vert(); }
 
-			return Segment<typename P::Scalar, 3>{
-				prev_polyVert().vert().pos(),
-				next_polyVert().vert().pos()
-			};
-		}
-
-		auto squaredLength() const {
-			return segment().squaredLength();
-		}
-
-		auto length() const {
-			return segment().length();
-		}
 
 		bool is_linked() const {
 			_check();

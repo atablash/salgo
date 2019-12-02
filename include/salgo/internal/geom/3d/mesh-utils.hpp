@@ -45,7 +45,7 @@ auto get_longest_polyEdge(const POLY& poly) {
 	Poly_Edge best_pe;
 
 	for(auto& pe : poly.polyEdges()) {
-		Scalar cand = pe.squaredLength();
+		Scalar cand = pe.squared_length();
 		if(cand > best) {
 			best = cand;
 			best_pe = pe;
