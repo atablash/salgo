@@ -93,20 +93,20 @@ matrix:
     #
     # (possibly because of std::map used in this test? we want to replace it with salgo::Splay_Tree anyway - when implemented)
     #
-    #
-    # # gcc  +  libc++
-    # - compiler: g++
-    #   env:
-    #     - USE_LIBCXX=ON
-    #     - LD_FLAGS_LIBCXX="$LD_FLAGS -nodefaultlibs -lc++ -lc++abi -lc -lm -lgcc_s -lgcc" # for projects not supporting libc++
 
-    #   addons:
-    #     apt:
-    #       packages:
-    #         # FOR ALL BUILDS:
-    #         - libgoogle-glog-dev
-    #         - libgflags-dev
-    #         - libeigen3-dev
+    # gcc  +  libc++
+    - compiler: g++
+      env:
+        - USE_LIBCXX=ON
+        - LD_FLAGS_LIBCXX="$LD_FLAGS -nodefaultlibs -lc++ -lc++abi -lc -lm -lgcc_s -lgcc" # for projects not supporting libc++
+
+      addons:
+        apt:
+          packages:
+            # FOR ALL BUILDS:
+            - libgoogle-glog-dev
+            - libgflags-dev
+            - libeigen3-dev
 
 
 
