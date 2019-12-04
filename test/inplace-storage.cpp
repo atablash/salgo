@@ -140,6 +140,8 @@ TEST(Inplace_Storage, copy_as_pod) {
 
 	DCHECK_NE(((S&)s).val, 696969696);
 
+	s.get().val = 0;
+
 	auto s2 = s;
 
 	DCHECK_NE(((S&)s2).val, 838383838);
