@@ -1,3 +1,0 @@
-#pragma once
-
-#include <salgo/internal/geom/3d/cut-poly.hpp>

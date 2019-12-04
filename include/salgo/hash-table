@@ -1,3 +1,3 @@
 #pragma once
 
-#include <salgo/internal/hash-table.hpp>
+#include <salgo/_/hash-table.inl>

@@ -1,0 +1,3 @@
+#pragma once
+
+#include <salgo/_/geom/g3d/split-edge.hpp>

@@ -1,7 +1,7 @@
 #include "common.hpp"
 
 #include <salgo/list>
-#include <salgo/salgo-from-std-allocator>
+#include <salgo/alloc/salgo-from-std-allocator>
 
 #include <gtest/gtest.h>
 

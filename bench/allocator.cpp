@@ -3,14 +3,15 @@
 
 #include <salgo/memory-block>
 
-#include <salgo/salgo-from-std-allocator>
-#include <salgo/crude-allocator>
-#include <salgo/random-allocator>
-#include <salgo/vector-allocator>
+#include <salgo/alloc/salgo-from-std-allocator>
+#include <salgo/alloc/crude-allocator>
+#include <salgo/alloc/random-allocator>
+#include <salgo/alloc/array-allocator>
 
 using namespace benchmark;
 
 using namespace salgo;
+using namespace salgo::alloc;
 
 
 
@@ -23,7 +24,7 @@ static void SEQUENTIAL_std(State& state) {
 	using Alloc = Salgo_From_Std_Allocator< std::allocator<int> >;
 	Alloc alloc;
 
-	Vector<Alloc::Handle> v;
+	Dynamic_Array<Alloc::Handle> v;
 	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
@@ -44,7 +45,7 @@ static void SEQUENTIAL_salgo_crude(State& state) {
 	using Alloc = salgo::Crude_Allocator<int>;
 	Alloc alloc;
 
-	Vector<Alloc::Handle> v;
+	Dynamic_Array<Alloc::Handle> v;
 	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
@@ -65,7 +66,7 @@ static void SEQUENTIAL_salgo_random(State& state) {
 	using Alloc = salgo::Random_Allocator<int>;
 	Alloc alloc;
 
-	Vector<Alloc::Handle> v;
+	Dynamic_Array<Alloc::Handle> v;
 	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
@@ -83,10 +84,10 @@ BENCHMARK( SEQUENTIAL_salgo_random )->MinTime(0.1);
 static void SEQUENTIAL_salgo_vector(State& state) {
 	srand(69); clear_cache();
 
-	using Alloc = salgo::Vector_Allocator<int>;
+	using Alloc = Array_Allocator<int>;
 	Alloc alloc;
 
-	Vector<Alloc::Handle> v;
+	Dynamic_Array<Alloc::Handle> v;
 	v.reserve( state.max_iterations );
 
 	for(auto _ : state) {
@@ -234,7 +235,7 @@ BENCHMARK( QUEUE_salgo_random )->MinTime(0.1);
 static void QUEUE_salgo_vector(State& state) {
 	srand(69); clear_cache();
 
-	using Alloc = salgo::Vector_Allocator<int>;
+	using Alloc = Array_Allocator<int>;
 	Alloc alloc;
 
 	// crude queue implementation
@@ -377,7 +378,7 @@ BENCHMARK( RANDOM_salgo_random )->MinTime(0.1);
 static void RANDOM_salgo_vector(State& state) {
 	srand(69); clear_cache();
 
-	using Alloc = salgo::Vector_Allocator<int>;
+	using Alloc = Array_Allocator<int>;
 	Alloc alloc;
 
 	Memory_Block<Alloc::Handle> ::CONSTRUCTED_FLAGS v(state.max_iterations/10 + 10);

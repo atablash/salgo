@@ -15,10 +15,10 @@ using namespace std;
 
 PlyProperty::PlyProperty(std::istream & is) : isList(false)
 {
-    parse_internal(is);
+    parse__(is);
 }
 
-void PlyProperty::parse_internal(std::istream & is)
+void PlyProperty::parse__(std::istream & is)
 {
     string type;
     is >> type;
@@ -39,10 +39,10 @@ void PlyProperty::parse_internal(std::istream & is)
 
 PlyElement::PlyElement(std::istream & is)
 {
-    parse_internal(is);
+    parse__(is);
 }
 
-void PlyElement::parse_internal(std::istream & is)
+void PlyElement::parse__(std::istream & is)
 {
     is >> name >> size;
 }
@@ -198,16 +198,16 @@ void PlyFile::write_property_binary(PlyProperty::Type t, std::ostream & os, uint
 
 void PlyFile::read(std::istream & is)
 {
-    read_internal(is);
+    read__(is);
 }
 
 void PlyFile::write(std::ostream & os, bool _isBinary)
 {
-    if (_isBinary) write_binary_internal(os);
-    else write_ascii_internal(os);
+    if (_isBinary) write_binary__(os);
+    else write_ascii__(os);
 }
 
-void PlyFile::write_binary_internal(std::ostream & os)
+void PlyFile::write_binary__(std::ostream & os)
 {
     isBinary = true;
     write_header(os);
@@ -239,7 +239,7 @@ void PlyFile::write_binary_internal(std::ostream & os)
     }
 }
 
-void PlyFile::write_ascii_internal(std::ostream & os)
+void PlyFile::write_ascii__(std::ostream & os)
 {
     write_header(os);
 
@@ -301,7 +301,7 @@ void PlyFile::write_header(std::ostream & os)
     os << "end_header\n";
 }
 
-void PlyFile::read_internal(std::istream & is)
+void PlyFile::read__(std::istream & is)
 {
     std::function<void(PlyProperty::Type t, void * dest, size_t & destOffset, std::istream & is)> read;
     std::function<void(const PlyProperty & property, std::istream & is)> skip;

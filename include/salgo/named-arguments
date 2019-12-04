@@ -1,3 +1,3 @@
 #pragma once
 
-#include <salgo/internal/named-arguments.hpp>
+#include <salgo/_/named-arguments.hpp>

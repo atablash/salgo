@@ -46,7 +46,7 @@ Contents
 	* 3D
 		* TODO
 	* Allocators
-		* [Vector_Allocator](doc/VECTOR-ALLOCATOR.md) - the default Salgo allocator
+		* [Array_Allocator](doc/VECTOR-ALLOCATOR.md) - the default Salgo allocator
 		* [Random_Allocator](doc/RANDOM-ALLOCATOR.md)
 		* [Crude_Allocator](doc/CRUDE-ALLOCATOR.md)
 		* [Salgo_From_Std_Allocator](doc/SALGO-FROM-STD-ALLOCATOR.md) - adapter for `std` compatible allocators
@@ -113,6 +113,13 @@ If you need to make this explicit, use `operator()`, i.e. call `e()` instead of 
 	for(const auto& e : v) cout << e().foo << endl;
 ```
 
+Instead of `operator()` (`e()`), you can also use one of aliases:
+* `e.val()` - best to use in contexts where there's also `e.key()` available (e.g. `Hash_Table<K,V>`)
+* `e.data()` - best to use in contexts where value is optional, e.g. it's some data attached to graph vertex
+* `e.value()` - use in all other contexts if it's more clear than `e()`
+
+**TODO:** Disable `operator()` for accessor if underlying object has `operator()` defined, in order to avoid ambiguity.
+
 Salgo containers generally return raw element for `operator[]`, and accessor for `operator()`:
 
 ```cpp
@@ -129,7 +136,22 @@ Accessors forward most operators to the underlying object:
 	// now v == {11, 21, 31}
 ```
 
-Accessors are also implicitly convertible to Handles - see below.
+Accessors are also implicitly convertible to Handles - see the next section.
+
+
+### `FIRST`, `LAST`, `ANY` tags
+
+For containers that imply some default order for stored elements:
+* Use `container[FIRST]` or `container(FIRST)` to get the first value or accessor, respectively.
+* Use `container[LAST]` or `container(LAST)` to get the last value or accessor, respectively.
+
+Also, most containers provide `ANY` tag, if you need one element, but don't care which one you get:
+* Use `container[ANY]` or `container(ANY)` to get any value or accessor, respectively.
+
+It's required that `ANY` works in a deterministic fashion, returning always the same element if container is not modified in the meantime.
+
+Also `container(ANY)` is required to return an accessor to a value returned by `container[ANY]`, i.e. they must refer to the same element.
+
 
 
 
@@ -169,7 +191,7 @@ Indexes
 -------
 Some structures also expose `Index` type, which is usually same as `Handle`, but can be implicitly created from `int`.
 
-For example, `Vector_Allocator` is natually indexed by `int`, so it exposes functions that accept `Index` type instead of `Handle`.
+For example, `Array_Allocator` is natually indexed by `int`, so it exposes functions that accept `Index` type instead of `Handle`.
 This way, these functions happily accept `int` parameters, while still accepting `Handle`, which is implicitly convertible to `Index`.
 
 

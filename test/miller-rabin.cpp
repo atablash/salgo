@@ -1,10 +1,10 @@
-#include <salgo/primes>
+#include <salgo/discr/primes>
 
 #include <gtest/gtest.h>
 
 
 using namespace std;
-using namespace salgo;
+using namespace salgo::discr;
 
 
 

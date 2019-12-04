@@ -21,4 +21,4 @@ To use the default `new` and `delete` (i.e. system allocator directly), use:
 
 See Also
 --------
-* [Vector_Allocator](VECTOR-ALLOCATOR.md) - the default Salgo allocator
+* [Array_Allocator](VECTOR-ALLOCATOR.md) - the default Salgo allocator

@@ -10,4 +10,4 @@ Built on top of Chunked_Vector. Searches for memory holes by randomly drawing in
 
 See Also
 --------
-* [Vector_Allocator](VECTOR-ALLOCATOR.md) - the default Salgo allocator
+* [Array_Allocator](VECTOR-ALLOCATOR.md) - the default Salgo allocator

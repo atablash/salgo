@@ -10,4 +10,4 @@ Fast persistent allocator that doesn't reuse memory. Generally rather for testin
 
 See Also
 --------
-* [Vector_Allocator](VECTOR-ALLOCATOR.md) - the default Salgo allocator
+* [Array_Allocator](VECTOR-ALLOCATOR.md) - the default Salgo allocator

@@ -27,22 +27,30 @@ endif()
 set(sources
 	main.cpp
 	inplace-storage.cpp
-	memory-block.cpp
-	vector.cpp
-	vector-sparse.cpp
+
+	named-arguments.cpp
+
 	crude-allocator.cpp
-	list.cpp
-	unordered-vector.cpp
+
+	memory-block.cpp
+	dynamic-array.cpp
+	sparse-array.cpp
+	chunked-array.cpp
+	unordered-array.cpp
+
 	hash-table.cpp
-	chunked-vector.cpp
-	binary-forest.cpp
+
+	list.cpp
+
 	graph.cpp
+	binary-forest.cpp
+	union-find.cpp
+
 	modulo.cpp
 	binomial.cpp
-	union-find.cpp
 	miller-rabin.cpp
+
 	kd.cpp
-	named-arguments.cpp
 )
 
 
@@ -66,4 +74,4 @@ add_executable(	salgo-unit-tests ${sources} )
 add_test( salgo-unit-tests salgo-unit-tests )
 
 
-add_subdirectory( 3d )
+add_subdirectory( g3d )

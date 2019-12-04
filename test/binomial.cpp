@@ -1,11 +1,11 @@
-#include <salgo/binomial>
-#include <salgo/modulo>
+#include <salgo/discr/binomial>
+#include <salgo/discr/modulo>
 
 #include <gtest/gtest.h>
 
 
 using namespace std;
-using namespace salgo;
+using namespace salgo::discr;
 
 
 

@@ -3,7 +3,7 @@
 #include "../../common.hpp" // competitive programming macros, etc.
 
 using namespace std;
-using namespace salgo;
+using namespace salgo::discr;
 
 
 

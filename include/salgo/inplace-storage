@@ -1,3 +1,3 @@
 #pragma once
 
-#include <salgo/internal/inplace-storage.hpp>
+#include <salgo/_/inplace-storage.hpp>

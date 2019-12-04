@@ -1,4 +1,0 @@
-#pragma once
-
-#include <salgo/internal/geom/3d/mesh/mesh.inl>
-#include <salgo/internal/geom/3d/mesh-utils.hpp>

@@ -1,9 +1,9 @@
-#include <salgo/binary-forest>
-#include <salgo/inorder>
+#include <salgo/graph/binary-forest>
+#include <salgo/graph/inorder>
 
 #include <gtest/gtest.h>
 
-using namespace salgo;
+using namespace salgo::graph;
 
 
 //                  |
@@ -34,7 +34,7 @@ auto sample_tree_1(TREE& tree) {
 }
 
 
-using My_Binary_Forest = N_Ary_Forest<2> // AKA Binary_Forest
+using My_Binary_Forest = Binary_Forest // AKA N_Ary_Forest<2>
 	::PARENT_LINKS :: CHILD_LINKS;
 
 

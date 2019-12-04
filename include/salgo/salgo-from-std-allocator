@@ -1,3 +1,0 @@
-#pragma once
-
-#include <salgo/internal/salgo-from-std-allocator.hpp>

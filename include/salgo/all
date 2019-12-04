@@ -1,5 +1,5 @@
 #pragma once
 
 // TODO: include all files here
-#include <salgo/n-ary-forest>
-#include <salgo/modulo>
+#include <salgo/graph/all>
+#include <salgo/discr/all>

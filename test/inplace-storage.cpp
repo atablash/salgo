@@ -128,18 +128,21 @@ TEST(Inplace_Storage, copy_noop) {
 }
 
 
+
 TEST(Inplace_Storage, copy_as_pod) {
 	struct S {
-		int val = 0;
+		int val = 696969696;
 
-		S(const S&) { val = 69; }
+		S(const S&) { val = 838383838; }
 	};
 
-	Inplace_Storage<S>::TREAT_AS_POD s;
+	Inplace_Storage<S> ::TREAT_AS_POD s;
+
+	DCHECK_NE(((S&)s).val, 696969696);
 
 	auto s2 = s;
 
-	DCHECK_EQ(0, ((S&)s2).val);
+	DCHECK_NE(((S&)s2).val, 838383838);
 }
 
 

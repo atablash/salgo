@@ -44,6 +44,19 @@ TEST(Named_Arguments, simple) {
 	library_fun(69, GAMMA = 234, ALPHA = S(123));
 }
 
+TEST(Named_Arguments, empty) {
+    auto library_fun = [](auto&&... _args) {
+        auto args = Named_Arguments{ std::forward<decltype(_args)>(_args)... };
+        EXPECT_FALSE( args.has(ALPHA) );
+        EXPECT_FALSE( args.has(BETA) );
+        EXPECT_FALSE( args.has(GAMMA) );
+    };
+
+	library_fun();
+}
+
+
+
 TEST(Named_Arguments, const) {
     auto library_fun = [](auto&&... _args) {
         auto args = Named_Arguments( std::forward<decltype(_args)>(_args)... );
@@ -179,13 +192,4 @@ TEST(Named_Arguments, forward) {
     };
 
 	library_fun(69, GAMMA=234, ALPHA=S(123));
-}
-
-TEST(Named_Arguments, empty) {
-    auto library_fun = [](auto&&... _args) {
-        auto args = Named_Arguments{ std::forward<decltype(_args)>(_args)... };
-        (void)args;
-    };
-
-    library_fun();
 }

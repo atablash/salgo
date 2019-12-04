@@ -1,9 +1,10 @@
-#include <salgo/modulo>
+#include <salgo/discr/modulo>
+#include <salgo/discr/modulo-hash>
 
 #include <gtest/gtest.h>
 
 using namespace std;
-using namespace salgo;
+using namespace salgo::discr;
 
 
 

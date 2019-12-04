@@ -35,7 +35,7 @@ add_test( salgo-bench-hashtable salgo-bench-hashtable )
 add_executable(	salgo-bench-list       list.cpp )
 add_test( salgo-bench-list salgo-bench-list )
 
-add_executable(	salgo-bench-vector     vector.cpp )
-add_test( salgo-bench-vector salgo-bench-vector )
+add_executable(	salgo-bench-dynamic-array   dynamic-array.cpp )
+add_test( salgo-bench-dynamic-array salgo-bench-dynamic-array )
 
 

@@ -52,7 +52,7 @@ namespace tinyply
 
 	class PlyProperty
 	{
-		void parse_internal(std::istream & is);
+		void parse__(std::istream & is);
 	public:
 
 		enum class Type : uint8_t
@@ -182,7 +182,7 @@ namespace tinyply
 
 	class PlyElement
 	{
-		void parse_internal(std::istream & is);
+		void parse__(std::istream & is);
 	public:
 		PlyElement(std::istream & istream);
 		PlyElement(const std::string & _name, size_t count) : name(_name), size(count) {}
@@ -363,10 +363,10 @@ namespace tinyply
 		void read_header_property(std::istream & is);
 		void read_header_text(std::string line, std::istream & is, std::vector<std::string> & place, int erase = 0);
 
-		void read_internal(std::istream & is);
+		void read__(std::istream & is);
 
-		void write_ascii_internal(std::ostream & os);
-		void write_binary_internal(std::ostream & os);
+		void write_ascii__(std::ostream & os);
+		void write_binary__(std::ostream & os);
 
 		bool isBinary = false;
 		bool isBigEndian = false;

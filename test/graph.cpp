@@ -1,8 +1,9 @@
-#include <salgo/graph>
+#include <salgo/graph/graph>
 
 #include <gtest/gtest.h>
 
 using namespace salgo;
+using namespace salgo::graph;
 
 
 
@@ -26,6 +27,7 @@ TEST(Graph, construct_verts) {
 
 TEST(Graph, add_edge) {
 	Graph g(2);
+
 	g.edges().add(0, 1);
 
 	EXPECT_EQ( 1, g.vert(0).outs().count() );

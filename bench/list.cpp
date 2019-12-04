@@ -2,16 +2,17 @@
 #include <benchmark/benchmark.h>
 
 #include <salgo/list>
-#include <salgo/salgo-from-std-allocator>
-#include <salgo/crude-allocator>
-#include <salgo/random-allocator>
-#include <salgo/vector-allocator>
+#include <salgo/alloc/salgo-from-std-allocator>
+#include <salgo/alloc/crude-allocator>
+#include <salgo/alloc/random-allocator>
+#include <salgo/alloc/array-allocator>
 
 #include <list>
 
 using namespace benchmark;
 
 using namespace salgo;
+using namespace salgo::alloc;
 
 
 
@@ -127,7 +128,7 @@ static void INSERT_ERASE_salgo_rndalloc(State& state) {
 	const int N = state.max_iterations;
 
 	using Alloc = salgo::Random_Allocator<int>;
-	salgo::List<int> :: COUNTABLE ::ALLOCATOR<Alloc> li;
+	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
 
 	for(int i=0; i<N; ++i) {
 		li.emplace_back( rnd() );
@@ -157,7 +158,7 @@ static void INSERT_ERASE_salgo_vectoralloc(State& state) {
 
 	const int N = state.max_iterations;
 
-	using Alloc = salgo::Vector_Allocator<int>;
+	using Alloc = Array_Allocator<int>;
 	salgo::List<int> :: COUNTABLE ::ALLOCATOR<Alloc> li;
 
 	for(int i=0; i<N; ++i) {
@@ -315,7 +316,7 @@ static void ITERATE_salgo_countable_vectoralloc(State& state) {
 
 	const int N = state.max_iterations;
 
-	using Alloc = salgo::Vector_Allocator<int>;
+	using Alloc = Array_Allocator<int>;
 	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
 
 	for(int i=0; i<N; ++i) {
@@ -565,7 +566,7 @@ static void ERASE_salgo_countable_vectoralloc(State& state) {
 
 	const int N = state.max_iterations;
 
-	using Alloc = salgo::Vector_Allocator<int>;
+	using Alloc = Array_Allocator<int>;
 	salgo::List<int> ::COUNTABLE ::ALLOCATOR<Alloc> li;
 
 	for(int i=0; i<N; ++i) {

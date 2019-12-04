@@ -1,4 +1,4 @@
-#include <salgo/kd>
+#include <salgo/linalg/kd>
 
 #include <gtest/gtest.h>
 
@@ -7,7 +7,7 @@
 #include <random>
 #include <algorithm>
 
-using namespace salgo;
+using namespace salgo::linalg;
 
 
 
