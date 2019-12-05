@@ -28,11 +28,13 @@ TEST(Map, simple) {
 TEST(Map, chain) {
     Dynamic_Array<int> arr = {1, 2, 3, 4, 5};
 
-    auto chained = arr.map(
+    auto squared = arr.map(
         [](auto& el) {
             return el*el;
         }
-    ).map(
+    );
+    
+    auto chained = squared.map(
         [](auto&& el) {
             return el == 25 ? 1000 : el;
         }

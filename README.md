@@ -378,16 +378,20 @@ The resulting `Map` object *references* the original `Iterable` collection - be 
 The `Map` object is also an `Iterable`, meaning you can chain another `.map()`:
 
 ```cpp
-	auto chained = arr.map(
+	auto squared = arr.map(
 		[](auto& el) {
 			return el*el;
 		}
-	).map(
+	);
+	
+	auto chained = squared.map(
 		[](auto&& el) {
 			return el == 25 ? 1000 : el;
 		}
 	);
 ```
+
+**Important:** It's not valid to chain in one statement: `auto chained = cont.map(fun1).map(fun2);` - this will cause memory leak, because the intermediate `Map` object will go *out-of-scope*!
 
 You can also return references, allowing you to modify the data pointed to by `Map`:
 

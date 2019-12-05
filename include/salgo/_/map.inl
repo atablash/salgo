@@ -42,6 +42,7 @@ template<class P, Const_Flag C>
 class Reference : public Reference_Base<C, Context<P>> {
 	using BASE = Reference_Base<C, Context<P>>;
 
+public:
 	FORWARDING_CONSTRUCTOR(Reference, BASE),
 		_cached_accessor( P::underlying_cont(CONT)(HANDLE) ) {}
 

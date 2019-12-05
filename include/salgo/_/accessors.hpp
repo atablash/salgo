@@ -146,12 +146,12 @@ protected:
 	auto& _mut_handle() { return _handle; }
 
 public:
-	operator decltype(auto)()       {
-		if constexpr(is_operator_subscript_invocable< Const<Container,C>, Handle >) {
-			return operator()();
-		}
-		else return *(Invalid_Type*)(1);
-	}
+	// operator auto() const {
+	// 	if constexpr(is_operator_subscript_invocable< Const<Container,C>, Handle >) {
+	// 		return operator()();
+	// 	}
+	// 	else return *(Invalid_Type*)(1);
+	// }
 
 	operator decltype(auto)() const {
 		if constexpr(is_operator_subscript_invocable< Const<Container,C>, Handle >) {
