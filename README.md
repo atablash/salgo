@@ -362,15 +362,15 @@ All containers should (TODO: work on it!) implement `Iterable` concept, by deriv
 Allows you to apply a function before returning accessor value.
 
 ```cpp
-    Dynamic_Array<int> arr = {1, 2, 3, 4, 5};
+	Dynamic_Array<int> arr = {1, 2, 3, 4, 5};
 
-    auto squared = arr.map(
-        [](auto& el) {
-            return el*el;
-        }
-    );
+	auto squared = arr.map(
+		[](auto& el) {
+			return el*el;
+		}
+	);
 
-    for(auto& e : squared) std::cout << e.val() << " "; // 1 4 9 16 25
+	for(auto& e : squared) std::cout << e.val() << " "; // 1 4 9 16 25
 ```
 
 The resulting `Map` object *references* the original `Iterable` collection - be careful not to let the original collection go *out-of-scope*.
@@ -378,41 +378,41 @@ The resulting `Map` object *references* the original `Iterable` collection - be 
 The `Map` object is also an `Iterable`, meaning you can chain another `.map()`:
 
 ```cpp
-    auto chained = arr.map(
-        [](auto& el) {
-            return el*el;
-        }
-    ).map(
-        [](auto&& el) {
-            return el == 25 ? 1000 : el;
-        }
-    );
+	auto chained = arr.map(
+		[](auto& el) {
+			return el*el;
+		}
+	).map(
+		[](auto&& el) {
+			return el == 25 ? 1000 : el;
+		}
+	);
 ```
 
 You can also return references, allowing you to modify the data pointed to by `Map`:
 
 ```cpp
 	struct S {
-        int number = 0;
-        S(int x) : number(x) {}
-    };
+		int number = 0;
+		S(int x) : number(x) {}
+	};
 
-    Dynamic_Array<S> arr = {1, 2, 3, 4, 5};
+	Dynamic_Array<S> arr = {1, 2, 3, 4, 5};
 
-    auto numbers = arr.map(
-        [](auto& el) -> auto& {
-            return el.number;
-        }
-    );
+	auto numbers = arr.map(
+		[](auto& el) -> auto& {
+			return el.number;
+		}
+	);
 
-    for(auto& e : numbers) e *= e;
+	for(auto& e : numbers) e *= e;
 ```
 
 See more examples in `test/map.cpp`.
 
 
 
-### filter
+### Filter
 Linear-time filtering.
 
 TODO! Not implemented yet.
