@@ -70,7 +70,7 @@ private:
 	friend BASE;
 
 public:
-	bool operator!=(End_Iterator<P>) const { return BASE::_cached_accessor.iterator() != P::underlying_cont(CONT).end(); }
+	bool operator!=(End_Iterator<P>) const { return BASE::_cached_accessor.iterator() != P::underlying_cont(CONT).before_begin(); }
 };
 
 

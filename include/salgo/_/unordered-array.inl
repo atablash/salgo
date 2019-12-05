@@ -48,6 +48,8 @@ struct Index : Handle<P> {
 template<class P>
 struct End_Iterator {};
 
+template<class P>
+struct Before_Begin_Iterator {};
 
 
 
@@ -123,7 +125,8 @@ private:
 	// compare with End_Iterator
 	//
 public:
-	bool operator!=(End_Iterator<P>) const { return HANDLE < CONT.size() && HANDLE >= 0; } // todo optim: wouldn't it be too slow?
+	bool operator!=(End_Iterator<P>) const { return HANDLE < CONT.size(); }
+	bool operator!=(Before_Begin_Iterator<P>) const { return HANDLE >= 0; }
 };
 
 
@@ -243,8 +246,7 @@ public:
 
 
 public:
-	auto before_begin()       { return _accessor( -1 ).iterator(); }
-	auto before_begin() const { return _accessor( -1 ).iterator(); }
+	auto before_begin() const { return Before_Begin_Iterator<P>(); }
 
 	auto begin()       { return _accessor( 0 ).iterator(); }
 	auto begin() const { return _accessor( 0 ).iterator(); }
