@@ -7,6 +7,7 @@
 #include "accessors.hpp"
 #include "const-flag.hpp"
 #include "subscript-tags.hpp"
+#include "iterable-base.hpp"
 
 
 #ifndef NDEBUG
@@ -278,7 +279,8 @@ struct Context {
 
 	class List :
 			private Allocator,
-			private Add_num_existing<int, Countable> {
+			private Add_num_existing<int, Countable>,
+			public Iterable_Base<List> {
 
 		using NUM_EXISTING_BASE = Add_num_existing<int, Countable>;
 
@@ -288,6 +290,9 @@ struct Context {
 
 		using       Handle = Context::      Handle;
 		using Handle_Small = Context::Handle_Small;
+
+		template<Const_Flag C> using Accessor = Context::Accessor<C>;
+		template<Const_Flag C> using Iterator = Context::Iterator<C>;
 
 
 	private:
@@ -326,6 +331,10 @@ struct Context {
 			}
 		}
 
+		List(std::initializer_list<Val> il) {
+			for(auto& e : il) emplace_back(e);
+		}
+
 		~List() {
 			for(auto& e : *this) e.erase(); // todo: erase faster, without managing links
 		}
@@ -357,6 +366,12 @@ struct Context {
 		auto operator()(Last_Tag) const { return operator()(_back); }
 		auto& operator[](Last_Tag)       { return operator[](_back); }
 		auto& operator[](Last_Tag) const { return operator[](_back); }
+	
+		// todo: move this default implementation that delegates to operator[](First_Tag) to Iterable_Base
+		auto operator()(Any_Tag)       { return operator()(FIRST); }
+		auto operator()(Any_Tag) const { return operator()(FIRST); }
+		auto& operator[](Any_Tag)       { return operator[](FIRST); }
+		auto& operator[](Any_Tag) const { return operator[](FIRST); }
 
 		void erase(Handle handle) { operator()(handle).erase(); }
 

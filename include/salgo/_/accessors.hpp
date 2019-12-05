@@ -99,13 +99,13 @@ public:
 
 
 	// get value
-	auto& data()       {
+	decltype(auto) data()       {
 		static_assert(is_operator_subscript_invocable< Const<Container,C>, Handle >,
 			"in order to access DATA/VALUE, your container should have operator[](HANDLE) defined");
 		return (*_container)[_handle];
 	}
 
-	auto& data() const {
+	decltype(auto) data() const {
 		static_assert(is_operator_subscript_invocable< Const<Container,C>, Handle >,
 			"in order to access DATA/VALUE, your container should have operator[](HANDLE) defined");
 		return (*_container)[_handle];
@@ -113,13 +113,16 @@ public:
 
 
 	// get value
-	auto& val()       { return data(); }
-	auto& val() const { return data(); }
+	decltype(auto) val()       { return data(); }
+	decltype(auto) val() const { return data(); }
 
 	// get value
-	auto& operator()()       { return data(); }
-	auto& operator()() const { return data(); }
+	decltype(auto) operator()()       { return data(); }
+	decltype(auto) operator()() const { return data(); }
 
+
+	decltype(auto) operator->()       { return &data(); }
+	decltype(auto) operator->() const { return &data(); }
 
 
 	bool     valid() const { return handle().valid(); }
@@ -143,14 +146,14 @@ protected:
 	auto& _mut_handle() { return _handle; }
 
 public:
-	operator       auto&()       {
+	operator decltype(auto)()       {
 		if constexpr(is_operator_subscript_invocable< Const<Container,C>, Handle >) {
 			return operator()();
 		}
 		else return *(Invalid_Type*)(1);
 	}
 
-	operator const auto&() const {
+	operator decltype(auto)() const {
 		if constexpr(is_operator_subscript_invocable< Const<Container,C>, Handle >) {
 			return operator()();
 		}
@@ -185,8 +188,8 @@ class _Reference : public CONTEXT::template Reference<C> {
 	using BASE = typename CONTEXT::template Reference<C>;
 
 public:
-	//using BASE::BASE;
-	FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
+	using BASE::BASE;
+	//FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
 };
 
 
@@ -230,12 +233,49 @@ public:
 	static constexpr bool Is_Const = C == CONST;
 
 public:
-	//using BASE::BASE;
-	FORWARDING_CONSTRUCTOR(Accessor_Base, BASE) {}
+	using BASE::BASE;
+	//FORWARDING_CONSTRUCTOR(Accessor_Base, BASE) {}
 
 	// assign data/value
 	template<class VAL>
-	auto& operator=(VAL&& val) { BASE::operator()() = std::forward<VAL>(val); return _self(); }
+	auto& operator=(VAL&& val)        { BASE::val() = std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator=(VAL&& val) const  { BASE::val() = std::forward<VAL>(val); return _self(); }
+
+
+
+	template<class VAL>
+	auto& operator+=(VAL&& val)       { BASE::val() += std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator+=(VAL&& val) const { BASE::val() += std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator-=(VAL&& val)       { BASE::val() -= std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator-=(VAL&& val) const { BASE::val() -= std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator*=(VAL&& val)       { BASE::val() *= std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator*=(VAL&& val) const { BASE::val() *= std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator/=(VAL&& val)       { BASE::val() /= std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator/=(VAL&& val) const { BASE::val() /= std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator%=(VAL&& val)       { BASE::val() %= std::forward<VAL>(val); return _self(); }
+
+	template<class VAL>
+	auto& operator%=(VAL&& val) const { BASE::val() %= std::forward<VAL>(val); return _self(); }
+
+
 
 public:
 	Accessor<C>& operator++() { ++BASE::data(); return _self(); }
@@ -244,9 +284,6 @@ public:
 	// doesn't return accessor:
 	auto operator++(int) { return BASE::operator()()++; }
 	auto operator--(int) { return BASE::operator()()--; }
-
-	template<class T> Accessor<C>& operator+=(T&& t) { BASE::data() += std::forward<T>(t); return _self(); }
-	template<class T> Accessor<C>& operator-=(T&& t) { BASE::data() -= std::forward<T>(t); return _self(); }
 
 // public:
 // 	auto next() const { auto r = _self(); ++r.iterator(); return r; }
@@ -301,8 +338,8 @@ public:
 	template<Const_Flag CC>	using Iterator = typename BASE::template Iterator<CC>;
 
 public:
-	//using BASE::BASE;
-	FORWARDING_CONSTRUCTOR(Iterator_Base, BASE) {}
+	using BASE::BASE;
+	//FORWARDING_CONSTRUCTOR(Iterator_Base, BASE) {}
 
 
 //

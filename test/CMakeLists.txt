@@ -51,6 +51,7 @@ set(sources
 	miller-rabin.cpp
 
 	kd.cpp
+	map.cpp
 )
 
 

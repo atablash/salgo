@@ -17,7 +17,7 @@ Salgo is an experimental C++17 algorithm template library.
 	* Type builders allow easy compile-time customization of data structures and algorithms
 * Performance is critical
 	* Lots of optimizations available via type builders
-	* Included benchmarks comparing Salgo to libstdc++ and libc++, using GCC and Clang (see **Travis** builds)
+	* Included benchmarks comparing Salgo to libstdc++ and libc++, using GCC and Clang (see **Travis** builds: [![Build Status](https://travis-ci.org/atablash/salgo.svg?branch=master)](https://travis-ci.org/atablash/salgo))
 
 It's an experimental project with no backward compatibility, or even versioning.
 
@@ -31,6 +31,8 @@ Contents
 	* [Allocators](#allocators)
 	* [A Story Behind Accessors](#a-story-behind-accessors)
 	* [Type Builders](#type-builders)
+	* [Iterables](#iterables)
+		* [Map](#map)
 * [Exception Safety](#exception-safety)
 * [Reference](#reference)
 	* Containers
@@ -40,11 +42,11 @@ Contents
 		* [Hash_Table](doc/HASH-TABLE.md) - a replacement for `std::map` and `std::set`
 		* [List](doc/LIST.md) - a replacement for `std::list`
 	* Data Structures
-		* Union_Find - TODO, but see tests
-		* Graph - TODO, but see tests
-		* Rooted_Forest - TODO, but see tests
+		* Union_Find - documentation TODO, but see tests
+		* Graph - documentation TODO, but see tests
+		* N_Ary_Forest - documentation TODO, but see tests
 	* 3D
-		* TODO
+		* documentation TODO, but see tests
 	* Allocators
 		* [Array_Allocator](doc/VECTOR-ALLOCATOR.md) - the default Salgo allocator
 		* [Random_Allocator](doc/RANDOM-ALLOCATOR.md)
@@ -349,6 +351,71 @@ Of course, you can declare a new type, and parametrize it more later:
 
 	// or maybe we want doubles now?
 	using C = B ::VAL<double>	// still SPARSE and COUNTable
+
+
+
+Iterables
+---------
+All containers should (TODO: work on it!) implement `Iterable` concept, by deriving from `Iterable_Base<CRTP>`.
+
+### Map
+Allows you to apply a function before returning accessor value.
+
+```cpp
+    Dynamic_Array<int> arr = {1, 2, 3, 4, 5};
+
+    auto squared = arr.map(
+        [](auto& el) {
+            return el*el;
+        }
+    );
+
+    for(auto& e : squared) std::cout << e.val() << " "; // 1 4 9 16 25
+```
+
+The resulting `Map` object *references* the original `Iterable` collection - be careful not to let the original collection go *out-of-scope*.
+
+The `Map` object is also an `Iterable`, meaning you can chain another `.map()`:
+
+```cpp
+    auto chained = arr.map(
+        [](auto& el) {
+            return el*el;
+        }
+    ).map(
+        [](auto&& el) {
+            return el == 25 ? 1000 : el;
+        }
+    );
+```
+
+You can also return references, allowing you to modify the data pointed to by `Map`:
+
+```cpp
+	struct S {
+        int number = 0;
+        S(int x) : number(x) {}
+    };
+
+    Dynamic_Array<S> arr = {1, 2, 3, 4, 5};
+
+    auto numbers = arr.map(
+        [](auto& el) -> auto& {
+            return el.number;
+        }
+    );
+
+    for(auto& e : numbers) e *= e;
+```
+
+See more examples in `test/map.cpp`.
+
+
+
+### filter
+Linear-time filtering.
+
+TODO! Not implemented yet.
 
 
 

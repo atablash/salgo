@@ -7,6 +7,8 @@
 #include "accessors.hpp"
 #include "handles.hpp"
 
+#include "iterable-base.inl"
+
 #include "memory-block.inl"
 #include "hash.hpp"
 
@@ -111,10 +113,10 @@ public:
 	}
 
 	// same as `constructed()`, but also checks bounds
-	bool exists_SLOW() const {
-		if(!CONT._is_in_bounds( HANDLE )) return false;
-		return constructed();
-	}
+	// bool exists_SLOW() const {
+	// 	if(!CONT._is_in_bounds( HANDLE )) return false;
+	// 	return constructed();
+	// }
 
 };
 
@@ -153,7 +155,7 @@ private:
 	}
 
 public:
-	bool operator!=(End_Iterator<P>) { return HANDLE < CONT.domain(); }
+	bool operator!=(End_Iterator<P>) const { return HANDLE < CONT.domain(); }
 };
 
 
@@ -184,7 +186,7 @@ struct Context {
 
 
 template<class P>
-class Dynamic_Array : protected P {
+class Dynamic_Array : protected P, public Iterable_Base<Dynamic_Array<P>> {
 	static_assert(!(P::Dense && P::Count), "no need for COUNT if dynamic_array is DENSE");
 
 public:
@@ -199,10 +201,13 @@ public:
 	using typename P::Handle_Small;
 	using typename P::Index;
 
+	template<Const_Flag C> using Accessor = dynamic_array::Accessor<P,C>;
+	template<Const_Flag C> using Iterator = dynamic_array::Iterator<P,C>;
+
 
 private:
-	friend Accessor<P,MUTAB>;
-	friend Accessor<P,CONST>;
+	friend Accessor<MUTAB>;
+	friend Accessor<CONST>;
 
 
 private:
@@ -324,7 +329,7 @@ public:
 		if constexpr(P::Dense) return operator[]( Index(_size-1) );
 		else {
 			DCHECK_GT(_mb.count(), 0);
-			auto it = Iterator<P,CONST>(this, Index(_size-1));
+			auto it = Iterator<CONST>(this, Index(_size-1));
 			if(!it->constructed()) --it;
 			return it.value();
 		}
@@ -334,7 +339,7 @@ public:
 		if constexpr(P::Dense) return operator[]( Index(_size-1) );
 		else {
 			DCHECK_GT(_mb.count(), 0);
-			auto it = Iterator<P,CONST>(this, Index(_size-1));
+			auto it = Iterator<CONST>(this, Index(_size-1));
 			if(!it->constructed()) --it;
 			return it.value();
 		}
@@ -344,13 +349,11 @@ public:
 
 public:
 	auto operator()(Index key) {
-		_check_bounds(key);
-		return Accessor<P,MUTAB>(this, key);
+		return Accessor<MUTAB>(this, key);
 	}
 
 	auto operator()(Index key) const {
-		_check_bounds(key);
-		return Accessor<P,CONST>(this, key);
+		return Accessor<CONST>(this, key);
 	}
 
 	auto operator()(First_Tag)       { static_assert(P::Dense, "todo: implement for sparse"); return operator()( Index(0) ); }
@@ -380,7 +383,7 @@ private:
 
 public:
 	template<class... ARGS>
-	Accessor<P,MUTAB> emplace_back(ARGS&&... args) {
+	Accessor<MUTAB> emplace_back(ARGS&&... args) {
 		// because of dynamic_array realloc:
 		static_assert( P::Dense || P::Exists || (std::is_trivially_move_constructible_v<Val> && std::is_trivially_destructible_v<Val>),
 			"non-trivially-constructible types require CONSTRUCTED_FLAGS to emplace_back()" );
@@ -398,10 +401,10 @@ public:
 
 		_mb(_size).construct( std::forward<ARGS>(args)... );
 
-		return Accessor<P,MUTAB>( this, Index(_size++) );
+		return Accessor<MUTAB>( this, Index(_size++) );
 	}
 
-	Accessor<P,MUTAB> push_back(const Val& val) {
+	Accessor<MUTAB> push_back(const Val& val) {
 		return emplace_back(val);
 	}
 
@@ -486,14 +489,14 @@ public:
 public:
 	auto begin() {
 		static_assert(P::Iterable);
-		auto e = Iterator<P,MUTAB>(this, Index(0));
+		auto e = Iterator<MUTAB>(this, Index(0));
 		if(_size && !e->constructed()) ++e;
 		return e;
 	}
 
 	auto begin() const {
 		static_assert(P::Iterable);
-		auto e = Iterator<P,CONST>(this, Index(0));
+		auto e = Iterator<CONST>(this, Index(0));
 		if(_size && !e->constructed()) ++e;
 		return e;
 	}
