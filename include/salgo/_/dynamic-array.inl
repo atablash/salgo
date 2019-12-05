@@ -155,7 +155,7 @@ private:
 	}
 
 public:
-	bool operator!=(End_Iterator<P>) const { return HANDLE < CONT.domain(); }
+	bool operator!=(End_Iterator<P>) const { return HANDLE != CONT.domain(); }
 };
 
 

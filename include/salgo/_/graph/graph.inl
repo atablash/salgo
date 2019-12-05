@@ -269,7 +269,7 @@ struct Verts_Context {
 		void _decrement() { MUT_HANDLE = P::raw_vs(CONT)( HANDLE ).iterator().prev(); }
 
 	public:
-		bool operator!=(End_Iterator) const { return HANDLE < P::raw_vs(CONT).domain(); }
+		bool operator!=(End_Iterator) const { return HANDLE != P::raw_vs(CONT).domain(); }
 	}; // Iterator
 
 
@@ -344,7 +344,7 @@ struct Edges_Context {
 		void _decrement() { HANDLE = CONT._es( HANDLE ).iterator().prev(); }
 
 	public:
-		bool operator!=(End_Iterator) const { return HANDLE < CONT._es.domain(); }
+		bool operator!=(End_Iterator) const { return HANDLE != CONT._es.domain(); }
 	}; // Iterator
 
 

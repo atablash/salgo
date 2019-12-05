@@ -100,7 +100,7 @@ struct Verts_Context {
 		void _decrement() { MUT_HANDLE = P::raw_vs(CONT)( HANDLE ).iterator().prev(); }
 
 	public:
-		bool operator!=(End_Iterator) const { return HANDLE < P::raw_vs(CONT).domain(); }
+		bool operator!=(End_Iterator) const { return HANDLE != P::raw_vs(CONT).domain(); }
 	}; // Iterator
 
 
@@ -345,7 +345,7 @@ struct Polys_Context : private P {
 		void _decrement() { MUT_HANDLE = P::raw_ps(CONT)( HANDLE ).iterator().prev(); }
 
 	public:
-		bool operator!=(End_Iterator) const { return HANDLE < P::raw_ps(CONT).domain(); }
+		bool operator!=(End_Iterator) const { return HANDLE != P::raw_ps(CONT).domain(); }
 	}; // Iterator
 
 
@@ -454,7 +454,7 @@ struct PolyVerts_Context : private P {
 		void _decrement() { --MUT_HANDLE.ith; }
 
 	public:
-		bool operator!=(End_Iterator) const { return HANDLE.ith < 3; }
+		bool operator!=(End_Iterator) const { return HANDLE.ith != 3; }
 	}; // Iterator
 
 
@@ -632,7 +632,7 @@ struct PolyEdges_Context : private P {
 		void _decrement() { -- MUT_HANDLE.ith; }
 
 	public:
-		bool operator!=(End_Iterator) const { return HANDLE.ith < 3; }
+		bool operator!=(End_Iterator) const { return HANDLE.ith != 3; }
 	}; // Iterator
 
 

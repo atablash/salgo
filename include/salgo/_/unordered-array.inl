@@ -125,8 +125,8 @@ private:
 	// compare with End_Iterator
 	//
 public:
-	bool operator!=(End_Iterator<P>) const { return HANDLE < CONT.size(); }
-	bool operator!=(Before_Begin_Iterator<P>) const { return HANDLE >= 0; }
+	bool operator!=(End_Iterator<P>) const { return HANDLE != CONT.size(); }
+	bool operator!=(Before_Begin_Iterator<P>) const { return HANDLE != -1; }
 };
 
 

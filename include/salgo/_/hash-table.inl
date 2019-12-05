@@ -169,7 +169,7 @@ private:
 	auto _get_comparable() const { return std::make_pair(HANDLE.a, HANDLE.b); }
 
 public:
-	bool operator!=(End_Iterator<P>) const { return HANDLE.a >= 0; }
+	bool operator!=(End_Iterator<P>) const { return HANDLE.a != -1; }
 };
 
 
