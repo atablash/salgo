@@ -25,7 +25,7 @@ class Reference;
 template<class P, Const_Flag C>
 class Accessor;
 
-template<class P, Const_Flag C>
+template<class P>
 struct End_Iterator;
 
 template<class P, Const_Flag C>

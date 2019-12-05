@@ -45,19 +45,8 @@ struct Index : Handle<P> {
 
 
 
-// HACK to support erasing elements and back-iteration
-template<class P, Const_Flag C>
-struct End_Iterator : Iterator<P,C> {
-	using BASE = Iterator<P,C>;
-	using BASE::BASE;
-
-	// forbid decrementing
-private:
-	using BASE::operator--;
-	using BASE::operator-=;
-	using BASE::operator++;
-	using BASE::operator+=;
-};
+template<class P>
+struct End_Iterator {};
 
 
 
@@ -115,7 +104,6 @@ class Iterator : public Iterator_Base<C,Context<P>> {
 	using BASE::BASE;
 	// FORWARDING_CONSTRUCTOR(Iterator, BASE) {}
 	friend Unordered_Array<P>;
-	friend End_Iterator<P,C>;
 
 	using BASE::_just_erased;
 
@@ -135,9 +123,7 @@ private:
 	// compare with End_Iterator
 	//
 public:
-	template<Const_Flag CC>
-	bool operator!=(const End_Iterator<P,CC>&) { return BASE::operator!=( CONT.end() ); }
-	using BASE::operator!=; // still use normal version too
+	bool operator!=(End_Iterator<P>) const { return HANDLE < CONT.size() && HANDLE >= 0; } // todo optim: wouldn't it be too slow?
 };
 
 
@@ -165,7 +151,7 @@ struct Context {
 
 
 template<class P>
-class Unordered_Array : protected P {
+class Unordered_Array : protected P, public Iterable_Base<Unordered_Array<P>> {
 	using typename P::Index;
 
 public:
@@ -201,24 +187,34 @@ public:
 
 
 
-	//
-	// interface: manipulate element - can be accessed via the Accessor
-	//
 public:
 	auto& operator[](Index handle)       { _check(handle); return v[handle]; }
 	auto& operator[](Index handle) const { _check(handle); return v[handle]; }
 
-	// inline void erase(Handle handle) = delete; // only through accessor
+	auto& operator[](First_Tag)       { return v[0]; }
+	auto& operator[](First_Tag) const { return v[0]; }
+
+	auto& operator[](Last_Tag)       { return v[ size()-1 ]; }
+	auto& operator[](Last_Tag) const { return v[ size()-1 ]; }
+
+	decltype(auto) operator[](Any_Tag)       { return operator[](FIRST); }
+	decltype(auto) operator[](Any_Tag) const { return operator[](FIRST); }
 
 
 
+	auto operator()(Index handle)       { return _accessor(handle); }
+	auto operator()(Index handle) const { return _accessor(handle); }
 
-	//
-	// interface
-	//
-public:
-	auto operator()(Index handle)       { _check(handle); return _accessor(handle); }
-	auto operator()(Index handle) const { _check(handle); return _accessor(handle); }
+	auto operator()(First_Tag)       { return _accessor(0); }
+	auto operator()(First_Tag) const { return _accessor(0); }
+
+	auto operator()(Last_Tag)       { return _accessor( size()-1 ); }
+	auto operator()(Last_Tag) const { return _accessor( size()-1 ); }
+
+	decltype(auto) operator()(Any_Tag)       { return operator()(FIRST); }
+	decltype(auto) operator()(Any_Tag) const { return operator()(FIRST); }
+
+
 
 	template<class... ARGS>
 	auto add(ARGS&&... args) {
@@ -253,8 +249,7 @@ public:
 	auto begin()       { return _accessor( 0 ).iterator(); }
 	auto begin() const { return _accessor( 0 ).iterator(); }
 
-	auto end()       { return End_Iterator<P,MUTAB>( this, Handle(v.size()) ); }
-	auto end() const { return End_Iterator<P,CONST>( this, Handle(v.size()) ); }
+	auto end() const { return End_Iterator<P>(); }
 
 
 private:

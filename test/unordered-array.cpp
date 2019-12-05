@@ -1,5 +1,4 @@
 #include <salgo/unordered-array>
-#include <salgo/reversed>
 
 #include <gtest/gtest.h>
 
@@ -15,7 +14,7 @@ using namespace std::chrono;
 
 
 
-TEST(Unordered_Vector, push_delete) {
+TEST(Unordered_Array, push_delete) {
 
 	Unordered_Array<int> m;
 	m.add(1); //
@@ -52,7 +51,7 @@ TEST(Unordered_Vector, push_delete) {
 }
 
 
-TEST(Unordered_Vector, no_invalidation) {
+TEST(Unordered_Array, no_invalidation) {
 
 	Unordered_Array<int> m;
 	m.add(100); //
@@ -83,10 +82,10 @@ TEST(Unordered_Vector, no_invalidation) {
 
 
 
-TEST(Unordered_Vector, backward_iteration) {
+TEST(Unordered_Array, reversed_iteration) {
 	Unordered_Array<int> v = {1, 2, 3, 4, 5};
 	set<int> s;
-	for(auto& e : Reversed(v)) {
+	for(auto& e : v.reversed()) {
 		s.insert(e);
 		if(e == 3) {
 			v(e.handle()).erase();
@@ -97,7 +96,8 @@ TEST(Unordered_Vector, backward_iteration) {
 }
 
 
-TEST(Unordered_Vector, forward_iteration_good) {
+
+TEST(Unordered_Array, forward_iteration_good) {
 	Unordered_Array<int> v = {1, 2, 3, 4, 5};
 	set<int> s;
 	for(auto& e : v) {
@@ -111,7 +111,7 @@ TEST(Unordered_Vector, forward_iteration_good) {
 }
 
 
-TEST(Unordered_Vector, forward_iteration_bad) {
+TEST(Unordered_Array, forward_iteration_bad) {
 	Unordered_Array<int> v = {1, 2, 3, 4, 5};
 	set<int> s;
 	for(auto& e : v) {

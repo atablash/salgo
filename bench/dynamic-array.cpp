@@ -4,7 +4,6 @@
 #include <salgo/dynamic-array>
 #include <salgo/chunked-array>
 #include <salgo/unordered-array>
-#include <salgo/reversed>
 
 #include <vector>
 
@@ -338,7 +337,7 @@ static void FOREACH_ACCESS_REV_salgo_unordered(State& state) {
 
 	for(auto _ : state) {
 		int sum = 0;
-		for(auto& e : Reversed(v)) sum += e;
+		for(auto& e : v.reversed()) sum += e;
 		DoNotOptimize(sum);
 	}
 }
