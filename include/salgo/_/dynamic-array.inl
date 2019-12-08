@@ -295,7 +295,9 @@ public:
 	}
 
 	void clear() { resize(0); }
-	bool empty() const { return _size == 0; }
+
+	bool  is_empty() const { return _size == 0; }
+	bool not_empty() const { return !is_empty(); }
 
 
 	void reserve(int capacity) {

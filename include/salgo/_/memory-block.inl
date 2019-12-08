@@ -554,14 +554,14 @@ public:
 
 
 	auto operator()(First_Tag) {
-		DCHECK(!empty());
+		DCHECK( not_empty() );
 		Handle h = Index(0);
 		while(!(*this)(h).constructed()) ++h;
 		return operator()(h);
 	}
 
 	auto operator()(First_Tag) const {
-		DCHECK(!empty());
+		DCHECK( not_empty() );
 		Handle h = Index(0);
 		while(!(*this)(h).constructed()) ++h;
 		return operator()(h);
@@ -569,14 +569,14 @@ public:
 
 
 	auto operator()(Last_Tag) {
-		DCHECK(!empty());
+		DCHECK( not_empty() );
 		Handle h = Index( domain() );
 		do --h; while(!(*this)(h).constructed());
 		return operator()(h);
 	}
 
 	auto operator()(Last_Tag) const {
-		DCHECK(!empty());
+		DCHECK( not_empty() );
 		Handle h = Index( domain() );
 		do --h; while(!(*this)(h).constructed());
 		return operator()(h);
@@ -618,10 +618,12 @@ public:
 		else return NUM_EXISTING_BASE::num_existing;
 	}
 
-	bool empty() const {
+	bool is_empty() const {
 		static_assert(P::Countable);
 		return count() == 0;
 	}
+
+	bool not_empty() const { return !is_empty(); }
 
 
 
