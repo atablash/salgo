@@ -12,7 +12,7 @@ using namespace salgo::graph;
 TEST(Graph, construct) {
 	Graph g;
 
-	EXPECT_TRUE( g.verts().empty() );
+	EXPECT_TRUE( g.verts().is_empty() );
 	EXPECT_EQ(0, g.verts().count() );
 }
 
@@ -20,7 +20,7 @@ TEST(Graph, construct) {
 TEST(Graph, construct_verts) {
 	Graph g(3);
 
-	EXPECT_FALSE( g.verts().empty() );
+	EXPECT_TRUE( g.verts().not_empty() );
 	EXPECT_EQ( 3, g.verts().count() );
 }
 

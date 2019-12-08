@@ -5,6 +5,7 @@
 #include "has-member.hpp"
 #include "const-flag.hpp"
 #include "constructor-macros.hpp"
+#include "template-macros.hpp"
 
 #include <glog/logging.h>
 
@@ -80,9 +81,33 @@ public:
 	Reference_Base() = default;
 	Reference_Base(Const<Container,C>* container, Handle handle) : _handle(handle), _container(container) {}
 
+	Reference_Base(const Reference_Base&) = default;
+	Reference_Base(Reference_Base&&) = default;
+
+	Reference_Base& operator=(const Reference_Base&) = default;
+	Reference_Base& operator=(Reference_Base&&) = default;
+
+	// CONST from MUTAB
+	template<Const_Flag CC = C, SALGO_REQUIRES(CC == CONST)>
+	Reference_Base(const Reference_Base<MUTAB,CONTEXT>& o) : _handle(o._handle), _container(o._container) {}
+
+	template<Const_Flag CC = C, SALGO_REQUIRES(CC == CONST)>
+	Reference_Base(Reference_Base<MUTAB,CONTEXT>&& o) : _handle( std::move(o._handle) ), _container( std::move(o._container) ) {}
+
+	template<Const_Flag CC = C, SALGO_REQUIRES(CC == CONST)>
+	auto& operator=(const Reference_Base<MUTAB,CONTEXT>& o) { _handle = o._handle; _container = o._container; return *this; }
+
+	template<Const_Flag CC = C, SALGO_REQUIRES(CC == CONST)>
+	auto& operator=(Reference_Base<MUTAB,CONTEXT>&& o) { _handle = std::move(o._handle); _container = std::move(o._container); return *this; }
+
+
 private:
 	Handle _handle;
 	Const<Container,C>* _container = nullptr;
+
+	friend Reference_Base<MUTAB, CONTEXT>;
+	friend Reference_Base<CONST, CONTEXT>;
+
 
 public:
 	auto& accessor()       { _check(); return *static_cast<      Accessor<C>*>(this); }
@@ -97,6 +122,7 @@ public:
 	auto& container()       { return *_container; }
 	auto& container() const { return *_container; }
 
+	void reset() { _handle = Handle{}; }
 
 	// get value
 	decltype(auto) data()       {
@@ -163,7 +189,7 @@ public:
 
 
 template<Const_Flag C, class CONTEXT>
-std::ostream& operator<<(std::ostream& s, const Reference_Base<C,CONTEXT>& r) {
+::std::ostream& operator<<(::std::ostream& s, const Reference_Base<C,CONTEXT>& r) {
 	return s << r.handle() << " @" << &r.container();
 };
 
@@ -199,8 +225,8 @@ class _Reference<false,C,CONTEXT> : public Reference_Base<C, CONTEXT> {
 	using BASE = Reference_Base<C, CONTEXT>;
 
 public:
-	FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
-	//using BASE::BASE;
+	using BASE::BASE;
+	//FORWARDING_CONSTRUCTOR(_Reference, BASE) {}
 };
 
 

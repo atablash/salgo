@@ -97,7 +97,11 @@ class Accessor : public Accessor_Base<C,Context<P>> {
 // 	FORWARDING_CONSTRUCTOR_2(Accessor, BASE) {}
 
 public:
-	auto& merge_with(const Accessor& b) {
+	auto& merge_with(typename P::Index idx) {
+		auto b = CONT(idx);
+
+		if(*this == b) return *this; // todo: do we want this check?
+
 		static_assert(C==MUTAB, "called union_with() on const accessor");
 		DCHECK( !NODE.parent.valid() ) <<
 			"can't merge this accessor, because it's already invalidated. "
@@ -128,15 +132,6 @@ public:
 
 		return *this;
 	}
-
-	auto& merge_with(typename P::Index idx) { return merge_with( CONT(idx) ); }
-
-public:
-	template<Const_Flag CC>
-	bool operator==(const Accessor<P,CC>& o) const { DCHECK_EQ(&CONT, &o.CONT); return HANDLE == o.HANDLE; }
-
-	template<Const_Flag CC>
-	bool operator!=(const Accessor<P,CC>& o) const { DCHECK_EQ(&CONT, &o.CONT); return HANDLE != o.HANDLE; }
 };
 
 
@@ -240,7 +235,9 @@ public:
 		return Accessor<MUTAB>(this, handle);
 	}
 
-	auto merge(Accessor<MUTAB>& a, Index b) {
+	auto merge(Index _a, Index b) {
+		auto a = operator()(_a);
+
 		if constexpr(P::Countable_Sets) {
 			if(_alloc()[a].count > _alloc()[b].count) std::swap(a,b);
 		}
@@ -249,8 +246,6 @@ public:
 
 		return Accessor<MUTAB>(this, b);
 	}
-
-	auto merge(Index a, Index b) { return merge(operator()(a), b); }
 
 
 	auto domain() const { return _alloc().domain(); }

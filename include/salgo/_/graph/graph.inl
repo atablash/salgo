@@ -241,7 +241,7 @@ struct Verts_Context {
 			}
 			else {
 				for( auto& outs : P::raw_vs(CONT)[HANDLE].outs_ins ) {
-					DCHECK( outs.empty() ) << "removing this vert removes edges, so requires Edges_Erasable";
+					DCHECK( outs.is_empty() ) << "removing this vert removes edges, so requires Edges_Erasable";
 				}
 			}
 
@@ -469,7 +469,9 @@ class A_Verts {
 public:
 	auto domain() const {  return P::raw_vs(_graph).domain();  }
 
-	auto empty() const {  return P::raw_vs(_graph).empty();  }
+	auto  is_empty() const {  return P::raw_vs(_graph).is_empty();  }
+	auto not_empty() const {  return !is_empty();  }
+
 	auto count() const {  return P::raw_vs(_graph).count();  }
 
 	void resize(int new_size) {
@@ -511,7 +513,9 @@ class A_Edges : private P {
 public:
 	auto domain() const {  return _graph._es.domain();  }
 
-	auto empty() const {  return _graph._es.empty();  }
+	auto  is_empty() const {  return _graph._es.is_empty();  }
+	auto not_empty() const {  return !is_empty();  }
+
 	auto count() const {  return _graph._es.count();  }
 
 	template<class... ARGS>
@@ -575,7 +579,9 @@ class A_Vert_Edges {
 public:
 	auto domain() const { return _raw().domain(); }
 
-	auto empty() const {  return _raw().empty();  }
+	auto  is_empty() const {  return _raw().is_empty();  }
+	auto not_empty() const {  return !is_empty();  }
+
 	auto count() const {  return _raw().count();  }
 
 	auto operator()(typename P::Vert_Edges::Index idx)       { return P::A_Vert_Edge<C,oi>(&_graph, _vert, idx); }

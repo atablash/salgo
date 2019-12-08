@@ -105,7 +105,7 @@ TEST(Binary_Forest, traverse_and_erase) {
 	v = v.left();
 	v.erase();
 
-	EXPECT_TRUE( tree.empty() );
+	EXPECT_TRUE( tree.is_empty() );
 }
 
 

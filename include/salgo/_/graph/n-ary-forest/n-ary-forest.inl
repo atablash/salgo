@@ -291,9 +291,8 @@ private:
 public:
 	static_assert(Allocator::Auto_Destruct, "Rooted_Forest requires an Auto_Destruct allocator");
 
-	bool empty() const {
-		return _alloc().empty();
-	}
+	bool  is_empty() const { return _alloc().is_empty(); }
+	bool not_empty() const { return !is_empty(); }
 
 	template<class... Args>
 	auto emplace(Args&&... args) {

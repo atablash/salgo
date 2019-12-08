@@ -6,7 +6,7 @@
 
 #include "../../named-arguments.hpp"
 
-
+#include <iostream> // todo: disable
 
 
 
@@ -100,7 +100,7 @@ auto check_solid(const MESH& mesh, ARGS&&... _args) {
 template <class MESH, class... ARGS>
 auto is_solid(const MESH& mesh, ARGS&&... args) {
 	auto r = check_solid(mesh, std::forward<ARGS>(args)...);
-	//std::cout << "check_solid_result " << (int)r.failure << std::endl;
+	// std::cout << "check_solid_result " << (int)r.failure << std::endl;
 	return r.is_solid;
 }
 

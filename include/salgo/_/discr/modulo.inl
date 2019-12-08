@@ -92,7 +92,7 @@ private:
 
 		if constexpr(P::type == Type::STATIC) return P::mod;
 		else if constexpr(P::type == Type::CONTEXTED) {
-			DCHECK(!g_contexts.empty()) << "you must create Modulo_Context first!";
+			DCHECK(!g_contexts.is_empty()) << "you must create Modulo_Context first!";
 			return g_contexts[LAST].mod;
 		}
 		else if constexpr(P::type == Type::LOCAL || P::type == Type::LOCAL_WITH_TOTIENT) return BASE_MOD::mod;
@@ -104,7 +104,7 @@ private:
 		else if constexpr(P::type == Type::CONTEXTED) {
 			// both MOD and TOTIENT should have same source
 			static_assert(P::mod == 0);
-			DCHECK(!g_contexts.empty()) << "you must create Modulo_Context first!";
+			DCHECK(!g_contexts.is_empty()) << "you must create Modulo_Context first!";
 			return g_contexts[LAST].totient;
 		}
 		else if constexpr(P::type == Type::LOCAL) {

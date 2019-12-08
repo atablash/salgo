@@ -143,38 +143,43 @@ void erase_poly_if_degenerate(POLY poly, ARGS&&... _args) {
 		auto v = pv.vert();
 		auto w = pw.vert();
 
-		if(v == w) {
-			// yes, remove
-			if constexpr(POLY::Mesh::Has_Edge_Links) {
-				pv.next_polyEdge().unlink_if_linked();
+		if(v != w) continue;
 
-				// note: in some corner-cases poly can be edge-linked to itself
-				// it's generally not good situation to work with, but this function should support this anyway
+		// yes, remove
 
-				auto vv = pv.prev_polyEdge().linked_polyEdge();
-				if(vv.valid()) vv.unlink();
+		// call ON_POLY_ERASE callback here (not inside poly.erase()), while edge-links are still valid
+		if constexpr (args.has(ON_POLY_ERASE)) {
+			args(ON_POLY_ERASE)(poly);
+		}
 
-				auto ww = pw.next_polyEdge().linked_polyEdge();
-				if(ww.valid()) ww.unlink();
+		if constexpr(POLY::Mesh::Has_Edge_Links) {
+			pv.next_polyEdge().unlink_if_linked();
 
-				if(vv.valid() && ww.valid()) {
-					vv.link(ww);
+			// note: in some corner-cases poly can be edge-linked to itself
+			// it's generally not good situation to work with, but this function should support this anyway
+
+			auto vv = pv.prev_polyEdge().linked_polyEdge();
+			if(vv.valid()) vv.unlink();
+
+			auto ww = pw.next_polyEdge().linked_polyEdge();
+			if(ww.valid()) ww.unlink();
+
+			if(vv.valid() && ww.valid()) {
+				vv.link(ww);
+				if constexpr(args.has(ON_EDGE_LINKED)) {
+					args(ON_EDGE_LINKED)(vv);
 				}
 			}
-
-			if constexpr (args.has(ON_POLY_ERASE)) {
-				args(ON_POLY_ERASE)(poly);
-			}
-
-			poly.erase(
-				UNLINK_EDGE_LINKS = false,
-				ERASE_ISOLATED_VERTS = erase_isolated_verts,
-				ON_VERT_ERASE = args,
-				ON_POLY_ERASE = args
-			);
-
-			break;
 		}
+
+		poly.erase(
+			UNLINK_EDGE_LINKS = false,
+			ERASE_ISOLATED_VERTS = erase_isolated_verts,
+			ON_VERT_ERASE = args
+			// note: don't call ON_POLY_ERASE HERE, we did this already
+		);
+
+		break;
 	}
 }
 
@@ -183,7 +188,7 @@ template<class MESH>
 void erase_isolated_verts(MESH& mesh) {
 	if constexpr(MESH::Has_Vert_Poly_Links) {
 		for(auto& v : mesh.verts()) {
-			if(v.vertPolys().empty()) v.fast_erase();
+			if(v.vertPolys().is_empty()) v.fast_erase();
 		}
 	}
 	else {
@@ -197,7 +202,7 @@ template<class MESH>
 bool has_isolated_verts(const MESH& mesh) {
 	if constexpr(MESH::Has_Vert_Poly_Links) {
 		for(auto& v : mesh.verts()) {
-			if(v.vertPolys().empty()) return true;
+			if(v.vertPolys().is_empty()) return true;
 		}
 		return false;
 	}
@@ -283,4 +288,5 @@ void append(MESH& mesh, const OTHER& other) {
 
 
 
-}
+
+} // namespace salgo::geom::g3d

@@ -30,7 +30,7 @@ template<class PARAMS>
 struct Node;
 
 
-template<class KEY, class VAL, class AABB, class IMPLICIT_KEY, class BINARY_FOREST, int ALIGN_OVERRIDE, bool ERASABLE>
+template<class KEY, class VAL, class AABB, class IMPLICIT_KEY, class BINARY_FOREST, int ALIGN_OVERRIDE, bool ERASABLE, bool COUNTABLE>
 struct Params {
 	using Key = KEY;
 	using Val = VAL;
@@ -38,6 +38,7 @@ struct Params {
 	using Implicit_Key = IMPLICIT_KEY;
 	static constexpr auto Align_Override = ALIGN_OVERRIDE;
 	static constexpr auto Erasable = ERASABLE;
+	static constexpr auto Countable = COUNTABLE;
 
 	static constexpr auto Has_Key = ! std::is_same_v<Key, void>;
 	static constexpr auto Has_Val = ! std::is_same_v<Val, void>;
@@ -79,7 +80,8 @@ class Accessor : public Accessor_Base<C,Context<P>> {
 	friend Kd<P>;
 
 public:
-	// get key
+	auto& aabb() const { return CONT._tree[ HANDLE ].aabb; }
+
 	template<class PP = P, SALGO_REQUIRES(PP::Has_Key)>
 	auto& key()       { static_assert(P::Has_Key, "your KD tree does not store keys"); return CONT._tree[ HANDLE ].kv.key; }
 
@@ -93,7 +95,14 @@ public:
 		static_assert(C==MUTAB, "erase() called on CONST accessor");
 		static_assert(P::Erasable, "erase() only available if kd tree is ERASABLE");
 
+		// std::cout << "kd erase: " << this->val() << std::endl;
+
 		CONT._tree[HANDLE]._erased = true;
+
+		if constexpr(P::Countable) {
+			CONT._counter--;
+		}
+
 		// todo: destruct key/val, maybe even aabb
 	}
 };
@@ -161,11 +170,13 @@ SALGO_GENERATE_HAS_MEMBER(val)
 SALGO_GENERATE_HAS_MEMBER(first)
 SALGO_GENERATE_HAS_MEMBER(second)
 
+SALGO_ADD_MEMBER(_counter)
+
 //
 // kd
 //
 template<class P>
-class Kd : protected P {
+class Kd : protected P, private Add__counter<int, P::Countable> {
 public:
 	using typename P::Scalar;
 	using typename P::Vector;
@@ -234,10 +245,17 @@ private:
 		// std::cout << "sizeof kd node " << sizeof(Node) << std::endl;
 		auto new_node = _select_tree_emplace( std::forward<ARGS>(args)... );
 
+		// std::cout << "kd emplace: " << new_node().kv.val << std::endl;
+
 		if(!_root.valid()) {
 			_root = new_node;
 			new_node().l_to = new_node().aabb.max()[0];
 			new_node().r_fr = new_node().aabb.min()[0];
+
+			if constexpr(P::Countable) {
+				this->_counter++;
+			}
+
 			return Accessor<P, MUTAB>(this, new_node);;
 		}
 
@@ -265,6 +283,10 @@ private:
 			}
 			static_assert(P::Dim > 0, "AABB dimensionality must be compile time constant");
 			axis = (axis + 1) % P::Dim;
+		}
+
+		if constexpr(P::Countable) {
+			this->_counter++;
 		}
 
 		return Accessor<P, MUTAB>(this, new_node);
@@ -400,6 +422,12 @@ public:
 
 	template<class PP=P, SALGO_REQUIRES(PP::Has_Val)>
 	auto& operator[](const Handle& handle) const { return _tree[ handle ].kv.val; }
+
+public:
+	auto count() const {
+		static_assert(P::Countable, "count() requires COUNTABLE kd tree");
+		return this->_counter;
+	}
 };
 
 
@@ -419,27 +447,30 @@ class Builder : private P {
 	using typename P::Binary_Forest;
 	using P::Align_Override;
 	using P::Erasable;
+	using P::Countable;
 
 public:
 	template<class X>
-	using AABB          = With_Builder< Params<Key, Val, X, Implicit_Key, Binary_Forest, Align_Override, Erasable> >;
+	using AABB          = With_Builder< Params<Key, Val, X, Implicit_Key, Binary_Forest, Align_Override, Erasable, Countable> >;
 
 	template<class X>
-	using AABB_OF       = With_Builder< Params<Key, Val, Aabb_Of<X>, X, Binary_Forest, Align_Override, Erasable> >;
+	using AABB_OF       = With_Builder< Params<Key, Val, Aabb_Of<X>, X, Binary_Forest, Align_Override, Erasable, Countable> >;
 
 	template<class X>
-	using KEY           = With_Builder< Params<X, Val, Aabb_Of<X>, X, Binary_Forest, Align_Override, Erasable> >;
+	using KEY           = With_Builder< Params<X, Val, Aabb_Of<X>, X, Binary_Forest, Align_Override, Erasable, Countable> >;
 
 	template<class X>
-	using VAL           = With_Builder< Params<Key, X, Aabb, Implicit_Key, Binary_Forest, Align_Override, Erasable> >;
+	using VAL           = With_Builder< Params<Key, X, Aabb, Implicit_Key, Binary_Forest, Align_Override, Erasable, Countable> >;
 
 	template<class X>
-	using BINARY_FOREST = With_Builder< Params<Key, Val, Aabb, Implicit_Key, X, Align_Override, Erasable> >;
+	using BINARY_FOREST = With_Builder< Params<Key, Val, Aabb, Implicit_Key, X, Align_Override, Erasable, Countable> >;
 
 	template<int X>
-	using ALIGN         = With_Builder< Params<Key, Val, Aabb, Implicit_Key, Binary_Forest, X, Erasable > >;
+	using ALIGN         = With_Builder< Params<Key, Val, Aabb, Implicit_Key, Binary_Forest, X, Erasable, Countable > >;
 
-	using ERASABLE      = With_Builder< Params<Key, Val, Aabb, Implicit_Key, Binary_Forest, Align_Override, true > >;
+	using ERASABLE      = With_Builder< Params<Key, Val, Aabb, Implicit_Key, Binary_Forest, Align_Override, true, Countable > >;
+
+	using COUNTABLE     = With_Builder< Params<Key, Val, Aabb, Implicit_Key, Binary_Forest, Align_Override, Erasable, true > >;
 };
 
 
@@ -476,7 +507,8 @@ using Kd = typename _::kd::Bare_Builder<_::kd::Params<
 	void, // implicit key
 	::salgo::graph::Binary_Forest,
 	-1, // align-override
-	false // erasable
+	false, // erasable
+	false // countable
 >>;
 
 } // namespace salgo::linalg

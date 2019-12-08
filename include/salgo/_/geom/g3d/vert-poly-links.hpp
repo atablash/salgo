@@ -57,7 +57,7 @@ template<class MESH>
 void compute_vert_poly_links(MESH& mesh) {
 
 	for(auto v : mesh.verts) {
-		DCHECK(v.poly_links.empty()) << "compute_plinks expects empty plinks";
+		DCHECK(v.poly_links.is_empty()) << "compute_plinks expects empty plinks";
 	}
 
 	for(auto p : mesh.polys) {

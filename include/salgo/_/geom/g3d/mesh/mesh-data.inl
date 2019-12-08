@@ -67,6 +67,12 @@ struct H_PolyEdge {
 };
 
 
+template<class P>
+auto& operator<<(::std::ostream& os, const H_PolyEdge<P>& pe) {
+	return os << "{poly:" << pe.poly << ", edge:" << pe.ith << "}";
+}
+
+
 
 
 template<class P>
@@ -138,9 +144,3 @@ struct Poly :
 } // namespace salgo::geom::g3d::_::mesh
 
 
-namespace salgo {
-	template<class P>
-	auto& operator<<(::std::ostream& os, const salgo::geom::g3d::_::mesh::H_PolyEdge<P>& pe) {
-		return os << "{poly:" << pe.poly << ", edge:" << pe.ith << "}";
-	}
-}

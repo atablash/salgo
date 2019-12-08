@@ -56,7 +56,9 @@ auto split_edge(POLY_EDGE ab, VERT p) {
 
 	auto b = ab.next_vert();
 	auto c = ab.opposite_vert();
+
 	r.new_pbc = mesh.polys().add(p, b, c);
+	r.new_pb = r.new_pbc.polyVert(0).next_polyEdge();
 
 	r.old_bc = ab.next();
 
@@ -88,11 +90,12 @@ auto split_edge(POLY_EDGE ab, VERT p) {
 
 		ba.prev_polyVert().change_vert( p ); // B -> P
 
+		r.new_db = r.new_pdb.polyVert(0).opposite_polyEdge();
+
 		// unlink old_db, link new_db
 		if(r.old_db.is_linked()) {
 			auto bd = r.old_db.linked_polyEdge();
 			bd.unlink();
-			r.new_db = r.new_pdb.polyVert(0).opposite_polyEdge();
 			bd.link( r.new_db );
 		}
 
@@ -102,7 +105,6 @@ auto split_edge(POLY_EDGE ab, VERT p) {
 		r.new_dp.link( pd );
 
 		// link pb-bp
-		r.new_pb = r.new_pbc.polyVert(0).next_polyEdge();
 		auto bp = r.new_pdb.polyVert(0).prev_polyEdge();
 		r.new_pb.link( bp );
 	}

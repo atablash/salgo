@@ -251,7 +251,9 @@ public:
 
 
 	auto count() const { return v.count(); }
-	auto empty() const { return v.empty(); }
+
+	auto  is_empty() const { return v.is_empty(); }
+	auto not_empty() const { return !is_empty(); }
 
 	auto domain() const { return v.domain(); }
 

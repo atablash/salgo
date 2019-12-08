@@ -64,8 +64,11 @@ struct Key_Val<void,Val> {
 	Val val;
 	FORWARDING_CONSTRUCTOR_VAR(Key_Val, val) {}
 
-	Key_Val(const Key_Val&) = default;
-	Key_Val(Key_Val&&) = default;
+	// Key_Val(const Key_Val&) = default;
+	// Key_Val(Key_Val&&) = default;
+
+	// Key_Val& operator=(const Key_Val&) = default;
+	// Key_Val& operator=(Key_Val&&) = default;
 
 	auto& operator()()       { return val; }
 	auto& operator()() const { return val; }

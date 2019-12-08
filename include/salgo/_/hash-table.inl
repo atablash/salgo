@@ -456,12 +456,12 @@ public:
 		return _count;
 	}
 
-	bool empty() const {
+	bool is_empty() const {
 		return _count == 0;
 	}
 
 	bool not_empty() const {
-		return !empty();
+		return !is_empty();
 	}
 
 	void rehash(int want_buckets) {

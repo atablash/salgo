@@ -21,7 +21,7 @@ using MyMesh = Mesh<double> ::EDGE_LINKS;
 TEST(Cap_holes, sphere_holes_ply) {
 
 	auto mesh = load_ply<MyMesh>("resources/sphere-holes.ply");
-	EXPECT_FALSE(mesh.verts().empty());
+	EXPECT_TRUE( mesh.verts().not_empty() );
 
 	fast_compute_edge_links(mesh);
 	//compute_vert_poly_links(mesh);
@@ -42,7 +42,7 @@ TEST(Cap_holes, sphere_holes_ply) {
 TEST(Cap_holes, bunny_holes_ply) {
 
 	auto mesh = load_ply<MyMesh>("resources/bunny-holes.ply");
-	EXPECT_FALSE(mesh.verts().empty());
+	EXPECT_TRUE( mesh.verts().not_empty() );
 
 	fast_compute_edge_links(mesh);
 	//compute_vert_poly_links(mesh);

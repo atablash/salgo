@@ -421,11 +421,12 @@ struct Context {
 
 	public:
 		int count() const {
-			static_assert(Countable, "count() called on non countable Sparse_Vector");
+			static_assert(Countable, "count() called on non-countable List");
 			return NUM_EXISTING_BASE::num_existing;
 		}
 
 		bool is_empty() const { return !_front.valid(); }
+		bool not_empty() const { return !is_empty(); }
 
 
 

@@ -520,13 +520,13 @@ public:
 public:
 	Val& operator[](Index key) {
 		_check_bounds(key);
-		if constexpr(P::Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element with key " << key;
+		if constexpr(P::Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-constructed element with key " << key;
 		return _get(key).get();
 	}
 
 	const Val& operator[](Index key) const {
 		_check_bounds(key);
-		if constexpr(P::Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-existing element with key " << key;
+		if constexpr(P::Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-constructed element with key " << key;
 		return _get(key).get();
 	}
 

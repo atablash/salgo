@@ -89,6 +89,8 @@ bool has_all_edge_links( const MESH& mesh ) {
 //
 // if one edge is shared among more than 2 polys, pairing order is undefined
 //
+// does not modify existing links
+//
 template<class MESH>
 auto fast_compute_edge_links(MESH& mesh) {
 	struct Result {
@@ -106,6 +108,8 @@ auto fast_compute_edge_links(MESH& mesh) {
 		//std::cout << "process poly " << p.handle() << std::endl;
 
 		for(auto& pe : p.polyEdges()) {
+			if(pe.is_linked()) continue; // don't modify existing links
+
 			//std::cout << "process poly-edge " << pe.handle() << std::endl;
 
 			auto edge_key = std::pair(pe.prev_vert().handle(), pe.next_vert().handle());

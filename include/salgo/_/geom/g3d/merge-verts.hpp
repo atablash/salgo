@@ -32,6 +32,8 @@ void merge_verts(VERT a, VERT b, ARGS&&... _args) {
 	static_assert(VERT::Mesh::Polys_Erasable, "merge_verts requires POLYS_ERASABLE");
 	static_assert(VERT::Mesh::Has_Vert_Poly_Links, "merge_verts requires VERT_POLY_LINKS");
 
+	DCHECK_NE(a, b);
+
 	// this is optimization, as well as bugfix - without it program will crash in some cases,
 	// because 'a' could become isolated and deleted while this function is still running
 	// (edge-collapse)
@@ -68,7 +70,8 @@ void merge_verts(VERT a, VERT b, ARGS&&... _args) {
 			erase_poly_if_degenerate( p,
 				ERASE_ISOLATED_VERTS = true,
 				ON_VERT_ERASE = args,
-				ON_POLY_ERASE = args
+				ON_POLY_ERASE = args,
+				ON_EDGE_LINKED = args
 			);
 		}
 	}

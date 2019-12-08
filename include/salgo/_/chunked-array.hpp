@@ -477,7 +477,7 @@ struct Context {
 
 			// construct blocks
 			if(new_num_blocks > _blocks.size()) {
-				int curr_size = _blocks.empty() ? 1 : _blocks[LAST].domain()*2;
+				int curr_size = _blocks.is_empty() ? 1 : _blocks[LAST].domain()*2;
 				_blocks.reserve( new_num_blocks );
 				for(int i=_blocks.size(); i<new_num_blocks; ++i) {
 					_blocks.emplace_back( curr_size );
@@ -503,10 +503,10 @@ struct Context {
 		void clear() { resize(0); }
 
 		int capacity() const {
-			DCHECK_EQ((_blocks.empty() ? 0 : _blocks[LAST].domain()*2-1), ((1<<_blocks.domain())-1));
+			DCHECK_EQ((_blocks.is_empty() ? 0 : _blocks[LAST].domain()*2-1), ((1<<_blocks.domain())-1));
 			return (1 << _blocks.domain()) - 1;
 
-			//if(_blocks.empty()) return 0;
+			//if(_blocks.is_empty()) return 0;
 			//return _blocks.back()().size()*2 - 1;
 		}
 
