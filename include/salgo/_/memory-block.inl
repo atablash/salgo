@@ -19,10 +19,10 @@ SALGO_ADD_MEMBER(num_existing)
 SALGO_ADD_MEMBER(exists)
 
 
-			template<bool> struct Add_exists_bitset {
-				std::vector<bool> exists; // TODO: don't store size and capacity here
-			};
-			template<> struct Add_exists_bitset<false> {};
+template<bool> struct Add_exists_bitset {
+	std::vector<bool> exists; // TODO: don't store size and capacity here
+};
+template<> struct Add_exists_bitset<false> {};
 
 
 using Handle_Int_Type = int;
@@ -99,7 +99,7 @@ public:
 
 		_check_bounds();
 		if constexpr(P::Exists) {
-			DCHECK( !constructed() ) << "element already constructed";
+			DCHECK( !is_constructed() ) << "element already constructed";
 			CONT._set_exists(HANDLE, true);
 		}
 		_get().construct( std::forward<ARGS>(args)... );
@@ -114,7 +114,7 @@ public:
 
 		_check_bounds();
 		if constexpr(P::Exists) {
-			DCHECK( constructed() ) << "erasing already erased element";
+			DCHECK( is_constructed() ) << "erasing already erased element";
 			CONT._set_exists(HANDLE, false);
 		}
 		_get().destruct();
@@ -125,9 +125,9 @@ public:
 
 
 	// assumes key is in bounds
-	bool constructed() const {
+	bool is_constructed() const {
 		_check_bounds();
-		static_assert(P::Dense || P::Exists, "called constructed() on object without CONSTRUCTED_FLAGS or DENSE");
+		static_assert(P::Dense || P::Exists, "called is_constructed() on object without CONSTRUCTED_FLAGS or DENSE");
 
 		if constexpr(P::Dense) {
 			return true;
@@ -138,10 +138,12 @@ public:
 		}
 	}
 
-	// same as `constructed()` but also checks bounds
+	bool is_not_constructed() const { return ! is_constructed(); }
+
+	// same as `is_constructed()` but also checks bounds
 	// bool exists_SLOW() const {
 	// 	if(!_is_in_bounds()) return false;
-	// 	return constructed();
+	// 	return is_constructed();
 	// }
 
 private:
@@ -178,12 +180,12 @@ private:
 
 	void _increment() {
 		if constexpr(P::Dense) ++MUT_HANDLE;
-		else do ++MUT_HANDLE; while( (int)HANDLE != CONT.domain() && !BASE::accessor().constructed() );
+		else do ++MUT_HANDLE; while( (int)HANDLE != CONT.domain() && !BASE::accessor().is_constructed() );
 	}
 
 	void _decrement() {
 		if constexpr(P::Dense) --MUT_HANDLE;
-		else do --MUT_HANDLE; while( !BASE::accessor().constructed() );
+		else do --MUT_HANDLE; while( !BASE::accessor().is_constructed() );
 	}
 
 public:
@@ -299,7 +301,7 @@ public:
 
 		for(int i=0; i<_size; ++i) {
 			std::allocator_traits<Allocator>::construct(_allocator(), _data+i);
-			if( o(i).constructed() ) {
+			if( o(i).is_constructed() ) {
 				_get(i).construct( o[i] );
 			}
 		}
@@ -391,7 +393,7 @@ private:
 		static_assert(P::Dense || P::Exists || std::is_trivially_destructible_v<Val>,
 						"can't destroy non-POD container if no CONSTRUCTED_FLAGS or DENSE flags");
 
-		_destruct_block(data, size, [this](int i){ return (*this)(i).constructed(); });
+		_destruct_block(data, size, [this](int i){ return (*this)(i).is_constructed(); });
 	}
 
 	// destruct nodes+values
@@ -420,7 +422,7 @@ public:
 		if constexpr(std::is_trivially_move_constructible_v<Val>) {
 			_resize(new_size, [](int){ return true; });
 		}
-		else _resize(new_size, [this](int i){ return (*this)(i).constructed(); });
+		else _resize(new_size, [this](int i){ return (*this)(i).is_constructed(); });
 	}
 
 	template<class CONSTRUCTED_FLAGS_FUN>
@@ -520,13 +522,13 @@ public:
 public:
 	Val& operator[](Index key) {
 		_check_bounds(key);
-		if constexpr(P::Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-constructed element with key " << key;
+		if constexpr(P::Exists) DCHECK( (*this)(key).is_constructed() ) << "accessing non-constructed element with key " << key;
 		return _get(key).get();
 	}
 
 	const Val& operator[](Index key) const {
 		_check_bounds(key);
-		if constexpr(P::Exists) DCHECK( (*this)(key).constructed() ) << "accessing non-constructed element with key " << key;
+		if constexpr(P::Exists) DCHECK( (*this)(key).is_constructed() ) << "accessing non-constructed element with key " << key;
 		return _get(key).get();
 	}
 
@@ -556,14 +558,14 @@ public:
 	auto operator()(First_Tag) {
 		DCHECK( not_empty() );
 		Handle h = Index(0);
-		while(!(*this)(h).constructed()) ++h;
+		while(!(*this)(h).is_constructed()) ++h;
 		return operator()(h);
 	}
 
 	auto operator()(First_Tag) const {
 		DCHECK( not_empty() );
 		Handle h = Index(0);
-		while(!(*this)(h).constructed()) ++h;
+		while(!(*this)(h).is_constructed()) ++h;
 		return operator()(h);
 	}
 
@@ -571,14 +573,14 @@ public:
 	auto operator()(Last_Tag) {
 		DCHECK( not_empty() );
 		Handle h = Index( domain() );
-		do --h; while(!(*this)(h).constructed());
+		do --h; while(!(*this)(h).is_constructed());
 		return operator()(h);
 	}
 
 	auto operator()(Last_Tag) const {
 		DCHECK( not_empty() );
 		Handle h = Index( domain() );
-		do --h; while(!(*this)(h).constructed());
+		do --h; while(!(*this)(h).is_constructed());
 		return operator()(h);
 	}
 
@@ -593,7 +595,7 @@ public:
 
 		for(int i=0; i<_size; ++i) {
 			if constexpr(P::Exists) {
-				DCHECK( !(*this)(i).constructed() ) << "can't construct_all() if some elements already exist";
+				DCHECK( !(*this)(i).is_constructed() ) << "can't construct_all() if some elements already exist";
 			}
 			(*this)(i).construct( args... );
 		}
@@ -627,19 +629,43 @@ public:
 
 
 
+public:
+	template<class CALLBACK>
+	int compact(CALLBACK&& cb) {
+		int idx = 0;
+		for(int i=0; i<domain(); ++i) {
+			if((*this)(i).is_constructed()) {
+				if(idx < i) {
+					(*this)(idx).construct( std::move( _get(i).get() ) );
+					(*this)(i).destruct();
+					// std::cout << "remap " << i << " -> " << idx << std::endl;
+				}
+				cb(i, idx);
+				++idx;
+			}
+		}
+		resize(idx);
+		return idx;
+	}
+
+	int compact() {
+		return compact( [](auto&&, auto&&){} );
+	}
+
+
 
 public:
 	auto begin() {
 		static_assert(P::Iterable);
 		auto e = Iterator<P,MUTAB>(this, Index(0));
-		if(_size && !e.accessor().constructed()) ++e;
+		if(_size && !e.accessor().is_constructed()) ++e;
 		return e;
 	}
 
 	auto begin() const {
 		static_assert(P::Iterable);
 		auto e = Iterator<P,CONST>(this, Index(0));
-		if(_size && !e.accessor().constructed()) ++e;
+		if(_size && !e.accessor().is_constructed()) ++e;
 		return e;
 	}
 

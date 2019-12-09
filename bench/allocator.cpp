@@ -292,7 +292,7 @@ static void RANDOM_std(State& state) {
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
-		if(v(idx).constructed()) {
+		if(v(idx).is_constructed()) {
 			alloc.destruct( v[idx] );
 			v(idx).destruct();
 		}
@@ -323,7 +323,7 @@ static void RANDOM_salgo_crude(State& state) {
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
-		if(v(idx).constructed()) {
+		if(v(idx).is_constructed()) {
 			alloc.destruct( v[idx] );
 			v(idx).destruct();
 		}
@@ -354,7 +354,7 @@ static void RANDOM_salgo_random(State& state) {
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
-		if(v(idx).constructed()) {
+		if(v(idx).is_constructed()) {
 			alloc( v[idx] ).destruct();
 			v(idx).destruct();
 		}
@@ -385,7 +385,7 @@ static void RANDOM_salgo_vector(State& state) {
 
 	for(auto _ : state) {
 		int idx = rand() % v.domain();
-		if(v(idx).constructed()) {
+		if(v(idx).is_constructed()) {
 			alloc( v[idx] ).destruct();
 			v(idx).destruct();
 		}

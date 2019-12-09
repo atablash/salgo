@@ -184,6 +184,18 @@ TEST(Hash_Table, move) {
 	EXPECT_EQ(T::constructors(), T::destructors());
 }
 
+TEST(Hash_Table, modify_val_in_loop) {
+	Hash_Table<int,int> ht = {{1,1}, {2,2}, {3,3}, {4,4}};
+	for(auto& kv : ht) {
+		kv() = 10;
+	}
+
+	int sum = 0;
+	for(auto& kv : ht) sum += kv;
+
+	EXPECT_EQ(sum, 40);
+}
+
 
 
 //

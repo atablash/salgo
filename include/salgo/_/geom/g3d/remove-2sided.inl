@@ -33,7 +33,7 @@ void remove_2sided_and_double(MESH& mesh) {
 	};
 
 	struct Poly_Data {
-		int score = 0;
+		std::array<int,2> nums = {0,0};
 		bool first_done = false;
 	};
 
@@ -55,20 +55,20 @@ void remove_2sided_and_double(MESH& mesh) {
 		auto poly = poly_from_p(p);
 		auto node = polys.emplace_if_not_found(poly);
 
-		if(same_dir(poly, p)) node-> score++;
-		else node-> score--;
+		if(same_dir(poly, p)) node-> nums[0]++;
+		else node-> nums[1]++;
 	}
 
 	for(auto& p : mesh.polys()) {
 		auto poly = poly_from_p(p);
 		auto node = polys(poly);
 
-		if(node->score == 0) {
+		if(node->nums[0] > 0 && node->nums[1] > 0) {
 			p.erase();
 			continue;
 		}
 
-		if(!node->first_done && (node->score > 0) == same_dir(poly, p)) {
+		if(!node->first_done && (node->nums[0] > node->nums[1]) == same_dir(poly, p)) {
 			node->first_done = true;
 			continue;
 		}

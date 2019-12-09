@@ -106,11 +106,13 @@ public:
 	}
 
 	// assumes element is in bounds
-	bool constructed() const {
+	bool is_constructed() const {
 		CONT._check_bounds( HANDLE );
 		if constexpr(P::Dense) return true;
-		else return CONT._mb( HANDLE ).constructed();
+		else return CONT._mb( HANDLE ).is_constructed();
 	}
+
+	bool is_not_constructed() const { return ! is_constructed(); }
 
 	// same as `constructed()`, but also checks bounds
 	// bool exists_SLOW() const {
@@ -147,11 +149,11 @@ private:
 	friend BASE;
 
 	void _increment() {
-		do ++MUT_HANDLE; while( (int)HANDLE != CONT.domain() && !ACC.constructed() );
+		do ++MUT_HANDLE; while( (int)HANDLE != CONT.domain() && ACC.is_not_constructed() );
 	}
 
 	void _decrement() {
-		do --MUT_HANDLE; while( !ACC.constructed() );
+		do --MUT_HANDLE; while( ACC.is_not_constructed() );
 	}
 
 public:
@@ -220,7 +222,7 @@ private:
 public:
 	Dynamic_Array() : _mb( P::Memory_Block::Stack_Buffer ) {}
 
-	template<class... ARGS>
+	template<class... ARGS> // remove this? use named constructor instead?
 	Dynamic_Array(int size, ARGS&&... args) : _mb( std::max(size, P::Memory_Block::Stack_Buffer )), _size(size) {
 		for(int i=0; i<size; ++i) {
 			_mb(i).construct( args... );
@@ -427,7 +429,7 @@ public:
 
 		DCHECK_GE(_size, 1) << "pop_back() on empty Dynamic_Array";
 
-		DCHECK( (*this)(_size-1).constructed() );
+		DCHECK( (*this)(_size-1).is_constructed() );
 
 		Val result( std::move(_mb[_size-1]) );
 		_mb(--_size).destruct();
@@ -467,7 +469,7 @@ public:
 
 		int target = 0;
 		for(int i=0; i<_mb.domain(); ++i) {
-			if(_mb(i).constructed() && target != i) {
+			if(_mb(i).is_constructed() && target != i) {
 
 				_mb(target).construct( std::move( _mb[i] ) );
 				_mb(i).destruct();
@@ -492,14 +494,14 @@ public:
 	auto begin() {
 		static_assert(P::Iterable);
 		auto e = Iterator<MUTAB>(this, Index(0));
-		if(_size && !e->constructed()) ++e;
+		if(_size && e->is_not_constructed()) ++e;
 		return e;
 	}
 
 	auto begin() const {
 		static_assert(P::Iterable);
 		auto e = Iterator<CONST>(this, Index(0));
-		if(_size && !e->constructed()) ++e;
+		if(_size && e->is_not_constructed()) ++e;
 		return e;
 	}
 

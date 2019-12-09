@@ -535,6 +535,7 @@ public:
 
 	bool is_linked() const {
 		_check();
+		static_assert(P::Has_Edge_Links, "is_linked() called on Mesh without EDGE_LINKS enabled");
 		return P::raw(CONT, HANDLE).link.valid();
 	}
 

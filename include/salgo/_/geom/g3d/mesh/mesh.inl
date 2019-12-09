@@ -1,6 +1,7 @@
 #pragma once
 
 // mesh
+#include "mesh-base.inl"
 #include "mesh-params.inl"
 #include "mesh-data.inl"
 #include "mesh-accessors.inl"
@@ -34,7 +35,7 @@ namespace salgo::geom::g3d::_::mesh {
 
 
 template<class P>
-class Mesh : protected P {
+class Mesh : protected P, public Mesh_Base<Mesh<P>> {
 public:
 	using Scalar          = typename P::Scalar;
 	using Vector          = typename P::Vector;
@@ -163,7 +164,48 @@ public:
 
 	template<class OP>
 	Mesh(const Mesh<OP>& o) {
-		append(*this, o);
+		this->append(o);
+	}
+
+public:
+	void compact() {
+		if constexpr(P::Verts_Erasable_Mode == ERASABLE_HOLES) {
+			Dynamic_Array<int> v_remap( verts().domain() );
+			_vs.compact([&](auto&& old, auto&& neww) {
+				v_remap[old] = neww;
+			});
+
+			for(auto& p : _ps) {
+				for(int i=0; i<3; ++i) p->verts[i].vert = (H_Vert) v_remap[ p->verts[i].vert ];
+			}
+		}
+
+		// if constexpr(P::Polys_Erasable_Mode == ERASABLE_HOLES) {
+		// 	Dynamic_Array<int> p_remap( polys().domain() );
+		// 	_ps.compact([&](auto&& old, auto&& neww) {
+		// 		p_remap[old] = neww;
+		// 	});
+
+		// 	if constexpr(P::Has_Vert_Poly_Links) {
+		// 		for(auto& v : _vs) {
+		// 			decltype(v->poly_links) new_ht;
+
+		// 			for(auto& link : v->poly_links) {
+		// 				new_ht.emplace(H_PolyVert{ (H_Poly) p_remap[ link->poly ], link->ith });
+		// 			}
+
+		// 			v->poly_links = std::move(new_ht);
+		// 		}
+		// 	}
+
+		// 	if constexpr(P::Has_Edge_Links) {
+		// 		for(auto& p : _ps) {
+		// 			for(auto& pe : p->edges) {
+		// 				if(pe.link.valid()) pe.link.poly = (H_Poly) p_remap[ pe.link.poly ];
+		// 			}
+		// 		}
+		// 	}
+		// }
 	}
 
 }; // class Mesh

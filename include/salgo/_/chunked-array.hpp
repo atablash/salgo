@@ -211,7 +211,7 @@ struct Context {
 		bool constructed() const {
 			CONT._check_bounds( HANDLE );
 			if constexpr(Dense) return true;
-			if constexpr(Exists_Chunk_Bitset || Exists_Inplace) return CONT._blocks[ HANDLE.a ]( HANDLE.b ).constructed();
+			if constexpr(Exists_Chunk_Bitset || Exists_Inplace) return CONT._blocks[ HANDLE.a ]( HANDLE.b ).is_constructed();
 			// TODO: global bitset
 		}
 
@@ -403,7 +403,7 @@ struct Context {
 			auto idx = _size - _blocks[LAST].domain();
 
 			if constexpr(Exists_Chunk_Bitset || Exists_Inplace) {
-				while(!_blocks[LAST](idx).constructed()) {
+				while(_blocks[LAST](idx).is_not_constructed()) {
 					if(idx == 0) {
 						idx = _size >> 1;
 						_blocks.pop_back();

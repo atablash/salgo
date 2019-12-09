@@ -71,7 +71,8 @@ public:
 
 	void erase() { destruct(); } // alias
 
-	bool constructed() const { return CONT.v( HANDLE ).constructed(); }
+	bool is_constructed() const { return CONT.v( HANDLE ).is_constructed(); }
+	bool is_not_constructed() const { return ! is_constructed(); }
 };
 
 
@@ -98,7 +99,7 @@ private:
 	friend Iterator_Base<C,Context<P>>;
 
 	void _increment() {
-		do ++MUT_HANDLE; while( *this != End_Iterator<P>()  &&  !CONT( HANDLE ).constructed() );
+		do ++MUT_HANDLE; while( *this != End_Iterator<P>()  &&  CONT( HANDLE ).is_not_constructed() );
 	}
 
 	void _decrement() {
@@ -184,7 +185,7 @@ public:
 			// std::cout << "grow array allocator done" << std::endl;
 		}
 
-		while( v(lookup_index).constructed() ) {
+		while( v(lookup_index).is_constructed() ) {
 			++lookup_index;
 			if((int)lookup_index == v.domain()) {
 				lookup_index = 0;
@@ -262,6 +263,9 @@ public:
 	auto begin() const { return Iterator<P,CONST>(this, v.begin()); }
 
 	auto end() const { return End_Iterator<P>(); }
+
+	template<class... ARGS>
+	auto compact(ARGS&&... args) { return v.compact( std::forward<ARGS>(args)... ); }
 };
 
 

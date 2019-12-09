@@ -95,8 +95,7 @@ static void push_pop_resize_common(MB& m) {
 
 	m.pop_back();
 
-	//EXPECT_TRUE(  m(1).found() );
-	EXPECT_TRUE(  m(1).constructed() );
+	EXPECT_TRUE(  m(1).is_constructed() );
 
 	EXPECT_EQ(4, m.count());
 

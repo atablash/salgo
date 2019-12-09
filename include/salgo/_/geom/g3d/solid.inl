@@ -20,7 +20,10 @@ template<class MESH>
 bool has_degenerate_polys(const MESH& mesh) {
 	for(auto& p : mesh.polys()) {
 		for(auto& v : p.polyVerts()) {
-			if(v.vert() == v.next().vert()) return true;
+			if(v.vert() == v.next().vert()) {
+				std::cout << "has_degenerate_polys: poly " << p << std::endl;
+				return true;
+			}
 		}
 	}
 	return false;
@@ -100,7 +103,7 @@ auto check_solid(const MESH& mesh, ARGS&&... _args) {
 template <class MESH, class... ARGS>
 auto is_solid(const MESH& mesh, ARGS&&... args) {
 	auto r = check_solid(mesh, std::forward<ARGS>(args)...);
-	// std::cout << "check_solid_result " << (int)r.failure << std::endl;
+	std::cout << "check_solid_result " << (int)r.failure << std::endl;
 	return r.is_solid;
 }
 

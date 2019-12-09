@@ -18,7 +18,7 @@ struct H_PolyVert {
 	using H_Poly = typename P::H_Poly;
 
 	H_Poly poly = H_Poly();
-	int ith = 3; // 0,1,2 - char would be enough
+	char ith = 3; // todo: 0,1,2 - char would be enough
 
 	H_PolyVert() = default;
 	H_PolyVert(H_Poly new_poly, char new_ith) : poly(new_poly), ith(new_ith) {}

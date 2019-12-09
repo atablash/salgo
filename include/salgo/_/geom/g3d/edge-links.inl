@@ -93,6 +93,8 @@ bool has_all_edge_links( const MESH& mesh ) {
 //
 template<class MESH>
 auto fast_compute_edge_links(MESH& mesh) {
+	static_assert(MESH::Has_Edge_Links, "this mesh doesn't support edge-links");
+
 	struct Result {
 		int num_matched_edges = 0;
 		int num_open_edges = 0;
@@ -136,6 +138,13 @@ auto fast_compute_edge_links(MESH& mesh) {
 			}
 		}
 	}
+
+	// if(open_edges.not_empty()) {
+	// 	std::cout << "fast_compute_edge_links: open_edges left:" << std::endl;
+	// 	for(auto& oe : open_edges) {
+	// 		std::cout << "verts " << mesh(oe.key().first) << " " << mesh(oe.key().second) << "   edge " << mesh(oe.val()) << std::endl;
+	// 	}
+	// }
 
 	result.num_open_edges = open_edges.count();
 

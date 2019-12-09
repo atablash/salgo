@@ -32,8 +32,11 @@ auto orient_segment_triangle(const Segment& segment, const Triangle& triangle) {
 	// Compute denominator d. If d <= 0, segment is parallel to or points
 	// away from triangle, so exit early
 	Scalar d = qp.dot(n);
-	if(d == 0) return result;
-	
+	if(d <= std::numeric_limits<Scalar>::epsilon() * 1) return result;
+
+	//std::cout << "orient_segment_triangle: d == " << d << std::endl;
+	//std::cout << "num epsilons: " << d / std::numeric_limits<Scalar>::epsilon() << std::endl;
+
 	// Compute intersection t value of pq with plane of triangle. A ray
 	// intersects iff 0 <= t. Segment intersects iff 0 <= t <= 1. Delay
 	// dividing by d until intersection has been found to pierce triangle

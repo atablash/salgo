@@ -2,15 +2,17 @@
 
 #include "named-arguments.hpp"
 
+#include <cmath>
 
 namespace salgo::geom::g3d {
 
 
 
+// todo: move these functions to *_Base<CRTP> classes
 
 template<class V0, class V1>
 auto compute_angle(const V0& v0, const V1& v1) {
-	return acos(v0.dot(v1) / (v0.norm() * v1.norm()));
+	return std::acos(v0.dot(v1) / (v0.norm() * v1.norm()));
 }
 
 
@@ -241,48 +243,6 @@ void invert_polys(MESH& mesh) {
 }
 
 
-template<class MESH, class OTHER>
-void append(MESH& mesh, const OTHER& other) {
-    using H_Vert       = typename MESH ::H_Vert;
-    using H_Vert_Other = typename OTHER::H_Vert;
-
-    mesh.verts().reserve( mesh.verts().domain() + other.verts().count() );
-    mesh.polys().reserve( mesh.polys().domain() + other.polys().count() );
-
-    Hash_Table<H_Vert_Other, H_Vert> v_remap;
-    v_remap.reserve( other.verts().count() );
-
-    for(auto& v : other.verts()) {
-        auto new_vert = mesh.verts().add( v.pos()[0], v.pos()[1], v.pos()[2] );
-        if constexpr(MESH::Has_Vert_Data) new_vert.data() = v.data();
-
-        v_remap.emplace( v, new_vert );
-    }
-
-    for(auto& p : other.polys()) {
-        auto new_poly = mesh.polys().add(
-            v_remap[ p.vert(0) ],
-            v_remap[ p.vert(1) ],
-            v_remap[ p.vert(2) ]
-        );
-
-		(void)new_poly; // unused warning
-
-        if constexpr(MESH::Has_Poly_Data) new_poly.data() = p.data();
-
-        if constexpr(MESH::Has_PolyVert_Data) {
-            for(int i=0; i<3; ++i) {
-                new_poly.poly_vert(i).data() = p.poly_vert(i).data();
-            }
-        }
-
-        if constexpr(MESH::Has_PolyEdge_Data) {
-            for(int i=0; i<3; ++i) {
-                new_poly.poly_edge(i).data() = p.poly_edge(i).data();
-            }
-        }
-    }
-}
 
 
 

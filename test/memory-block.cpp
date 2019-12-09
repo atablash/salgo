@@ -30,8 +30,8 @@ TEST(Memory_Block, stack_optim_inplace_nontrivial) {
 
 		m(1).destruct();
 
-		EXPECT_TRUE ( m(0).constructed() );
-		EXPECT_FALSE( m(1).constructed() );
+		EXPECT_TRUE ( m(0).is_constructed() );
+		EXPECT_FALSE( m(1).is_constructed() );
 
 		int sum = 0;
 		for(auto& e : m) {
@@ -198,6 +198,6 @@ TEST(Memory_Block, begin_returns_first_existing) {
 	
 	block(3).construct(123);
 
-	EXPECT_TRUE( block.begin()->constructed() );
+	EXPECT_TRUE( block.begin()->is_constructed() );
 	EXPECT_EQ( 123, block.begin()->data() );
 }

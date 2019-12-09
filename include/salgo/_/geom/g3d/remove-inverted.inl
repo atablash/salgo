@@ -6,19 +6,29 @@
 namespace salgo::geom::g3d {
 
 
-NAMED_ARGUMENT(SUPPORT_HOLES)
+NAMED_ARGUMENT(CAVE_MODE)
+NAMED_ARGUMENT(SUPPORT_HOLES) // todo: not implemented (required some ray-casting)
 
 template<class MESH, class... ARGS>
 void remove_inverted(MESH& mesh, ARGS&&... _args) {
-	auto args = Named_Arguments{ std::forward<ARGS>(_args)... };
+	static_assert(MESH::Has_Edge_Links);
 
 	using Scalar = typename MESH::Scalar;
 
-	Union_Find ::DATA<Scalar> uf( mesh.verts().domain() );
+	auto args = Named_Arguments{ std::forward<ARGS>(_args)... };
+	auto cave_mode = args(CAVE_MODE, false);
+
+	fast_compute_edge_links(mesh);
+
+	Union_Find ::DATA<Scalar> uf( mesh.polys().domain() );
 
 	for(auto& p : mesh.polys()) {
-		uf.merge((int)p.vert(0).handle(), (int)p.vert(1).handle());
-		uf.merge((int)p.vert(1).handle(), (int)p.vert(2).handle());
+		for(auto& pe : p.polyEdges()) {
+			if(pe.is_not_linked()) continue;
+
+			uf.merge((int)p.handle(), (int)pe.linked_polyEdge().poly().handle());
+			uf.merge((int)p.handle(), (int)pe.linked_polyEdge().poly().handle());
+		}
 	}
 
 	for(auto& p : mesh.polys()) {
@@ -30,11 +40,11 @@ void remove_inverted(MESH& mesh, ARGS&&... _args) {
 
 		Scalar volume = mat.determinant();
 
-		uf[(int)p.vert(0).handle()] += volume;
+		uf[(int)p.handle()] += volume;
 	}
 
 	for(auto& p : mesh.polys()) {
-		if(uf[(int)p.vert(0).handle()] < 0) {
+		if(uf[(int)p.handle()] * (cave_mode ? -1 : 1) < 0) {
 			p.erase();
 		}
 	}
