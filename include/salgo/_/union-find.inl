@@ -93,9 +93,6 @@ class Accessor : public Accessor_Base<C,Context<P>> {
 	using BASE = Accessor_Base<C,Context<P>>;
 	using BASE::BASE;
 
-// public:
-// 	FORWARDING_CONSTRUCTOR_2(Accessor, BASE) {}
-
 public:
 	auto& merge_with(typename P::Index idx) {
 		_update();

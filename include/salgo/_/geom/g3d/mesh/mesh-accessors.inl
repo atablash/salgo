@@ -40,6 +40,8 @@ struct Verts_Context {
 		auto vertPolys()       { return P::template create_vertPolys_accessor<C>    ( CONT, HANDLE ); }
 		auto vertPolys() const { return P::template create_vertPolys_accessor<CONST>( CONT, HANDLE ); }
 
+		bool is_constructed() const { return P::raw_vs(CONT)(HANDLE).is_constructed(); }
+		bool is_not_constructed() const { return ! is_constructed(); }
 
 		// remove vert, along with its adjacent polys
 		void erase_with_polys() {
@@ -304,6 +306,9 @@ public:
 
 				if(erase_isolated_verts && v.poly_links.is_empty()) {
 					// std::cout << "while erasing poly " << HANDLE << ": also erasing isolated vert " << pv.vert << std::endl;
+					if constexpr(args.has(ON_VERT_ERASE)) {
+						args(ON_VERT_ERASE)( CONT(pv.vert) );
+					}
 					P::raw_vs(CONT)(pv.vert).erase();
 				}
 			}
