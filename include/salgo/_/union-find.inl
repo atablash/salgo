@@ -98,6 +98,7 @@ class Accessor : public Accessor_Base<C,Context<P>> {
 
 public:
 	auto& merge_with(typename P::Index idx) {
+		_update();
 		auto b = CONT(idx);
 
 		if(*this == b) return *this; // todo: do we want this check?
@@ -132,6 +133,16 @@ public:
 
 		return *this;
 	}
+
+	template<Const_Flag CC>
+	bool operator==(const Accessor<P,CC>& o) const { _update(); o._update(); return BASE::operator==(o); }
+
+	template<Const_Flag CC>
+	bool operator!=(const Accessor<P,CC>& o) const { _update(); o._update(); return BASE::operator!=(o); }
+
+private:
+	// todo optim: check if calling _update() all the time hurts performance
+	void _update() const { *const_cast<typename P::Handle*>(&HANDLE) = CONT._find(HANDLE); }
 };
 
 
